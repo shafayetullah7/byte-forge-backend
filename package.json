@@ -36,9 +36,12 @@
     "db:migrate:docker": "sudo docker-compose exec app npm run db:migrate"
   },
   "dependencies": {
+    "@apollo/server": "^4.12.2",
+    "@nestjs/apollo": "^13.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/graphql": "^13.1.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
@@ -46,6 +49,7 @@
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.43.1",
+    "graphql": "^16.11.0",
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",

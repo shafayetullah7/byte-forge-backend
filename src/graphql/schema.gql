@@ -1,0 +1,37 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Fruit {
+  id: ID!
+
+  """Create time of the record"""
+  createdAt: Timestamp!
+
+  """Last update time of the record"""
+  updatedAt: Timestamp!
+  name: String!
+  color: String!
+  sweetness: Int
+  description: String!
+}
+
+"""
+`Date` type as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
+type Query {
+  fruits: [Fruit!]!
+}
+
+type Mutation {
+  createFruit(input: CreateSingleFruitInput!): Fruit!
+}
+
+input CreateSingleFruitInput {
+  name: String!
+  color: String!
+  sweetness: Int
+  description: String!
+}

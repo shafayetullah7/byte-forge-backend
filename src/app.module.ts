@@ -20,6 +20,7 @@ import { SessionModule } from './api/session/session.module';
 import { AdminSessionModule } from './api/admin/admin-session/admin-session.module';
 import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
+import { GraphqlModule } from './graphql/graphql.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AppConfigModule } from './common/modules/app-config/app-config.module';
     EmailModule,
     ConfigModule,
     AppConfigModule,
+    GraphqlModule,
   ],
   controllers: [],
   providers: [
