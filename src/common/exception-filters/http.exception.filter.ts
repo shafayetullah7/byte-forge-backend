@@ -14,65 +14,48 @@ import { Response } from 'express';
 import { CustomException } from '../exceptions/custom.exception';
 import { ResponseService } from '../modules/response/response.service';
 import { ErrorCode } from '../modules/response/dto/error.schema';
-import { GraphQLError } from 'graphql';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   constructor(private readonly responseService: ResponseService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
-    // Determine if context is GraphQL or HTTP
-    const isGraphQL = host.getType<'graphql'>() === 'graphql';
-
-    // Generate a standardized error payload
-    const errorPayload = this.buildErrorPayload(exception);
-
-    if (isGraphQL) {
-      // GraphQL: throw a GraphQLError with custom extensions
-      throw new GraphQLError(errorPayload.message, {
-        extensions: errorPayload,
-      });
-    }
-
-    // HTTP: send JSON response
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const status = (errorPayload.error.code ||
-      HttpStatus.INTERNAL_SERVER_ERROR) as number;
 
-    return response.status(status).json(errorPayload);
-  }
-
-  private buildErrorPayload(exception: unknown) {
-    // Handle CustomException
+    // Handle custom exceptions
     if (exception instanceof CustomException) {
-      const { message, errorCode, details } = exception;
-      return this.responseService.error({
-        code: errorCode,
-        message,
-        details: details || message || 'Unknown error',
-      });
+      const { statusCode, message, errorCode, details } = exception;
+      return response.status(statusCode).json(
+        this.responseService.error({
+          code: errorCode,
+          message,
+          details: details || message || 'Unknown error',
+        }),
+      );
     }
 
-    // Handle NestJS HttpExceptions
+    // Handle NestJS HTTP exceptions
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const message = this.getErrorMessage(exception, status);
-      return this.responseService.error({
-        code: this.getErrorCode(exception, status),
-        message,
-        details: exception.message,
-      });
+      // const exceptionResponse = exception.getResponse();
+
+      return response.status(status).json(
+        this.responseService.error({
+          code: this.getErrorCode(exception, status),
+          message: this.getErrorMessage(exception, status),
+          details: exception.message,
+        }),
+      );
     }
 
-    // Fallback for unknown exceptions
-    return this.responseService.error({
-      code: ErrorCode.INTERNAL_SERVER_ERROR,
-      message:
-        exception instanceof Error
-          ? exception.message
-          : 'Internal server error',
-    });
+    // Fallback for unhandled errors
+    return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+      this.responseService.error({
+        code: ErrorCode.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+      }),
+    );
   }
 
   private getErrorCode(
@@ -132,4 +115,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return 'Internal server error';
     }
   }
+
+  // private getValidationErrors(exceptionResponse: any) {
+  //   if (Array.isArray(exceptionResponse?.message)) {
+  //     return exceptionResponse.message.map((err) => ({
+  //       field: err.property || 'unknown',
+  //       message: Object.values(err.constraints || {}).join(', '),
+  //     }));
+  //   }
+  //   return undefined;
+  // }
+
+  // private getSafeDetails(exceptionResponse: any, status: number) {
+  //   if (status >= 500 && process.env.NODE_ENV === 'production') {
+  //     return 'Internal server error';
+  //   }
+  //   return typeof exceptionResponse === 'object'
+  //     ? exceptionResponse.message || exceptionResponse.error
+  //     : exceptionResponse;
+  // }
 }

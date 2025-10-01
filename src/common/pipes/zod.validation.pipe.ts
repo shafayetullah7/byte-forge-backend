@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 
 import { ZodError, ZodType } from 'zod';
-import { ZodValidationException } from '../exceptions/zod.validation.exception';
 
 const isZodSchema = (value: unknown): value is ZodType => {
   return value instanceof ZodType;
@@ -16,6 +15,8 @@ const isZodSchema = (value: unknown): value is ZodType => {
 export class ZodValidationPipe implements PipeTransform {
   transform(value: any, metadata: ArgumentMetadata): any {
     const { metatype } = metadata;
+
+    console.log('Error came here********');
 
     console.log(metadata, metatype);
 
