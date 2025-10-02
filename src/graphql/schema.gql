@@ -22,7 +22,31 @@ type Fruit {
 scalar Timestamp
 
 type Query {
-  fruits: [Fruit!]!
+  fruits(filter: FruitFilterInput): [Fruit!]!
+}
+
+input FruitFilterInput {
+  name: StringFilter
+  color: StringFilter
+  sweetness: IntFilter
+  description: StringFilter
+}
+
+input StringFilter {
+  equals: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  in: [String!]
+}
+
+input IntFilter {
+  equals: Int
+  in: [Int!]
+  lt: Float
+  gt: Float
+  lte: Float
+  gte: Float
 }
 
 type Mutation {

@@ -20,26 +20,36 @@ import { ResponseService } from '../modules/response/response.service';
 import { CustomException } from '../exceptions/custom.exception';
 import { ErrorCode } from '../modules/response/dto/error.schema';
 import { ResponseValidationError } from '../modules/response/dto/response.validation.error.schema';
+import { ValidationError } from 'class-validator';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly responseService: ResponseService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const contextType = host.getType();
+    const contextType = host.getType<'graphql' | 'http' | 'ws' | 'rpc'>();
 
     if (contextType === 'http') {
       return this.handleHttpException(exception, host);
     }
 
-    // Try to detect GraphQL
-    try {
-      GqlArgumentsHost.create(host); // Will succeed only in GraphQL context
+    if (contextType === 'graphql') {
       return this.handleGraphQLException(exception, host);
-    } catch {
-      // Fallback to HTTP handling for other contexts (ws, rpc, etc.)
-      return this.handleHttpException(exception, host);
     }
+
+    // fallback
+    return this.handleHttpException(exception, host);
+
+    // console.log({ contextType });
+
+    // Try to detect GraphQL
+    // try {
+    //   GqlArgumentsHost.create(host); // Will succeed only in GraphQL context
+    //   return this.handleGraphQLException(exception, host);
+    // } catch {
+    //   // Fallback to HTTP handling for other contexts (ws, rpc, etc.)
+    //   return this.handleHttpException(exception, host);
+    // }
   }
 
   private handleHttpException(exception: unknown, host: ArgumentsHost) {
@@ -58,6 +68,43 @@ export class AllExceptionsFilter implements ExceptionFilter {
       });
 
       return response.status(HttpStatus.BAD_REQUEST).json(errorResponse);
+    }
+
+    if (exception instanceof BadRequestException) {
+      const res = exception.getResponse();
+
+      let validationErrors: ResponseValidationError[] = [];
+
+      if (Array.isArray(res)) {
+        // Type res as ValidationError[]
+        validationErrors = (res as ValidationError[]).map((err) => ({
+          field: err.property,
+          message: err.constraints
+            ? Object.values(err.constraints).join(', ')
+            : 'Unknown validation error',
+        }));
+      } else if (
+        typeof res === 'object' &&
+        res !== null &&
+        'message' in res &&
+        Array.isArray((res as { message: string }).message)
+      ) {
+        validationErrors = (res as { message: string[] }).message.map(
+          (msg) => ({
+            field: 'unknown_field',
+            message: msg,
+          }),
+        );
+      }
+
+      return response.status(HttpStatus.BAD_REQUEST).json(
+        this.responseService.error({
+          code: ErrorCode.VALIDATION_ERROR,
+          message: 'Validation failed',
+          details: 'Check validationErrors array for details',
+          validationErrors,
+        }),
+      );
     }
 
     // Handle Drizzle database errors
@@ -120,6 +167,38 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Please review the provided data',
         details: 'Check the validationErrors array for details',
+        validationErrors,
+      });
+
+      throw new GraphQLError(payload.message, { extensions: payload });
+    }
+
+    if (exception instanceof BadRequestException) {
+      const res = exception.getResponse();
+      let validationErrors: ResponseValidationError[] = [];
+
+      if (typeof res === 'object') {
+        console.log((res as { message: string }).message);
+        if (Array.isArray(res)) {
+          validationErrors = res.map(
+            (err: {
+              property: string;
+              constraints: Record<string, string>;
+            }) => {
+              console.log({ err });
+              return {
+                field: err.property,
+                message: Object.values(err.constraints || {}).join(', '),
+              };
+            },
+          );
+        }
+      }
+
+      const payload = this.responseService.error({
+        code: ErrorCode.VALIDATION_ERROR,
+        message: 'Validation failed',
+        details: 'Check validationErrors array for details',
         validationErrors,
       });
 
