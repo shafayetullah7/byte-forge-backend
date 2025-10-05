@@ -1,15 +1,15 @@
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { User } from './user.schema';
+import { userTable } from './user.schema';
 import { sql } from 'drizzle-orm/sql';
 import { Session } from '../session';
 
-export const UserSession = pgTable('user_sessions', {
+export const userSessionTable = pgTable('user_sessions', {
   id: uuid('id')
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
   userId: uuid('user_id')
     .notNull()
-    .references(() => User.id),
+    .references(() => userTable.id),
   sessionId: uuid('session_id')
     .notNull()
     .references(() => Session.id),
@@ -20,5 +20,5 @@ export const UserSession = pgTable('user_sessions', {
     .notNull(),
 });
 
-export type UserSession = typeof UserSession.$inferSelect;
-export type NewUserSession = typeof UserSession.$inferInsert;
+export type TUserSession = typeof userSessionTable.$inferSelect;
+export type TNewUserSession = typeof userSessionTable.$inferInsert;

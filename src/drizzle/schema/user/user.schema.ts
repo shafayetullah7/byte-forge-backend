@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm/sql';
 import { pgTable, uuid, varchar, timestamp, text } from 'drizzle-orm/pg-core';
 
-export const User = pgTable('users', {
+export const userTable = pgTable('users', {
   id: uuid('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -18,6 +18,5 @@ export const User = pgTable('users', {
     .notNull(),
 });
 
-export type User = typeof User.$inferSelect;
-export type UserType = User;
-export type NewUser = typeof User.$inferInsert;
+export type TUser = typeof userTable.$inferSelect;
+export type TNewUser = typeof userTable.$inferInsert;

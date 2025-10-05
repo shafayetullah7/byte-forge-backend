@@ -18,6 +18,7 @@ import { CookieService } from 'src/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from 'src/common/guards/user-auth.guard';
 import { LocalAuthenticUserParam } from 'src/common/pipes/local-authentic-user.pipe';
 import { LocalAuthenticUser } from 'src/common/types';
+import { LocalLoginDto } from './dto/local-login.dto';
 
 @Controller('user/auth')
 export class UserAuthController {
@@ -38,6 +39,7 @@ export class UserAuthController {
     @LocalAuthenticUserParam() userAuth: LocalAuthenticUser,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
+    @Body() payload: LocalLoginDto,
   ) {
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);

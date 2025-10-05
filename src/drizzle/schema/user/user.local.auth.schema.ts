@@ -5,15 +5,20 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import { User } from './user.schema';
+import { userTable } from './user.schema';
 
-export const UserLocalAuth = pgTable('user_local_auth', {
+export const userLocalAuthTable = pgTable('user_local_auth', {
+  id: uuid('id').defaultRandom().primaryKey(), // new primary key for this table
+
   userId: uuid('user_id')
-    .primaryKey()
-    .references(() => User.id),
+    .notNull()
+    .unique() // ensure one-to-one relation
+    .references(() => userTable.id, { onDelete: 'cascade' }),
+
   email: varchar('email', { length: 255 }).unique().notNull(),
   password: varchar('password', { length: 255 }).notNull(),
-  verfied: boolean('verified').default(false).notNull(),
+  verified: boolean('verified').default(false).notNull(), // fixed typo (was 'verfied')
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -21,5 +26,5 @@ export const UserLocalAuth = pgTable('user_local_auth', {
     .$onUpdate(() => new Date()),
 });
 
-export type UserLocalAuth = typeof UserLocalAuth.$inferSelect;
-export type NewUserLocalAuth = typeof UserLocalAuth.$inferInsert;
+export type TUserLocalAuth = typeof userLocalAuthTable.$inferSelect;
+export type TNewUserLocalAuth = typeof userLocalAuthTable.$inferInsert;

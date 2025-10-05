@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm/sql';
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { UserLocalAuth } from './user.local.auth.schema';
+import { userLocalAuthTable } from './user.local.auth.schema';
 import { Session } from '../session';
 
-export const UserLocalAuthSession = pgTable('user_local_auth_session', {
+export const userLocalAuthSessionTable = pgTable('user_local_auth_session', {
   id: uuid('id')
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
@@ -12,7 +12,7 @@ export const UserLocalAuthSession = pgTable('user_local_auth_session', {
     .references(() => Session.id),
   localAuthId: uuid('local_auth_id')
     .notNull()
-    .references(() => UserLocalAuth.userId),
+    .references(() => userLocalAuthTable.userId),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -20,5 +20,7 @@ export const UserLocalAuthSession = pgTable('user_local_auth_session', {
     .notNull(),
 });
 
-export type UserLocalAuthSession = typeof UserLocalAuthSession.$inferSelect;
-export type NewUserLocalAuthSession = typeof UserLocalAuthSession.$inferInsert;
+export type TUserLocalAuthSession =
+  typeof userLocalAuthSessionTable.$inferSelect;
+export type TNewUserLocalAuthSession =
+  typeof userLocalAuthSessionTable.$inferInsert;
