@@ -1,4 +1,4 @@
-import { ZodDtoFactory } from 'src/common/factories/zod.dto.factory';
+import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
 import { z } from 'zod';
 
 const localLoginSchema = z.object({

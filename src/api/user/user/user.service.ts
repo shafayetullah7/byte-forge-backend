@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
-import { User } from 'src/drizzle/schema';
-import { DrizzlePgTransaction } from 'src/drizzle/types';
+import { DrizzleService } from '@/drizzle/drizzle.service';
+import { userTable } from '@/drizzle/schema';
+import { DrizzlePgTransaction } from '@/drizzle/types';
 
 @Injectable()
 export class UserService {
@@ -25,8 +25,8 @@ export class UserService {
 
     const [user] = await db
       .select()
-      .from(User)
-      .where(eq(User.userName, payload.userName))
+      .from(userTable)
+      .where(eq(userTable.userName, payload.userName))
       .execute();
 
     if (user) {
@@ -34,7 +34,7 @@ export class UserService {
     }
 
     const [newUser] = await db
-      .insert(User)
+      .insert(userTable)
       .values({
         firstName: payload.firstName,
         lastName: payload.lastName,
@@ -54,11 +54,11 @@ export class UserService {
     const [user] = await this.drizzle.client
       .select({
         user: {
-          ...User,
+          ...userTable,
         },
       })
-      .from(User)
-      .where(eq(User.id, userId))
+      .from(userTable)
+      .where(eq(userTable.id, userId))
       .execute();
 
     if (!user) throw new NotFoundException('User not found');

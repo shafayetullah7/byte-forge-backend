@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm/sql';
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { userLocalAuthTable } from './user.local.auth.schema';
-import { Session } from '../session';
+import { sessionTable } from '../session';
 
 export const userLocalAuthSessionTable = pgTable('user_local_auth_session', {
   id: uuid('id')
@@ -9,7 +9,7 @@ export const userLocalAuthSessionTable = pgTable('user_local_auth_session', {
     .primaryKey(),
   sessionId: uuid('session_id')
     .notNull()
-    .references(() => Session.id),
+    .references(() => sessionTable.id),
   localAuthId: uuid('local_auth_id')
     .notNull()
     .references(() => userLocalAuthTable.userId),

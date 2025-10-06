@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
+import { DrizzleService } from '@/drizzle/drizzle.service';
 import { CreateAdminSession } from './types';
-import { SessionService } from 'src/api/session/session.service';
+import { SessionService } from '@/api/session/session.service';
 import {
-  AdminLocalAuthSession,
-  AdminSession,
-  NewAdminSession,
-} from 'src/drizzle/schema';
+  adminLocalAuthSessionTable,
+  adminSessionTable,
+  TNewAdminSession,
+} from '@/drizzle/schema';
 
 @Injectable()
 export class AdminSessionService {
@@ -34,16 +34,16 @@ export class AdminSessionService {
         sessionData,
         tx,
       );
-      const adminSessionData: NewAdminSession = {
+      const adminSessionData: TNewAdminSession = {
         adminId: admin.id,
         sessionId: newSession.id,
       };
 
-      await tx.insert(AdminSession).values(adminSessionData).execute();
+      await tx.insert(adminSessionTable).values(adminSessionData).execute();
 
       if (adminLocalAuth) {
         await tx
-          .insert(AdminLocalAuthSession)
+          .insert(adminLocalAuthSessionTable)
           .values({
             sessionId: newSession.id,
             localAuthId: adminLocalAuth.adminId,

@@ -1,18 +1,18 @@
 import { sql } from 'drizzle-orm/sql';
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { AdminLocalAuth } from './admin.local.auth.schema';
-import { Session } from '../session';
+import { sessionTable } from '../session';
+import { adminLocalAuthTable } from './admin.local.auth.schema';
 
-export const AdminLocalAuthSession = pgTable('admin_local_auth_session', {
+export const adminLocalAuthSessionTable = pgTable('admin_local_auth_session', {
   id: uuid('id')
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
   sessionId: uuid('session_id')
     .notNull()
-    .references(() => Session.id),
+    .references(() => sessionTable.id),
   localAuthId: uuid('local_auth_id')
     .notNull()
-    .references(() => AdminLocalAuth.adminId),
+    .references(() => adminLocalAuthTable.adminId),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -20,6 +20,7 @@ export const AdminLocalAuthSession = pgTable('admin_local_auth_session', {
     .notNull(),
 });
 
-export type AdminLocalAuthSession = typeof AdminLocalAuthSession.$inferSelect;
-export type NewAdminLocalAuthSession =
-  typeof AdminLocalAuthSession.$inferInsert;
+export type TAdminLocalAuthSession =
+  typeof adminLocalAuthSessionTable.$inferSelect;
+export type TNewAdminLocalAuthSession =
+  typeof adminLocalAuthSessionTable.$inferInsert;

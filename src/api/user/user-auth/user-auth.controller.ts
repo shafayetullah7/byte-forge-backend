@@ -9,15 +9,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
-import { UserLocalAuthGuard } from 'src/common/guards/user-local.-auth.guard';
+import { UserLocalAuthGuard } from '@/common/guards/user-local.-auth.guard';
 import { Request, Response } from 'express';
-import { parseDeviceInfo } from 'src/common/utils/get-divice-info';
-import { getClientIp } from 'src/common/utils/get-client-ip';
+import { parseDeviceInfo } from '@/common/utils/get-divice-info';
+import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
-import { CookieService } from 'src/common/modules/cookie/cookie.service';
-import { UserAuthGuard } from 'src/common/guards/user-auth.guard';
-import { LocalAuthenticUserParam } from 'src/common/pipes/local-authentic-user.pipe';
-import { LocalAuthenticUser } from 'src/common/types';
+import { CookieService } from '@/common/modules/cookie/cookie.service';
+import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { LocalAuthenticUserParam } from '@/common/pipes/local-authentic-user.pipe';
+import { LocalAuthenticUser } from '@/common/types';
 import { LocalLoginDto } from './dto/local-login.dto';
 
 @Controller('user/auth')

@@ -5,12 +5,12 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import { Admin } from './admin.schema';
+import { adminTable } from './admin.schema';
 
-export const AdminLocalAuth = pgTable('admin_local_auth', {
+export const adminLocalAuthTable = pgTable('admin_local_auth', {
   adminId: uuid('admin_id')
     .primaryKey()
-    .references(() => Admin.id),
+    .references(() => adminTable.id),
   email: varchar('email', { length: 255 }).unique().notNull(),
   password: varchar('password', { length: 255 }).notNull(),
   verfied: boolean('verified').default(false).notNull(),
@@ -21,5 +21,5 @@ export const AdminLocalAuth = pgTable('admin_local_auth', {
     .$onUpdate(() => new Date()),
 });
 
-export type AdminLocalAuth = typeof AdminLocalAuth.$inferSelect;
-export type NewAdminLocalAuth = typeof AdminLocalAuth.$inferInsert;
+export type TAdminLocalAuth = typeof adminLocalAuthTable.$inferSelect;
+export type TNewAdminLocalAuth = typeof adminLocalAuthTable.$inferInsert;

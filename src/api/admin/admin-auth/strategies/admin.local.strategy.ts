@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
-import { HashingService } from 'src/common/modules/hashing/hashing.service';
+import { HashingService } from '@/common/modules/hashing/hashing.service';
 import { AdminLocalAuthService } from '../admin-local-auth.service';
-import { AdminAuthStrategyEnum } from 'src/common/enum/admin.auth.strategy.enum';
-import { AuthAccess } from 'src/common/types';
+import { AdminAuthStrategyEnum } from '@/common/enum/admin.auth.strategy.enum';
+import { AuthAccess } from '@/common/types';
 
 @Injectable()
 export class AdminLocalStrategy extends PassportStrategy(

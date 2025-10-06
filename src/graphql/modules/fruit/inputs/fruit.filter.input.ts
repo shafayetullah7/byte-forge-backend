@@ -1,12 +1,9 @@
 import { Field, InputType } from '@nestjs/graphql';
-import {
-  IntFilter,
-  IntFilterSchema,
-} from 'src/graphql/common/filers/int.filter';
+import { IntFilter, IntFilterSchema } from '@/graphql/common/filers/int.filter';
 import {
   StringFilter,
   StringFilterSchema,
-} from 'src/graphql/common/filers/string.filter';
+} from '@/graphql/common/filers/string.filter';
 import { z } from 'zod';
 
 export const FruitFilterSchema = z

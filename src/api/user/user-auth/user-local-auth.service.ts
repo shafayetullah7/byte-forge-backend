@@ -3,13 +3,13 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
+import { DrizzleService } from '@/drizzle/drizzle.service';
 import { GetLocalUserQueryDto } from './dto/get-local-user.dto';
 import { and, eq, SQL } from 'drizzle-orm';
-import { DrizzlePgTransaction } from 'src/drizzle/types';
+import { DrizzlePgTransaction } from '@/drizzle/types';
 import { UserService } from '../user/user.service';
-import { HashingService } from 'src/common/modules/hashing/hashing.service';
-import { userLocalAuthTable, userTable } from 'src/drizzle/schema';
+import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { userLocalAuthTable, userTable } from '@/drizzle/schema';
 
 @Injectable()
 export class UserLocalAuthService {
@@ -19,11 +19,41 @@ export class UserLocalAuthService {
     private readonly hashingService: HashingService,
   ) {}
 
+  // async getLocalUser(query: GetLocalUserQueryDto) {
+  //   const conditions: SQL[] = [];
+
+  //   if (query.id) {
+  //     conditions.push(eq(userLocalAuthTable.userId, query.id));
+  //   }
+  //   if (query.email) {
+  //     conditions.push(eq(userLocalAuthTable.email, query.email));
+  //   }
+
+  //   if (conditions.length === 0) {
+  //     return null;
+  //   }
+
+  //   const users = await this.drizzle.client
+  //     .select({
+  //       user: userTable,
+  //       userLocalAuth: userLocalAuthTable,
+  //     })
+  //     .from(userTable)
+  //     .innerJoin(
+  //       userLocalAuthTable,
+  //       eq(userLocalAuthTable.userId, userTable.id),
+  //     )
+  //     .where(and(...conditions))
+  //     .execute();
+
+  //   return users.length > 0 ? users[0] : null;
+  // }
+
   async getLocalUser(query: GetLocalUserQueryDto) {
     const conditions: SQL[] = [];
 
     if (query.id) {
-      conditions.push(eq(userLocalAuthTable.userId, query.id));
+      conditions.push(eq(userTable.id, query.id)); // Use userTable.id since it's the same as userLocalAuthTable.userId
     }
     if (query.email) {
       conditions.push(eq(userLocalAuthTable.email, query.email));
@@ -34,11 +64,14 @@ export class UserLocalAuthService {
     }
 
     const users = await this.drizzle.client
-      .select()
+      .select({
+        user: userTable,
+        userLocalAuth: userLocalAuthTable,
+      })
       .from(userTable)
       .innerJoin(
         userLocalAuthTable,
-        eq(userLocalAuthTable.userId, userTable.id),
+        eq(userLocalAuthTable.userId, userTable.id), // Join condition
       )
       .where(and(...conditions))
       .execute();

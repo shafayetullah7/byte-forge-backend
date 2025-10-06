@@ -1,9 +1,9 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Request } from 'express';
-import { UserAuthGuard } from 'src/common/guards/user-auth.guard';
-import { AuthenticUserParam } from 'src/common/pipes/authentic-user.pipe';
-import { AuthenticUser } from 'src/common/types';
+import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
+import { AuthenticUser } from '@/common/types';
 
 @Controller('user')
 export class UserController {

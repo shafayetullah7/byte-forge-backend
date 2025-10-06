@@ -1,6 +1,6 @@
-import { User, UserLocalAuth } from 'src/drizzle/schema';
+import { TUser, TUserLocalAuth } from '@/drizzle/schema';
 
 export type UserAuth = {
-  user: User;
-  userLocalAuth: UserLocalAuth;
+  user: TUser;
+  userLocalAuth: TUserLocalAuth;
 };

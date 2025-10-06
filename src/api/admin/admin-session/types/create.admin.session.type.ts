@@ -1,4 +1,4 @@
-import { DeviceInfo } from 'src/drizzle/schema';
+import { DeviceInfo } from '@/drizzle/schema';
 import { AdminAuth } from '../../admin-auth/types/admin-auth.type';
 
 export type CreateAdminSession = {

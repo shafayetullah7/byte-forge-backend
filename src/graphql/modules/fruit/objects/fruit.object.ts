@@ -1,6 +1,6 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { FruitType } from 'src/drizzle/schema/test/fruit.schema';
-import { BaseEntity } from 'src/graphql/common/base/base.entity';
+import { FruitType } from '@/drizzle/schema/test/fruit.schema';
+import { BaseEntity } from '@/graphql/common/base/base.entity';
 
 @ObjectType()
 export class Fruit extends BaseEntity implements FruitType {

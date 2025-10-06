@@ -8,7 +8,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 import { sql } from 'drizzle-orm/sql';
-import { DeviceType } from 'src/drizzle/enum';
+import { DeviceType } from '@/drizzle/enum';
 
 const deviceTypeSchema = z.nativeEnum(DeviceType);
 
@@ -43,7 +43,7 @@ const deviceInfoJson = customType<{ data: DeviceInfo; driverData: unknown }>({
   },
 });
 
-export const Session = pgTable('sessions', {
+export const sessionTable = pgTable('sessions', {
   id: uuid('id')
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
@@ -65,5 +65,5 @@ export const Session = pgTable('sessions', {
     .notNull(),
 });
 
-export type Session = typeof Session.$inferSelect;
-export type NewSession = typeof Session.$inferInsert;
+export type TSession = typeof sessionTable.$inferSelect;
+export type TNewSession = typeof sessionTable.$inferInsert;

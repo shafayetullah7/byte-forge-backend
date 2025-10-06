@@ -1,10 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { CustomException } from 'src/common/exceptions/custom.exception';
-import { ErrorCode } from 'src/common/modules/response/dto/error.schema';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
-import { Admin } from 'src/drizzle/schema';
-import { DrizzlePgTransaction } from 'src/drizzle/types';
+import { CustomException } from '@/common/exceptions/custom.exception';
+import { ErrorCode } from '@/common/modules/response/dto/error.schema';
+import { DrizzleService } from '@/drizzle/drizzle.service';
+import { adminTable } from '@/drizzle/schema';
+import { DrizzlePgTransaction } from '@/drizzle/types';
 
 @Injectable()
 export class AdminService {
@@ -24,8 +24,8 @@ export class AdminService {
 
     const [existingAdmin] = await db
       .select()
-      .from(Admin)
-      .where(eq(Admin.userName, userName));
+      .from(adminTable)
+      .where(eq(adminTable.userName, userName));
 
     if (existingAdmin) {
       throw new CustomException(
@@ -36,7 +36,7 @@ export class AdminService {
     }
 
     const [newAdmin] = await db
-      .insert(Admin)
+      .insert(adminTable)
       .values(payload)
       .returning()
       .execute();

@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthController } from './user-auth.controller';
 import { UserLocalAuthService } from './user-local-auth.service';
-import { HashingModule } from 'src/common/modules/hashing/hashing.module';
+import { HashingModule } from '@/common/modules/hashing/hashing.module';
 import { UserSessionModule } from '../user-session/user-session.module';
 import { UserModule } from '../user/user.module';
 import { UserLocalStrategy } from './strategies/user-local.strategy';
-import { CookieModule } from 'src/common/modules/cookie/cookie.module';
+import { CookieModule } from '@/common/modules/cookie/cookie.module';
 
 @Module({
   imports: [

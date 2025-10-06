@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
+import { DrizzleService } from '@/drizzle/drizzle.service';
 import { CreateLocalAdminDto } from './dto/create.local.admin.dto';
 import { AdminService } from '../admin/admin.service';
 import { AdminLocalAuthService } from './admin-local-auth.service';
 import { AdminAuth } from './types/admin-auth.type';
-import { DeviceInfo } from 'src/drizzle/schema';
+import { DeviceInfo } from '@/drizzle/schema';
 import { AdminSessionService } from '../admin-session/admin-session.service';
 
 @Injectable()

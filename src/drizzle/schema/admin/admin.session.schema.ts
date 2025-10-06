@@ -1,18 +1,18 @@
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm/sql';
-import { Admin } from './admin.schema';
-import { Session } from '../session';
+import { adminTable } from './admin.schema';
+import { sessionTable } from '../session';
 
-export const AdminSession = pgTable('admin_sessions', {
+export const adminSessionTable = pgTable('admin_sessions', {
   id: uuid('id')
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
   adminId: uuid('admin_id')
     .notNull()
-    .references(() => Admin.id),
+    .references(() => adminTable.id),
   sessionId: uuid('session_id')
     .notNull()
-    .references(() => Session.id),
+    .references(() => sessionTable.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -20,5 +20,5 @@ export const AdminSession = pgTable('admin_sessions', {
     .notNull(),
 });
 
-export type AdminSession = typeof AdminSession.$inferSelect;
-export type NewAdminSession = typeof AdminSession.$inferInsert;
+export type TAdminSession = typeof adminSessionTable.$inferSelect;
+export type TNewAdminSession = typeof adminSessionTable.$inferInsert;

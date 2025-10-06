@@ -1,7 +1,7 @@
 import { pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { userTable } from './user.schema';
 import { sql } from 'drizzle-orm/sql';
-import { Session } from '../session';
+import { sessionTable } from '../session';
 
 export const userSessionTable = pgTable('user_sessions', {
   id: uuid('id')
@@ -12,7 +12,7 @@ export const userSessionTable = pgTable('user_sessions', {
     .references(() => userTable.id),
   sessionId: uuid('session_id')
     .notNull()
-    .references(() => Session.id),
+    .references(() => sessionTable.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

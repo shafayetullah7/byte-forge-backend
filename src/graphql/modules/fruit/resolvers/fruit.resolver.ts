@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Fruit } from '../objects/fruit.object';
-import { FruitService } from 'src/api/fruit/fruit.service';
+import { FruitService } from '@/api/fruit/fruit.service';
 import {
   CreateFruitSchema,
   CreateSingleFruitInput,
@@ -9,7 +9,7 @@ import {
   FruitFilterInput,
   FruitFilterSchema,
 } from '../inputs/fruit.filter.input';
-import { ZodGQLValidationPipe } from 'src/common/pipes/zod.gql.validation.pipe';
+import { ZodGQLValidationPipe } from '@/common/pipes/zod.gql.validation.pipe';
 
 @Resolver(() => Fruit)
 export class FruitResolver {

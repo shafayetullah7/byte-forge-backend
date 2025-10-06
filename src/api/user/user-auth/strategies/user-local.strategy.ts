@@ -6,9 +6,9 @@ import {
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 import { UserLocalAuthService } from '../user-local-auth.service';
-import { HashingService } from 'src/common/modules/hashing/hashing.service';
-import { UserAuthStrategyEnum } from 'src/common/enum/user.auth.strategy.enum';
-import { AuthAccess } from 'src/common/types';
+import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { UserAuthStrategyEnum } from '@/common/enum/user.auth.strategy.enum';
+import { AuthAccess } from '@/common/types';
 
 @Injectable()
 export class UserLocalStrategy extends PassportStrategy(
@@ -23,7 +23,7 @@ export class UserLocalStrategy extends PassportStrategy(
   }
 
   async validate(email: string, password: string): Promise<AuthAccess> {
-    const [user] = await this.authService.getLocalUser({ email });
+    const user = await this.authService.getLocalUser({ email });
 
     if (!user) {
       throw new NotFoundException('User not found');

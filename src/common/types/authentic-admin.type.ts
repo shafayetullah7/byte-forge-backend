@@ -1,6 +1,6 @@
-import { Admin, Session } from 'src/drizzle/schema';
+import { TAdmin, TSession } from '@/drizzle/schema';
 
 export type AuthenticAdmin = {
-  admin: Admin;
-  session: Session;
+  admin: TAdmin;
+  session: TSession;
 };

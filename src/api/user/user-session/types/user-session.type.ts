@@ -1,6 +1,6 @@
-import { User } from 'src/drizzle/schema';
+import { TUser } from '@/drizzle/schema';
 
-export type ActiveUserSession = User & {
+export type ActiveUserSession = TUser & {
   session?: {
     id: string;
     ip: string | null;

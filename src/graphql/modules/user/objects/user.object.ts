@@ -1,9 +1,9 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { UserType } from 'src/drizzle/schema';
-import { BaseEntity } from 'src/graphql/common/base/base.entity';
+import { TUser } from '@/drizzle/schema';
+import { BaseEntity } from '@/graphql/common/base/base.entity';
 
 @ObjectType()
-export class User extends BaseEntity implements UserType {
+export class User extends BaseEntity implements TUser {
   @Field()
   firstName: string;
 

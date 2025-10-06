@@ -19,11 +19,13 @@ export const userLocalAuthTable = pgTable('user_local_auth', {
   password: varchar('password', { length: 255 }).notNull(),
   verified: boolean('verified').default(false).notNull(), // fixed typo (was 'verfied')
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at')
+  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
+    .notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 export type TUserLocalAuth = typeof userLocalAuthTable.$inferSelect;

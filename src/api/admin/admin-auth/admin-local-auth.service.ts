@@ -1,10 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { and, eq, SQL } from 'drizzle-orm';
-import { CustomException } from 'src/common/exceptions/custom.exception';
-import { ErrorCode } from 'src/common/modules/response/dto/error.schema';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
-import { Admin, AdminLocalAuth } from 'src/drizzle/schema';
-import { DrizzlePgTransaction } from 'src/drizzle/types';
+import { CustomException } from '@/common/exceptions/custom.exception';
+import { ErrorCode } from '@/common/modules/response/dto/error.schema';
+import { DrizzleService } from '@/drizzle/drizzle.service';
+import { adminLocalAuthTable, adminTable } from '@/drizzle/schema';
+import { DrizzlePgTransaction } from '@/drizzle/types';
 
 @Injectable()
 export class AdminLocalAuthService {
@@ -18,8 +18,8 @@ export class AdminLocalAuthService {
 
     const [existingLocalAuth] = await db
       .select()
-      .from(AdminLocalAuth)
-      .where(eq(AdminLocalAuth.email, payload.email))
+      .from(adminLocalAuthTable)
+      .where(eq(adminLocalAuthTable.email, payload.email))
       .execute();
 
     if (existingLocalAuth) {
@@ -31,7 +31,7 @@ export class AdminLocalAuthService {
     }
 
     const [adminLocalAuth] = await db
-      .insert(AdminLocalAuth)
+      .insert(adminLocalAuthTable)
       .values(payload)
       .returning()
       .execute();
@@ -43,19 +43,22 @@ export class AdminLocalAuthService {
     const conditions: SQL[] = [];
 
     if (query.id) {
-      conditions.push(eq(AdminLocalAuth.adminId, query.id));
+      conditions.push(eq(adminLocalAuthTable.adminId, query.id));
     }
     if (query.email) {
-      conditions.push(eq(AdminLocalAuth.email, query.email));
+      conditions.push(eq(adminLocalAuthTable.email, query.email));
     }
 
     const admins = await this.drizzle.client
       .select({
-        admin: Admin,
-        adminLocalAuth: AdminLocalAuth,
+        admin: adminTable,
+        adminLocalAuth: adminLocalAuthTable,
       })
-      .from(Admin)
-      .innerJoin(AdminLocalAuth, eq(Admin.id, AdminLocalAuth.adminId))
+      .from(adminTable)
+      .innerJoin(
+        adminLocalAuthTable,
+        eq(adminTable.id, adminLocalAuthTable.adminId),
+      )
       .where(and(...conditions))
       .execute();
 

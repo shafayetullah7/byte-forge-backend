@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from 'src/drizzle/drizzle.service';
+import { DrizzleService } from '@/drizzle/drizzle.service';
 import { UserAuth } from '../user-auth/types/user-auth.type';
 import {
   DeviceInfo,
-  Session,
-  User,
-  UserLocalAuthSession,
-  UserSession,
-} from 'src/drizzle/schema';
+  sessionTable,
+  TSession,
+  TUser,
+  userLocalAuthSessionTable,
+  userSessionTable,
+  userTable,
+} from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { SessionService } from 'src/api/session/session.service';
+import { SessionService } from '@/api/session/session.service';
 
 @Injectable()
 export class UserSessionService {
@@ -23,11 +25,8 @@ export class UserSessionService {
     deviceInfo: DeviceInfo;
     ip: string;
   }) {
-    const {
-      userAuth: { user, userLocalAuth },
-      deviceInfo,
-      ip,
-    } = payload;
+    const { userAuth, deviceInfo, ip } = payload;
+    const { user } = userAuth;
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // now + 7 days
 
     const sessionData = {
@@ -42,12 +41,12 @@ export class UserSessionService {
         tx,
       );
       const userSessionData = { sessionId: newSession.id, userId: user.id };
-      await tx.insert(UserSession).values(userSessionData).execute();
+      await tx.insert(userSessionTable).values(userSessionData).execute();
 
-      if (userLocalAuth) {
-        await tx.insert(UserLocalAuthSession).values({
+      if (userAuth.userLocalAuth) {
+        await tx.insert(userLocalAuthSessionTable).values({
           sessionId: newSession.id,
-          localAuthId: userLocalAuth.userId,
+          localAuthId: userAuth.userLocalAuth.userId,
         });
       }
       return newSession;
@@ -58,22 +57,22 @@ export class UserSessionService {
 
   async getUserSession(
     sessionId: string,
-  ): Promise<{ user: User; session: Session } | null> {
+  ): Promise<{ user: TUser; session: TSession } | null> {
     const [userSession] = await this.drizzle.client
       .select({
-        user: User,
-        session: Session,
+        user: userTable,
+        session: sessionTable,
       })
-      .from(User)
-      .innerJoin(UserSession, eq(User.id, UserSession.userId))
-      .innerJoin(Session, eq(Session.id, UserSession.sessionId))
-      .where(eq(UserSession.id, sessionId))
+      .from(userTable)
+      .innerJoin(userSessionTable, eq(userTable.id, userSessionTable.userId))
+      .innerJoin(sessionTable, eq(sessionTable.id, userSessionTable.sessionId))
+      .where(eq(userSessionTable.id, sessionId))
       .execute();
 
     return userSession;
   }
 
-  isSessionActive(payload: { user: User; session: Session }) {
+  isSessionActive(payload: { user: TUser; session: TSession }) {
     if (!payload) return false;
     if (!payload.session) return false;
 

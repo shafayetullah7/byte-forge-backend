@@ -5,7 +5,7 @@ import { join } from 'path';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { FruitGqlModule } from './modules/fruit/fruit.gql.module';
-// import { FruitModule } from 'src/api/fruit/fruit.module';
+// import { FruitModule } from '@/api/fruit/fruit.module';
 
 // make crypto global
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -17,7 +17,7 @@ global.crypto = crypto;
     NestGraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       useFactory: () => ({
-        autoSchemaFile: join(process.cwd(), 'src/graphql/schema.gql'),
+        autoSchemaFile: join(process.cwd(), '@/graphql/schema.gql'),
         playground: true,
         context: ({ req, res }: { req: Request; res: Response }) => ({
           req,
