@@ -66,7 +66,7 @@ export class UserSessionService {
       .from(userTable)
       .innerJoin(userSessionTable, eq(userTable.id, userSessionTable.userId))
       .innerJoin(sessionTable, eq(sessionTable.id, userSessionTable.sessionId))
-      .where(eq(userSessionTable.id, sessionId))
+      .where(eq(sessionTable.id, sessionId))
       .execute();
 
     return userSession;

@@ -21,15 +21,17 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access');
       //   return false;
     }
+    console.log('here');
 
     const userSession = await this.userSessionService.getUserSession(sessionId);
+    console.log(userSession);
     if (!userSession) {
       throw new UnauthorizedException('Unauthorized access');
       //   return false;
     }
     const active = this.userSessionService.isSessionActive(userSession);
     if (!active) {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new UnauthorizedException('Unauthorized access. Session expired.');
       //   return false;
     }
 
