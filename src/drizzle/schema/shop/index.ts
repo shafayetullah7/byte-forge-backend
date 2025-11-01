@@ -6,3 +6,4 @@ export * from './shop.social.media.schema';
 export * from './shop.branch.business.schema';
 export * from './shop.branch.manager.schema';
 export * from './shop.branch.manager.verification.schema';
+export * from './shop.verification.info.schema';

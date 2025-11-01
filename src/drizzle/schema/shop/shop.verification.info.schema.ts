@@ -1,5 +1,17 @@
-import { pgTable, uuid, text, varchar, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  varchar,
+  timestamp,
+  pgEnum,
+} from 'drizzle-orm/pg-core';
 import { shopTable } from './shop.schema';
+
+export const ShopVerificationStatusEnum = pgEnum(
+  'shop_verification_status_enum',
+  ['pending', 'reviewing', 'approved', 'rejected'],
+);
 
 export const shopVerificationInfoTable = pgTable('shop_verification_info', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -17,6 +29,9 @@ export const shopVerificationInfoTable = pgTable('shop_verification_info', {
   businessDocument: text('business_document').notNull(), // supporting doc path or URL
   ownerIdProof: text('owner_id_proof').notNull(), // owner ID document path or URL
   professionalCertification: text('professional_certification'), // optional file path or URL
+
+  status: ShopVerificationStatusEnum('status').default('pending').notNull(),
+  verifiedAt: timestamp('verified_at', { mode: 'date', withTimezone: true }),
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()

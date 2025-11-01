@@ -9,6 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { shopBranchManagerTable } from './shop.branch.manager.schema';
 
+// Enum for ID types
 export const IdTypeEnum = pgEnum('id_type_enum', [
   'nid',
   'passport',
@@ -16,13 +17,21 @@ export const IdTypeEnum = pgEnum('id_type_enum', [
   'other',
 ]);
 
+// Enum for verification status
+export const ManagerVerificationStatusEnum = pgEnum(
+  'manager_verification_status_enum',
+  ['pending', 'reviewing', 'approved', 'rejected'],
+);
+
 export const shopBranchManagerVerificationInfoTable = pgTable(
   'shop_branch_manager_verification_info',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+
     shopBranchManagerId: uuid('shop_branch_manager_id')
       .notNull()
       .references(() => shopBranchManagerTable.id, { onDelete: 'cascade' }),
+
     address: text('address').notNull(),
     idType: IdTypeEnum('id_type').notNull(),
     idNumber: varchar('id_number', { length: 100 }).notNull(),
@@ -32,6 +41,11 @@ export const shopBranchManagerVerificationInfoTable = pgTable(
       .default(false)
       .notNull(),
     professionalCertification: text('professional_certification'),
+
+    // New fields
+    status: ManagerVerificationStatusEnum('status')
+      .default('pending')
+      .notNull(),
     verifiedAt: timestamp('verified_at', { mode: 'date', withTimezone: true }),
 
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
