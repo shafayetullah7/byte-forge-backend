@@ -5,3 +5,4 @@ export * from './shop.branch.contact.schema';
 export * from './shop.social.media.schema';
 export * from './shop.branch.business.schema';
 export * from './shop.branch.manager.schema';
+export * from './shop.branch.manager.verification.schema';

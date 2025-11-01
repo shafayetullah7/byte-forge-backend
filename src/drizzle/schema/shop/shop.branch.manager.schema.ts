@@ -1,20 +1,11 @@
 import {
   pgTable,
   uuid,
-  pgEnum,
   varchar,
-  text,
   timestamp,
   boolean,
 } from 'drizzle-orm/pg-core';
 import { shopBranchTable } from './shop.branch.schema';
-
-export const IdTypeEnum = pgEnum('id_type_enum', [
-  'nid',
-  'passport',
-  'driving_license',
-  'other',
-]);
 
 export const shopBranchManagerTable = pgTable('shop_branch_manager', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -35,18 +26,7 @@ export const shopBranchManagerTable = pgTable('shop_branch_manager', {
   whatsapp: varchar('whatsapp', { length: 20 }),
   telegram: varchar('telegram', { length: 20 }),
 
-  address: text('address').notNull(),
-
   verified: boolean('verified').default(false).notNull(),
-  idType: IdTypeEnum('id_type').notNull(),
-  idNumber: varchar('id_number', { length: 100 }).notNull(),
-  idDocument: text('id_document').notNull(), // could store file path or URL
-  proofOfAddress: text('proof_of_address').notNull(), // file path or URL
-  backgroundCheckAuthorization: boolean('background_check_authorization')
-    .default(false)
-    .notNull(),
-  professionalCertification: text('professional_certification'),
-
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
     .notNull(),
