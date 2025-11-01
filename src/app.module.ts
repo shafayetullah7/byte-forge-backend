@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE, RouterModule } from '@nestjs/core';
 import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserAuthModule } from './api/user/user-auth/user-auth.module';
 import { UserModule } from './api/user/user/user.module';
@@ -19,6 +19,7 @@ import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
+import { SellerModule } from './api/seller/seller.module';
 
 @Module({
   imports: [
@@ -44,6 +45,13 @@ import { AllExceptionsFilter } from './common/exception-filters/all.exception.fi
     ConfigModule,
     AppConfigModule,
     GraphqlModule,
+    SellerModule,
+    RouterModule.register([
+      {
+        path: 'seller',
+        module: SellerModule,
+      },
+    ]),
   ],
   controllers: [],
   providers: [
