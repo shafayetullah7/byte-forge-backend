@@ -64,4 +64,14 @@ export class AppConfigService {
   get defaultFromEmail(): AppEnv['DEFAULT_FROM_EMAIL'] {
     return this.configService.getOrThrow('DEFAULT_FROM_EMAIL');
   }
+
+  get cloudinaryCloudName(): AppEnv['CLOUDINARY_CLOUD_NAME'] {
+    return this.configService.getOrThrow('DEFAULT_FROM_EMAIL');
+  }
+  get cloudinaryApiKey(): AppEnv['CLOUDINARY_API_KEY'] {
+    return this.configService.getOrThrow('CLOUDINARY_API_KEY');
+  }
+  get cloudinaryApiSecret(): AppEnv['CLOUDINARY_API_SECRET'] {
+    return this.configService.getOrThrow('CLOUDINARY_API_SECRET');
+  }
 }

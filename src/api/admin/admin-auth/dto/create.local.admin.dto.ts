@@ -4,8 +4,7 @@ import { z } from 'zod';
 const createLocalAdminSchema = z.object({
   firstName: z
     .string({
-      required_error: 'First name is required',
-      invalid_type_error: 'First name must be a string',
+      error: 'Invalid first name',
     })
     .min(1, { message: 'First name cannot be empty' })
     .max(50, { message: 'First name cannot exceed 50 characters' })
@@ -13,8 +12,7 @@ const createLocalAdminSchema = z.object({
 
   lastName: z
     .string({
-      required_error: 'Last name is required',
-      invalid_type_error: 'Last name must be a string',
+      error: 'Invalid last name is',
     })
     .min(1, { message: 'Last name cannot be empty' })
     .max(50, { message: 'Last name cannot exceed 50 characters' })
@@ -22,8 +20,7 @@ const createLocalAdminSchema = z.object({
 
   userName: z
     .string({
-      required_error: 'Username is required',
-      invalid_type_error: 'Username must be a string',
+      error: 'Invalid username',
     })
     .min(3, { message: 'Username must be at least 3 characters' })
     .max(50, { message: 'Username cannot exceed 50 characters' })
@@ -33,17 +30,12 @@ const createLocalAdminSchema = z.object({
     }),
 
   email: z
-    .string({
-      required_error: 'Email is required',
-      invalid_type_error: 'Email must be a string',
-    })
     .email({ message: 'Invalid email format' })
     .max(255, { message: 'Email cannot exceed 255 characters' }),
 
   password: z
     .string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
+      error: 'Invalid password',
     })
     .min(8, { message: 'Password must be at least 8 characters' })
     .max(255, { message: 'Password cannot exceed 255 characters' })

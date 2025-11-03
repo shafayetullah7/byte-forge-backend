@@ -3,24 +3,16 @@ import { z } from 'zod';
 
 const loginBodySchema = z.object({
   email: z
-    .string({
-      required_error: 'Email is required',
-      invalid_type_error: 'Email must be a string',
-    })
-    .min(1, 'Email cannot be empty')
-    .email('Invalid email format')
-    .max(255, 'Email must be less than 255 characters')
-    .trim()
-    .transform((val) => val.toLowerCase()),
+    .email({ message: 'Please provide a valid email address' })
+    .max(255, { message: 'Email must not exceed 255 characters' }),
 
   password: z
     .string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
+      // Unified generic error for both missing/invalid type issues
+      error: 'Invalid password input provided',
     })
-    .min(1, 'Password cannot be empty')
-    .min(8, 'Password must be at least 8 characters')
-    .max(255, 'Password must be less than 255 characters'),
+    .min(8, { message: 'Password must be at least 8 characters long' })
+    .max(255, { message: 'Password must not exceed 255 characters' }),
 });
 
 export class LoginBodyDto extends ZodDtoFactory.create(loginBodySchema) {}

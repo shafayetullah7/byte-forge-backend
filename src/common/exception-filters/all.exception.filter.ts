@@ -304,10 +304,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private formatZodErrors(zodError: ZodError): ResponseValidationError[] {
-    return zodError.errors.map((error) => {
+    return zodError.issues.map((issue) => {
       return {
-        field: error.path.join('.') || 'unknown_field',
-        message: error.message,
+        field: issue.path.join('.') || 'unknown_field',
+        message: issue.message,
+        code: issue.code,
       };
     });
   }

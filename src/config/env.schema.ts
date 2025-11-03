@@ -26,6 +26,10 @@ export const envSchema = z
     GMAIL_USER: z.string(),
     GMAIL_APP_PASSWORD: z.string(),
     DEFAULT_FROM_EMAIL: z.string().email(),
+
+    CLOUDINARY_CLOUD_NAME: z.string().nonempty().max(255),
+    CLOUDINARY_API_KEY: z.string().nonempty().max(255),
+    CLOUDINARY_API_SECRET: z.string().nonempty().max(255),
   })
   .transform((data) => {
     const dbUrl = data.DATABASE_URL;

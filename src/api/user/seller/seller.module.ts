@@ -3,5 +3,6 @@ import { ShopModule } from './shop/shop.module';
 
 @Module({
   imports: [ShopModule],
+  controllers: [],
 })
 export class SellerModule {}

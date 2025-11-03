@@ -8,15 +8,18 @@ export class ZodValidationException extends HttpException {
       {
         status: HttpStatus.BAD_REQUEST,
         message: 'Validation Error',
-        description: error.errors.map((err) => {
-          return `${
-            err.path.length > 0 ? err.path[err.path.length - 1] : 'unknown'
-          }: ${err.message}`;
+        description: error.issues.map((issue) => {
+          return issue.message;
+          // return `${
+          //   issue.path.length > 0
+          //     ? issue.path[issue.path.length - 1]
+          //     : 'unknown'
+          // }: ${err.message}`;
         }),
-        errors: error.errors.map((err) => ({
-          path: err.path.join('.'),
-          code: err.code,
-          message: err.message,
+        errors: error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          code: issue.code,
+          message: issue.message,
         })),
         timestamp: new Date().toISOString(),
       },

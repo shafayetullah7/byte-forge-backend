@@ -19,7 +19,10 @@ import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
-import { SellerModule } from './api/seller/seller.module';
+import { SellerModule } from './api/user/seller/seller.module';
+import { MediaModule } from './api/media/media.module';
+import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
+import { LoggerModule } from './common/modules/logger/logger.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { SellerModule } from './api/seller/seller.module';
         module: SellerModule,
       },
     ]),
+    MediaModule,
+    CloudinaryModule,
+    LoggerModule,
   ],
   controllers: [],
   providers: [
