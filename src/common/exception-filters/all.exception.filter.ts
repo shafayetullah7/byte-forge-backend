@@ -73,6 +73,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof BadRequestException) {
       const res = exception.getResponse();
 
+      // console.log(exception);
+
       let validationErrors: ResponseValidationError[] = [];
 
       if (Array.isArray(res)) {
@@ -100,7 +102,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return response.status(HttpStatus.BAD_REQUEST).json(
         this.responseService.error({
           code: ErrorCode.VALIDATION_ERROR,
-          message: 'Validation failed',
+          message: exception.message,
           details: 'Check validationErrors array for details',
           validationErrors,
         }),

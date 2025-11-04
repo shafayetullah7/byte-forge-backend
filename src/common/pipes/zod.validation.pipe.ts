@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { ZodError, ZodType } from 'zod';
+// import { ZodDto } from '../factories/zod.dto.factory';
 
 const isZodSchema = (value: unknown): value is ZodType => {
   return value instanceof ZodType;
@@ -27,12 +28,21 @@ export class ZodValidationPipe implements PipeTransform {
 
     if (!value) {
       if (metadata.type) {
+        console.log('came here', metadata);
         throw new BadRequestException(`${metadata.type} is required`);
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const schema = (metatype as { schema?: any })?.schema;
+
+    console.log('schema type', typeof schema);
+
+    // if (schema instanceof ZodDto) {
+    //   console.log('Its a zod dto');
+    // } else {
+    //   console.log('not zod dto');
+    // }
 
     if (!schema || !isZodSchema(schema)) {
       console.log('here');

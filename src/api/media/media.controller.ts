@@ -5,7 +5,6 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
-  Req,
   HttpCode,
   HttpStatus,
   BadRequestException,
@@ -97,12 +96,12 @@ export class MediaController {
    * Delete a media file by ID
    */
   @Delete(':id')
+  @UseGuards(UserAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMedia(
     @Param('id') id: string,
-    @Req() req: Request,
+    @AuthenticUserParam() authenticUser: AuthenticUser,
   ): Promise<void> {
-    const user = req.user as AuthenticUser;
-    await this.mediaService.deleteMedia(id, user);
+    await this.mediaService.deleteMedia(id, authenticUser);
   }
 }
