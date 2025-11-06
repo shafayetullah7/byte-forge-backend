@@ -9,7 +9,7 @@ export const cloudinaryMediaTable = pgTable('cloudinary_media', {
     .unique()
     .references(() => mediaTable.id, { onDelete: 'cascade' }),
 
-  publicKey: varchar('public_key', { length: 255 }).notNull(),
+  publicKey: varchar('public_key', { length: 255 }).notNull().unique(),
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from '@/drizzle/drizzle.service';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { UserAuth } from '../user-auth/types/user-auth.type';
 import {
   DeviceInfo,
@@ -9,7 +9,7 @@ import {
   userLocalAuthSessionTable,
   userSessionTable,
   userTable,
-} from '@/drizzle/schema';
+} from '@/_db/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { SessionService } from '@/api/session/session.service';
 

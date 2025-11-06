@@ -9,6 +9,7 @@ import {
   HttpStatus,
   BadRequestException,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
@@ -16,6 +17,7 @@ import { Request } from 'express';
 import { AuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
+import { DeleteMediaDto } from './dto/delete.media.dto';
 
 const allowedMimeTypes = [
   // Images
@@ -99,9 +101,19 @@ export class MediaController {
   @UseGuards(UserAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMedia(
-    @Param('id') id: string,
+    @Param() params: DeleteMediaDto,
     @AuthenticUserParam() authenticUser: AuthenticUser,
   ): Promise<void> {
-    await this.mediaService.deleteMedia(id, authenticUser);
+    console.log('inside delete media controller');
+    await this.mediaService.deleteMedia(params.id, authenticUser);
+  }
+
+  @Get()
+  @UseGuards(UserAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getMedia(@AuthenticUserParam() authenticUser: AuthenticUser) {
+    console.log('inside delete media controller');
+    const result = await this.mediaService.getAllMedia(authenticUser);
+    return result;
   }
 }

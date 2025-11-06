@@ -1,4 +1,4 @@
-import { TAdmin, TAdminLocalAuth } from '@/drizzle/schema';
+import { TAdmin, TAdminLocalAuth } from '@/_db/drizzle/schema';
 
 export type LocalAuthenticAdmin = {
   admin: TAdmin;

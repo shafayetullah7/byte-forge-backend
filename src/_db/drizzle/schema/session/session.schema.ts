@@ -8,7 +8,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 import { sql } from 'drizzle-orm/sql';
-import { DeviceType } from '@/drizzle/enum';
+import { DeviceType } from '@/_db/drizzle/enum';
 
 const deviceTypeSchema = z.nativeEnum(DeviceType);
 

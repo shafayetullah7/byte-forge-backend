@@ -10,8 +10,8 @@ dotenv.config();
 // console.log({ databaseUrl });
 
 export default defineConfig({
-  schema: './src/drizzle/schema',
-  out: './src/drizzle/migrations',
+  schema: './src/_db/drizzle/schema',
+  out: './src/_db/drizzle/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     // url: databaseUrl,

@@ -11,12 +11,12 @@ import {
   and,
   Column,
 } from 'drizzle-orm';
-import { DrizzleService } from '@/drizzle/drizzle.service';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   fruits,
   FruitType,
   NewFruitType,
-} from '@/drizzle/schema/test/fruit.schema';
+} from '@/_db/drizzle/schema/test/fruit.schema';
 import { FruitFilterInput } from '@/graphql/modules/fruit/inputs/fruit.filter.input';
 
 @Injectable()

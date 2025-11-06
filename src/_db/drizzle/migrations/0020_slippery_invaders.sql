@@ -1,0 +1,1 @@
+ALTER TABLE "cloudinary_media" ADD CONSTRAINT "cloudinary_media_public_key_unique" UNIQUE("public_key");

@@ -1,5 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { TUser } from '@/drizzle/schema';
+import { TUser } from '@/_db/drizzle/schema';
 import { BaseEntity } from '@/graphql/common/base/base.entity';
 
 @ObjectType()

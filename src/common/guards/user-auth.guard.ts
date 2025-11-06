@@ -21,10 +21,10 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access');
       //   return false;
     }
-    console.log('here');
+    // console.log('here');
 
     const userSession = await this.userSessionService.getUserSession(sessionId);
-    console.log(userSession);
+    // console.log(userSession);
     if (!userSession) {
       throw new UnauthorizedException('Unauthorized access');
       //   return false;

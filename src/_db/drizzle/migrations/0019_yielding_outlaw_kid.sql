@@ -1,0 +1,1 @@
+ALTER TABLE "user_upload_media" ADD CONSTRAINT "user_media_unique" UNIQUE("media_id","user_id");

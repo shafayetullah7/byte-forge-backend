@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { DrizzleModule } from './drizzle/drizzle.module';
+import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
-import configuration from './config/configuration';
+import configuration from './_config/configuration';
 import { APP_FILTER, APP_PIPE, RouterModule } from '@nestjs/core';
 import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserAuthModule } from './api/user/user-auth/user-auth.module';

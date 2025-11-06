@@ -1,13 +1,13 @@
 import { CloudinaryService } from '@/common/modules/cloudinary/cloudinary.service';
 import { AppLoggerService } from '@/common/modules/logger/app.logger.service';
 import { AuthenticUser } from '@/common/types';
-import { DrizzleService } from '@/drizzle/drizzle.service';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   cloudinaryMediaTable,
   mediaTable,
   TNewMedia,
   userUploadMediaTable,
-} from '@/drizzle/schema';
+} from '@/_db/drizzle/schema';
 import { ForbiddenError } from '@nestjs/apollo';
 import {
   Injectable,
@@ -15,7 +15,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UploadApiResponse } from 'cloudinary';
-import { eq } from 'drizzle-orm';
+import { and, eq, getTableColumns } from 'drizzle-orm';
 
 @Injectable()
 export class MediaService {
@@ -44,10 +44,10 @@ export class MediaService {
 
     try {
       const mediaData: TNewMedia = {
-        fileName: file.filename,
+        fileName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
-        url: cloudinaryUpload.url,
+        url: cloudinaryUpload.secure_url,
       };
       const media = await this.db.client.transaction(async (tx) => {
         const [createdMedia] = await tx
@@ -90,12 +90,15 @@ export class MediaService {
     }
   }
 
-  async deleteMedia(id: string, authenticUser: AuthenticUser): Promise<void> {
+  async deleteMedia(
+    mediaId: string,
+    authenticUser: AuthenticUser,
+  ): Promise<void> {
     const [mediaRecord] = await this.db.client
       .select({
-        media: mediaTable,
-        userUploadMedia: userUploadMediaTable,
-        cloudinaryMedia: cloudinaryMediaTable,
+        media: getTableColumns(mediaTable),
+        userUploadMedia: getTableColumns(userUploadMediaTable),
+        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
       })
       .from(mediaTable)
       .leftJoin(
@@ -104,9 +107,14 @@ export class MediaService {
       )
       .innerJoin(
         userUploadMediaTable,
-        eq(mediaTable.id, userUploadMediaTable.userId),
+        eq(mediaTable.id, userUploadMediaTable.mediaId),
       )
-      .where(eq(userUploadMediaTable.userId, authenticUser.user.id));
+      .where(
+        and(
+          eq(userUploadMediaTable.userId, authenticUser.user.id),
+          eq(mediaTable.id, mediaId),
+        ),
+      );
 
     if (!mediaRecord) {
       throw new NotFoundException('Media not found in Cloudinary records');
@@ -116,21 +124,42 @@ export class MediaService {
     }
 
     try {
-      if (mediaRecord.cloudinaryMedia?.id) {
-        await this.cloudinaryService.deleteFile(
-          mediaRecord.cloudinaryMedia.publicKey,
-        );
-      }
-
       await this.db.client.transaction(async (tx) => {
         await tx
           .delete(cloudinaryMediaTable)
-          .where(eq(cloudinaryMediaTable.mediaId, id));
-        await tx.delete(mediaTable).where(eq(mediaTable.id, id));
+          .where(eq(cloudinaryMediaTable.mediaId, mediaId));
+        await tx.delete(mediaTable).where(eq(mediaTable.id, mediaId));
+
+        if (mediaRecord.cloudinaryMedia?.id) {
+          await this.cloudinaryService.deleteFile(
+            mediaRecord.cloudinaryMedia.publicKey,
+          );
+        }
       });
     } catch (error) {
       this.logger.error('Failed to delete media resource', error);
       throw new InternalServerErrorException('Failed to delete media resource');
     }
+  }
+
+  async getAllMedia(authenticUser: AuthenticUser) {
+    const mediaRecords = await this.db.client
+      .select({
+        media: getTableColumns(mediaTable),
+        userUploadMedia: getTableColumns(userUploadMediaTable),
+        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
+      })
+      .from(mediaTable)
+      .innerJoin(
+        userUploadMediaTable,
+        eq(mediaTable.id, userUploadMediaTable.mediaId),
+      )
+      .leftJoin(
+        cloudinaryMediaTable,
+        eq(mediaTable.id, cloudinaryMediaTable.mediaId),
+      )
+      .where(eq(userUploadMediaTable.userId, authenticUser.user.id));
+
+    return mediaRecords;
   }
 }

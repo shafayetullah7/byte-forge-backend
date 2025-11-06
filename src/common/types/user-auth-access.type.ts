@@ -1,4 +1,4 @@
-import { TSession, TUser, TUserLocalAuth } from '@/drizzle/schema';
+import { TSession, TUser, TUserLocalAuth } from '@/_db/drizzle/schema';
 
 export type AccessUserAuth = {
   user: TUser;

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from '@/drizzle/drizzle.service';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateAdminSession } from './types';
 import { SessionService } from '@/api/session/session.service';
 import {
   adminLocalAuthSessionTable,
   adminSessionTable,
   TNewAdminSession,
-} from '@/drizzle/schema';
+} from '@/_db/drizzle/schema';
 
 @Injectable()
 export class AdminSessionService {

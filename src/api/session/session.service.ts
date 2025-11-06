@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from '@/drizzle/drizzle.service';
-import { sessionTable, TNewSession } from '@/drizzle/schema';
-import { DrizzlePgTransaction } from '@/drizzle/types';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { sessionTable, TNewSession } from '@/_db/drizzle/schema';
+import { DrizzlePgTransaction } from '@/_db/drizzle/types';
 
 @Injectable()
 export class SessionService {

@@ -1,0 +1,1 @@
+ALTER TABLE "user_upload_media" DROP CONSTRAINT "user_upload_media_user_id_unique";

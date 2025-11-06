@@ -1,4 +1,4 @@
-import { TSession, TUser } from '@/drizzle/schema';
+import { TSession, TUser } from '@/_db/drizzle/schema';
 
 export type AuthenticUser = {
   user: TUser;

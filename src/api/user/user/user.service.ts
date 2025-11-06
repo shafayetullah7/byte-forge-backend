@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { DrizzleService } from '@/drizzle/drizzle.service';
-import { userTable } from '@/drizzle/schema';
-import { DrizzlePgTransaction } from '@/drizzle/types';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { userTable } from '@/_db/drizzle/schema';
+import { DrizzlePgTransaction } from '@/_db/drizzle/types';
 
 @Injectable()
 export class UserService {

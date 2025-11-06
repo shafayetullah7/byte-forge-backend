@@ -1,5 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { FruitType } from '@/drizzle/schema/test/fruit.schema';
+import { FruitType } from '@/_db/drizzle/schema/test/fruit.schema';
 import { BaseEntity } from '@/graphql/common/base/base.entity';
 
 @ObjectType()

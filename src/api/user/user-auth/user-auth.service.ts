@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DrizzleService } from '@/drizzle/drizzle.service';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { UserAuth } from './types/user-auth.type';
 import { UserSessionService } from '../user-session/user-session.service';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { UserLocalAuthService } from './user-local-auth.service';
 import { UserService } from '../user/user.service';
-import { DeviceInfo } from '@/drizzle/schema';
+import { DeviceInfo } from '@/_db/drizzle/schema';
 
 @Injectable()
 export class UserAuthService {

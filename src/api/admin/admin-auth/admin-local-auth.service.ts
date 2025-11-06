@@ -2,9 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { and, eq, SQL } from 'drizzle-orm';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
-import { DrizzleService } from '@/drizzle/drizzle.service';
-import { adminLocalAuthTable, adminTable } from '@/drizzle/schema';
-import { DrizzlePgTransaction } from '@/drizzle/types';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { adminLocalAuthTable, adminTable } from '@/_db/drizzle/schema';
+import { DrizzlePgTransaction } from '@/_db/drizzle/types';
 
 @Injectable()
 export class AdminLocalAuthService {

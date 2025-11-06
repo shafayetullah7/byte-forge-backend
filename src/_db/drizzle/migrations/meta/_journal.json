@@ -127,6 +127,34 @@
       "when": 1761996762153,
       "tag": "0017_familiar_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1762406207679,
+      "tag": "0018_polite_echo",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1762406938614,
+      "tag": "0019_yielding_outlaw_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1762406972517,
+      "tag": "0020_slippery_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1762407039464,
+      "tag": "0021_opposite_vapor",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppEnv } from '@/config/env.schema';
+import { AppEnv } from '@/_config/env.schema';
 
 @Injectable()
 export class AppConfigService {
@@ -66,7 +66,7 @@ export class AppConfigService {
   }
 
   get cloudinaryCloudName(): AppEnv['CLOUDINARY_CLOUD_NAME'] {
-    return this.configService.getOrThrow('DEFAULT_FROM_EMAIL');
+    return this.configService.getOrThrow('CLOUDINARY_CLOUD_NAME');
   }
   get cloudinaryApiKey(): AppEnv['CLOUDINARY_API_KEY'] {
     return this.configService.getOrThrow('CLOUDINARY_API_KEY');
