@@ -155,6 +155,20 @@
       "when": 1762407039464,
       "tag": "0021_opposite_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1762428414475,
+      "tag": "0022_freezing_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1762428589033,
+      "tag": "0023_aspiring_purple_man",
+      "breakpoints": true
     }
   ]
 }

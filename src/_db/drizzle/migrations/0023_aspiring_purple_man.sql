@@ -1,0 +1,2 @@
+ALTER TABLE "shops" ADD CONSTRAINT "shops_logo_media_id_fk" FOREIGN KEY ("logo") REFERENCES "public"."media"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shops" ADD CONSTRAINT "shops_banner_media_id_fk" FOREIGN KEY ("banner") REFERENCES "public"."media"("id") ON DELETE no action ON UPDATE no action;
