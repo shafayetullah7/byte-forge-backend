@@ -23,6 +23,7 @@ import { SellerModule } from './api/user/seller/seller.module';
 import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
+import { RepositoriesModule } from './_repositories/repositories.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { LoggerModule } from './common/modules/logger/logger.module';
     MediaModule,
     CloudinaryModule,
     LoggerModule,
+    RepositoriesModule,
   ],
   controllers: [],
   providers: [

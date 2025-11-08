@@ -15,7 +15,26 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UploadApiResponse } from 'cloudinary';
-import { and, eq, getTableColumns } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  not,
+  SQL,
+} from 'drizzle-orm';
+import { PgTransaction } from 'drizzle-orm/pg-core';
+
+type QueryOptions = {
+  userId?: string;
+  used?: boolean;
+  mediaIds?: string[];
+  transactionInfo?: {
+    transaction?: PgTransaction<any, any, any>;
+    lock?: boolean;
+  };
+};
 
 @Injectable()
 export class MediaService {
@@ -160,6 +179,47 @@ export class MediaService {
       )
       .where(eq(userUploadMediaTable.userId, authenticUser.user.id));
 
+    return mediaRecords;
+  }
+
+  async getUserMedia(queryOptions: QueryOptions) {
+    const { transactionInfo = {}, used, userId, mediaIds } = queryOptions;
+    const { transaction, lock } = transactionInfo;
+
+    const executor = transaction || this.db.client;
+
+    const conditions: SQL[] = [];
+
+    if (mediaIds?.length) {
+      conditions.push(inArray(mediaTable.id, mediaIds));
+    }
+    if (userId) {
+      conditions.push(eq(userUploadMediaTable.userId, userId));
+    }
+    if (used !== undefined) {
+      if (used) {
+        conditions.push(not(isNull(mediaTable.usedAt)));
+      } else {
+        conditions.push(isNull(mediaTable.usedAt));
+      }
+    }
+    const query = executor
+      .select({
+        media: getTableColumns(mediaTable),
+        userUploadMedia: getTableColumns(userUploadMediaTable),
+      })
+      .from(mediaTable)
+      .innerJoin(
+        userUploadMediaTable,
+        eq(mediaTable.id, userUploadMediaTable.mediaId),
+      )
+      .where(and(...conditions));
+
+    if (lock) {
+      query.for('update');
+    }
+
+    const mediaRecords = await query.execute();
     return mediaRecords;
   }
 }
