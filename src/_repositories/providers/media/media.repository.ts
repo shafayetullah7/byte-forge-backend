@@ -7,7 +7,10 @@ import {
 import {
   cloudinaryMediaTable,
   mediaTable,
+  TCloudinaryMedia,
+  TMedia,
   TNewMedia,
+  TUserUploadMedia,
   userUploadMediaTable,
 } from '@/_db/drizzle/schema';
 import { PgTransaction } from 'drizzle-orm/pg-core';
@@ -22,6 +25,12 @@ import {
   SQL,
 } from 'drizzle-orm';
 
+type SingleMedia = {
+  media: TMedia;
+  userUploadMedia: TUserUploadMedia;
+  cloudinaryMedia: TCloudinaryMedia | null;
+};
+
 @Injectable()
 export class MediaRepository implements IMediaRepository {
   constructor(private readonly db: DrizzleService) {}
@@ -31,18 +40,32 @@ export class MediaRepository implements IMediaRepository {
   }
 
   async createMedia(
-    media: TNewMedia,
-    userId: string,
+    payload: {
+      media: TNewMedia;
+      cloudinary?: { publicKey: string };
+      userId: string;
+    },
     tx?: PgTransaction<any, any, any>,
   ): Promise<TNewMedia> {
+    const { media, userId, cloudinary } = payload;
     const executor = this.getExecutor(tx);
 
     const operation = async (t: typeof executor) => {
-      const [created] = await t.insert(mediaTable).values(media).returning();
+      const [createdMedia] = await t
+        .insert(mediaTable)
+        .values(media)
+        .returning();
       await t
         .insert(userUploadMediaTable)
-        .values({ mediaId: created.id, userId });
-      return created;
+        .values({ mediaId: createdMedia.id, userId });
+      if (cloudinary) {
+        await t.insert(cloudinaryMediaTable).values({
+          mediaId: createdMedia.id,
+          publicKey: cloudinary?.publicKey,
+        });
+      }
+
+      return createdMedia;
     };
 
     return tx ? operation(executor) : this.db.transaction(operation);
@@ -58,6 +81,10 @@ export class MediaRepository implements IMediaRepository {
       await t
         .delete(cloudinaryMediaTable)
         .where(eq(cloudinaryMediaTable.mediaId, mediaId));
+      await t
+        .delete(userUploadMediaTable)
+        .where(eq(userUploadMediaTable.mediaId, mediaId));
+
       await t.delete(mediaTable).where(eq(mediaTable.id, mediaId));
     };
 
@@ -100,11 +127,14 @@ export class MediaRepository implements IMediaRepository {
   async findMediaById(
     mediaId: string,
     userId: string,
-    tx?: PgTransaction<any, any, any>,
-  ): Promise<any> {
-    const executor = tx ?? this.db.client;
+    transaction?: {
+      tx: PgTransaction<any, any, any>;
+      lock: boolean;
+    },
+  ): Promise<SingleMedia | null> {
+    const executor = this.getExecutor(transaction?.tx);
 
-    const [media] = await executor
+    const query = executor
       .select({
         media: getTableColumns(mediaTable),
         userUploadMedia: getTableColumns(userUploadMediaTable),
@@ -124,8 +154,11 @@ export class MediaRepository implements IMediaRepository {
           eq(mediaTable.id, mediaId),
           eq(userUploadMediaTable.userId, userId),
         ),
-      )
-      .execute();
+      );
+
+    const [media] = await (
+      transaction?.lock ? query.for('update') : query
+    ).execute();
 
     return media;
   }

@@ -15,8 +15,11 @@ export type TUserMediaQueryResult = TMedia & Pick<TUserUploadMedia, 'userId'>;
 
 export interface IMediaRepository {
   createMedia(
-    media: TNewMedia,
-    userId: string,
+    payload: {
+      media: TNewMedia;
+      cloudinary?: { publicKey: string };
+      userId: string;
+    },
     tx?: PgTransaction<any, any, any>,
   ): Promise<any>;
   deleteMedia(
@@ -29,6 +32,9 @@ export interface IMediaRepository {
   findMediaById(
     mediaId: string,
     userId: string,
-    tx?: PgTransaction<any, any, any>,
+    transaction: {
+      tx: PgTransaction<any, any, any>;
+      lock: boolean;
+    },
   ): Promise<any>;
 }

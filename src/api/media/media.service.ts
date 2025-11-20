@@ -25,6 +25,7 @@ import {
   SQL,
 } from 'drizzle-orm';
 import { PgTransaction } from 'drizzle-orm/pg-core';
+import { MediaRepository } from '@/_repositories/providers/media/media.repository';
 
 type QueryOptions = {
   userId?: string;
@@ -40,6 +41,7 @@ type QueryOptions = {
 export class MediaService {
   constructor(
     private readonly cloudinaryService: CloudinaryService,
+    private readonly mediaRepository: MediaRepository,
     private readonly db: DrizzleService,
     private readonly logger: AppLoggerService,
   ) {}
@@ -69,19 +71,16 @@ export class MediaService {
         url: cloudinaryUpload.secure_url,
       };
       const media = await this.db.client.transaction(async (tx) => {
-        const [createdMedia] = await tx
-          .insert(mediaTable)
-          .values(mediaData)
-          .returning();
-
-        await tx
-          .insert(userUploadMediaTable)
-          .values({ mediaId: createdMedia.id, userId: authenticUser.user.id });
-
-        await tx.insert(cloudinaryMediaTable).values({
-          mediaId: createdMedia.id,
-          publicKey: cloudinaryUpload.public_id,
-        });
+        const createdMedia = await this.mediaRepository.createMedia(
+          {
+            media: mediaData,
+            userId: authenticUser.user.id,
+            cloudinary: {
+              publicKey: cloudinaryUpload.public_id,
+            },
+          },
+          tx,
+        );
         return createdMedia;
       });
 
@@ -113,46 +112,25 @@ export class MediaService {
     mediaId: string,
     authenticUser: AuthenticUser,
   ): Promise<void> {
-    const [mediaRecord] = await this.db.client
-      .select({
-        media: getTableColumns(mediaTable),
-        userUploadMedia: getTableColumns(userUploadMediaTable),
-        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
-      })
-      .from(mediaTable)
-      .leftJoin(
-        cloudinaryMediaTable,
-        eq(mediaTable.id, cloudinaryMediaTable.mediaId),
-      )
-      .innerJoin(
-        userUploadMediaTable,
-        eq(mediaTable.id, userUploadMediaTable.mediaId),
-      )
-      .where(
-        and(
-          eq(userUploadMediaTable.userId, authenticUser.user.id),
-          eq(mediaTable.id, mediaId),
-        ),
-      );
-
-    if (!mediaRecord) {
-      throw new NotFoundException('Media not found in Cloudinary records');
-    }
-    if (mediaRecord.media.usedAt != null) {
-      throw new ForbiddenError('File is already in use');
-    }
-
     try {
       await this.db.client.transaction(async (tx) => {
-        await tx
-          .delete(cloudinaryMediaTable)
-          .where(eq(cloudinaryMediaTable.mediaId, mediaId));
-        await tx.delete(mediaTable).where(eq(mediaTable.id, mediaId));
+        const mediaRecord = await this.mediaRepository.findMediaById(
+          mediaId,
+          authenticUser.user.id,
+          { tx, lock: true },
+        );
 
-        if (mediaRecord.cloudinaryMedia?.id) {
-          await this.cloudinaryService.deleteFile(
-            mediaRecord.cloudinaryMedia.publicKey,
-          );
+        if (!mediaRecord) {
+          throw new NotFoundException('Media not found in Cloudinary records');
+        }
+        if (mediaRecord.media.usedAt != null) {
+          throw new ForbiddenError('File is already in use');
+        }
+        const { media, cloudinaryMedia } = mediaRecord;
+        await this.mediaRepository.deleteMedia(media.id, tx);
+
+        if (cloudinaryMedia?.id) {
+          await this.cloudinaryService.deleteFile(cloudinaryMedia.publicKey);
         }
       });
     } catch (error) {
