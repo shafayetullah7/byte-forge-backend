@@ -157,7 +157,7 @@ export class MediaRepository implements IMediaRepository {
       );
 
     const [media] = await (
-      transaction?.lock ? query.for('update') : query
+      transaction?.lock ? query.for('update', { of: mediaTable }) : query
     ).execute();
 
     return media;

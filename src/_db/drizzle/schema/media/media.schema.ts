@@ -7,6 +7,8 @@ import {
   timestamp,
   json,
 } from 'drizzle-orm/pg-core';
+import { allowedMimeTypes } from '../../enum/mime.type.enum';
+import { pgEnum } from 'drizzle-orm/pg-core';
 
 export type MediaUse = {
   table: string;
@@ -14,11 +16,13 @@ export type MediaUse = {
 };
 
 export type MediaUses = MediaUse[];
+export const MimeTypeEnum = pgEnum('mime_type_enum', allowedMimeTypes);
 
 export const mediaTable = pgTable('media', {
   id: uuid('id').defaultRandom().primaryKey(),
   fileName: varchar('file_name', { length: 255 }).notNull(),
-  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  // mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  mimeType: MimeTypeEnum('mime_type').notNull(),
   size: integer('size').notNull(),
   url: text('url').notNull(),
 

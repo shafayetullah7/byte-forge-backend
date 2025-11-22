@@ -169,6 +169,13 @@
       "when": 1762428589033,
       "tag": "0023_aspiring_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1763694184261,
+      "tag": "0026_tiresome_hellion",
+      "breakpoints": true
     }
   ]
 }

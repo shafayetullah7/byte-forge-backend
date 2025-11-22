@@ -1,0 +1,2 @@
+CREATE TYPE "public"."mime_type_enum" AS ENUM('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'video/ogg', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'application/pdf', 'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint', 'text/plain');--> statement-breakpoint
+ALTER TABLE "media" ALTER COLUMN "mime_type" SET DATA TYPE "public"."mime_type_enum" USING "mime_type"::"public"."mime_type_enum";

@@ -18,36 +18,7 @@ import { AuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
 import { DeleteMediaDto } from './dto/delete.media.dto';
-
-const allowedMimeTypes = [
-  // Images
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
-
-  // Videos
-  'video/mp4',
-  'video/webm',
-  'video/ogg',
-
-  // Audio
-  'audio/mpeg', // mp3
-  'audio/wav',
-  'audio/ogg',
-  'audio/webm',
-
-  // Documents
-  'application/pdf', // PDF
-  'application/msword', // DOC
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-  'application/vnd.ms-excel', // XLS
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
-  'application/vnd.ms-powerpoint', // PPT
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
-  'text/plain', // TXT
-];
+import { allowedMimeTypes, MimeType } from '@/_db/drizzle/enum/mime.type.enum';
 
 @Controller('media')
 export class MediaController {
@@ -62,7 +33,7 @@ export class MediaController {
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
       fileFilter: (req, file, callback) => {
-        if (!allowedMimeTypes.includes(file.mimetype)) {
+        if (!allowedMimeTypes.includes(file.mimetype as MimeType)) {
           return callback(
             new BadRequestException(
               `File type ${file.mimetype} is not allowed`,

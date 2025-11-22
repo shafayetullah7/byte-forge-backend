@@ -26,6 +26,7 @@ import {
 } from 'drizzle-orm';
 import { PgTransaction } from 'drizzle-orm/pg-core';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository';
+import { MimeType } from '@/_db/drizzle/enum/mime.type.enum';
 
 type QueryOptions = {
   userId?: string;
@@ -66,7 +67,7 @@ export class MediaService {
     try {
       const mediaData: TNewMedia = {
         fileName: file.originalname,
-        mimeType: file.mimetype,
+        mimeType: file.mimetype as MimeType,
         size: file.size,
         url: cloudinaryUpload.secure_url,
       };
