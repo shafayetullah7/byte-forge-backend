@@ -6,15 +6,15 @@ import {
   boolean,
   timestamp,
 } from 'drizzle-orm/pg-core';
-import { shopBranchTable } from './shop.branch.schema';
+import { shopTable } from './shop.schema';
 
-export const shopBranchBusinessTable = pgTable('shop_branch_business', {
+export const shopBusinessTable = pgTable('shop_business', {
   id: uuid('id').defaultRandom().primaryKey(),
 
-  shopBranchId: uuid('shop_branch_id')
+  shopId: uuid('shop_id')
     .notNull()
-    .unique() // one business info per branch
-    .references(() => shopBranchTable.id, { onDelete: 'cascade' }),
+    .unique() // one business info per shop
+    .references(() => shopTable.id, { onDelete: 'cascade' }),
 
   businessHours: text('business_hours').notNull(),
   localDelivery: boolean('local_delivery').default(false).notNull(),
@@ -39,6 +39,6 @@ export const shopBranchBusinessTable = pgTable('shop_branch_business', {
     .notNull(),
 });
 
-export type TShopBranchBusiness = typeof shopBranchBusinessTable.$inferSelect;
-export type TNewShopBranchBusiness =
-  typeof shopBranchBusinessTable.$inferInsert;
+// Types
+export type TShopBusiness = typeof shopBusinessTable.$inferSelect;
+export type TNewShopBusiness = typeof shopBusinessTable.$inferInsert;

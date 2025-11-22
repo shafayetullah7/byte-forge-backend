@@ -5,14 +5,15 @@ import {
   timestamp,
   boolean,
 } from 'drizzle-orm/pg-core';
-import { shopBranchTable } from './shop.branch.schema';
+import { userTable } from '../user';
+import { mediaTable } from '../media';
 
-export const shopBranchManagerTable = pgTable('shop_branch_manager', {
+export const managerTable = pgTable('manager', {
   id: uuid('id').defaultRandom().primaryKey(),
 
-  shopBranchId: uuid('shop_branch_id')
+  userId: uuid('user_id') // previously managerId
     .notNull()
-    .references(() => shopBranchTable.id, { onDelete: 'cascade' }),
+    .references(() => userTable.id, { onDelete: 'cascade' }),
 
   name: varchar('name', { length: 255 }).notNull(),
   workingSince: timestamp('working_since', {
@@ -25,8 +26,12 @@ export const shopBranchManagerTable = pgTable('shop_branch_manager', {
   alternativePhone: varchar('alternative_phone', { length: 20 }),
   whatsapp: varchar('whatsapp', { length: 20 }),
   telegram: varchar('telegram', { length: 20 }),
+  managerImage: uuid('manager_image').references(() => mediaTable.id, {
+    onDelete: 'no action',
+  }),
 
   verified: boolean('verified').default(false).notNull(),
+
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -37,5 +42,6 @@ export const shopBranchManagerTable = pgTable('shop_branch_manager', {
     .notNull(),
 });
 
-export type TShopBranchManager = typeof shopBranchManagerTable.$inferSelect;
-export type TNewShopBranchManager = typeof shopBranchManagerTable.$inferInsert;
+// Corrected types
+export type TManager = typeof managerTable.$inferSelect;
+export type TNewManager = typeof managerTable.$inferInsert;

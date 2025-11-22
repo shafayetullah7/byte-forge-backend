@@ -1,17 +1,20 @@
 import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
-import { shopBranchTable } from './shop.branch.schema';
+import { shopTable } from './shop.schema';
 
-export const shopBranchContactTable = pgTable('shop_branch_contact', {
-  id: uuid('id').defaultRandom().notNull(),
-  shopBranchId: uuid('shop_branch_id')
+export const shopContactTable = pgTable('shop_contact', {
+  id: uuid('id').defaultRandom().primaryKey(),
+
+  shopId: uuid('shop_id')
     .notNull()
-    .unique()
-    .references(() => shopBranchTable.id),
+    .unique() // one contact per shop
+    .references(() => shopTable.id, { onDelete: 'cascade' }),
+
   businessEmail: varchar('business_email', { length: 255 }).notNull(),
   phone: varchar('phone', { length: 20 }).notNull(),
   alternativePhone: varchar('alternative_phone', { length: 20 }),
   whatsapp: varchar('whatsapp', { length: 20 }),
   telegram: varchar('telegram', { length: 50 }),
+
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -22,5 +25,6 @@ export const shopBranchContactTable = pgTable('shop_branch_contact', {
     .notNull(),
 });
 
-export type TShopBranchContact = typeof shopBranchContactTable.$inferSelect;
-export type TNewShopBranchContact = typeof shopBranchContactTable.$inferInsert;
+// Corrected types
+export type TShopContact = typeof shopContactTable.$inferSelect;
+export type TNewShopContact = typeof shopContactTable.$inferInsert;
