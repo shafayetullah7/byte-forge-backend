@@ -1,10 +1,11 @@
 import { pgTable, uuid, varchar, pgEnum, timestamp } from 'drizzle-orm/pg-core';
 import { mediaTable } from '../media';
 import { userTable } from '../user';
+import { BusinessAccountVerificationStatusEnum } from '../../enum';
 
-export const BusinessAccountVerificationStatusEnum = pgEnum(
+export const businessAccountVerificationStatus = pgEnum(
   'business_account_verification_status_enum',
-  ['UNVERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+  BusinessAccountVerificationStatusEnum, // use same values
 );
 
 export const businessAccountTable = pgTable('business_account', {
@@ -18,7 +19,7 @@ export const businessAccountTable = pgTable('business_account', {
 
   address: varchar('address', { length: 500 }).notNull(), // optional: change if needed
 
-  verificationStatus: BusinessAccountVerificationStatusEnum(
+  verificationStatus: businessAccountVerificationStatus(
     'verification_status',
   ).notNull(),
 
@@ -35,3 +36,6 @@ export const businessAccountTable = pgTable('business_account', {
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export type TBusinessAccount = typeof businessAccountTable.$inferSelect;
+export type TNewBusinessAccount = typeof businessAccountTable.$inferInsert;
