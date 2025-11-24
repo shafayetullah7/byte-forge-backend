@@ -1,12 +1,12 @@
 import { SQL, and, sql } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { DrizzleClient, DrizzleTx } from '@/_db/drizzle/types';
+import { DrizzleTx } from '@/_db/drizzle/types';
 import { AnyPgTable } from 'drizzle-orm/pg-core';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 
 type TxWrapper = { tx: DrizzleTx; lock?: boolean };
 
 export abstract class BaseRepository<
-  // TTable extends AnyPgTable,
   TTable extends AnyPgTable,
   TQueryOption = unknown, // Keep this abstract for child classes to define
 > {
@@ -15,12 +15,12 @@ export abstract class BaseRepository<
   public readonly TNewRecord: InferInsertModel<TTable>;
 
   constructor(
-    protected readonly db: DrizzleClient,
+    protected readonly db: DrizzleService,
     protected readonly table: TTable,
   ) {}
 
   protected executor(tx?: DrizzleTx) {
-    return tx ?? this.db;
+    return tx ?? this.db.client;
   }
 
   protected abstract buildWhere(options?: TQueryOption): SQL[];
