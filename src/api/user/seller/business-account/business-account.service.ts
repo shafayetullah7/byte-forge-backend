@@ -4,6 +4,7 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository';
 import { MediaService } from '@/api/media/media.service';
 import { AllowedMimeType, TAllowedMimeType } from '@/_db/drizzle/enum';
+import { TBusinessAccount } from '@/_db/drizzle/schema';
 
 @Injectable()
 export class BusinessAccountService {
@@ -55,5 +56,12 @@ export class BusinessAccountService {
       return newAccount;
     });
     return result;
+  }
+
+  async getBusiness(userId: string): Promise<TBusinessAccount | null> {
+    const businessAccount =
+      await this.businessAccountRepository.findBusinessAccountByOwnerId(userId);
+
+    return businessAccount;
   }
 }

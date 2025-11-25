@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { BusinessAccountService } from './business-account.service';
 import { CreateBusinessAccountDto } from './dto/setup.business.dto';
 import { TBusinessAccount } from '@/_db/drizzle/schema';
@@ -22,5 +22,10 @@ export class BusinessAccountController {
       body,
       userAuth.user.id,
     );
+  }
+
+  @Get('')
+  async getBusiness(@AuthenticUserParam() userAuth: AuthenticUser) {
+    return this.businessAccountService.getBusiness(userAuth.user.id);
   }
 }
