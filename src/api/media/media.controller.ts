@@ -18,7 +18,10 @@ import { AuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
 import { DeleteMediaDto } from './dto/delete.media.dto';
-import { allowedMimeTypes, MimeType } from '@/_db/drizzle/enum/mime.type.enum';
+import {
+  AllowedMimeType,
+  TAllowedMimeType,
+} from '@/_db/drizzle/enum/mime.type.enum';
 
 @Controller('media')
 export class MediaController {
@@ -33,7 +36,11 @@ export class MediaController {
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
       fileFilter: (req, file, callback) => {
-        if (!allowedMimeTypes.includes(file.mimetype as MimeType)) {
+        if (
+          !Object.values(AllowedMimeType).includes(
+            file.mimetype as TAllowedMimeType,
+          )
+        ) {
           return callback(
             new BadRequestException(
               `File type ${file.mimetype} is not allowed`,

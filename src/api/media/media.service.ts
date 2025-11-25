@@ -26,7 +26,8 @@ import {
 } from 'drizzle-orm';
 import { PgTransaction } from 'drizzle-orm/pg-core';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository';
-import { MimeType } from '@/_db/drizzle/enum/mime.type.enum';
+import { TAllowedMimeType } from '@/_db/drizzle/enum/mime.type.enum';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 type QueryOptions = {
   userId?: string;
@@ -67,7 +68,7 @@ export class MediaService {
     try {
       const mediaData: TNewMedia = {
         fileName: file.originalname,
-        mimeType: file.mimetype as MimeType,
+        mimeType: file.mimetype as TAllowedMimeType,
         size: file.size,
         url: cloudinaryUpload.secure_url,
       };
@@ -115,14 +116,19 @@ export class MediaService {
   ): Promise<void> {
     try {
       await this.db.client.transaction(async (tx) => {
-        const mediaRecord = await this.mediaRepository.findMediaById(
+        const mediaRecord = await this.mediaRepository.findMediaDetailsById(
           mediaId,
-          authenticUser.user.id,
-          { tx, lock: true },
+          {
+            tx,
+            lock: true,
+          },
         );
 
-        if (!mediaRecord) {
-          throw new NotFoundException('Media not found in Cloudinary records');
+        if (
+          !mediaRecord ||
+          mediaRecord.userUploadMedia.userId !== authenticUser.user.id
+        ) {
+          throw new NotFoundException('Media not found');
         }
         if (mediaRecord.media.usedAt != null) {
           throw new ForbiddenError('File is already in use');
@@ -200,5 +206,55 @@ export class MediaService {
 
     const mediaRecords = await query.execute();
     return mediaRecords;
+  }
+
+  async useMedia(
+    payload: {
+      mediaIds: string[];
+      userId: string;
+      validMimeTypes: TAllowedMimeType[];
+    },
+    tx: DrizzleTx,
+  ) {
+    const { mediaIds, userId, validMimeTypes } = payload;
+    const mediaRecords = await this.getUserMedia({
+      mediaIds,
+      userId,
+      transactionInfo: {
+        transaction: tx,
+        lock: true,
+      },
+    });
+
+    // if (mediaRecords.length !== mediaIds.length) {
+    //   throw new NotFoundException('Not all media records found');
+    // }
+
+    const mediaRecordMap = mediaRecords.reduce((map, record) => {
+      map[record.media.id] = record;
+      return map;
+    }, {});
+
+    mediaIds.forEach((mediaId) => {
+      if (!mediaRecordMap[mediaId]) {
+        throw new NotFoundException(
+          `Media record with id ${mediaId} not found`,
+        );
+      }
+    });
+
+    const plainMediaRecords = mediaRecords.map((record) => record.media);
+
+    if (
+      !this.mediaRepository.areValidMediaType(plainMediaRecords, validMimeTypes)
+    ) {
+      throw new ForbiddenError('File type is not allowed');
+    }
+
+    if (this.mediaRepository.areMediaUsed(plainMediaRecords)) {
+      throw new ForbiddenError('File is already in use');
+    }
+
+    return this.mediaRepository.useMedia(mediaIds, tx);
   }
 }

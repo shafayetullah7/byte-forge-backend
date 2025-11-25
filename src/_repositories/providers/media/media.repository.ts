@@ -24,6 +24,8 @@ import {
   not,
   SQL,
 } from 'drizzle-orm';
+import { DrizzleTx } from '@/_db/drizzle/types';
+import { TAllowedMimeType } from '@/_db/drizzle/enum';
 
 type SingleMedia = {
   media: TMedia;
@@ -35,7 +37,7 @@ type SingleMedia = {
 export class MediaRepository implements IMediaRepository {
   constructor(private readonly db: DrizzleService) {}
 
-  private getExecutor(tx?: PgTransaction<any, any, any>) {
+  private getExecutor(tx?: DrizzleTx) {
     return tx ?? this.db.client;
   }
 
@@ -45,7 +47,7 @@ export class MediaRepository implements IMediaRepository {
       cloudinary?: { publicKey: string };
       userId: string;
     },
-    tx?: PgTransaction<any, any, any>,
+    tx: DrizzleTx,
   ): Promise<TNewMedia> {
     const { media, userId, cloudinary } = payload;
     const executor = this.getExecutor(tx);
@@ -124,11 +126,10 @@ export class MediaRepository implements IMediaRepository {
     return results;
   }
 
-  async findMediaById(
+  async findMediaDetailsById(
     mediaId: string,
-    userId: string,
     transaction?: {
-      tx: PgTransaction<any, any, any>;
+      tx: DrizzleTx;
       lock: boolean;
     },
   ): Promise<SingleMedia | null> {
@@ -149,17 +150,31 @@ export class MediaRepository implements IMediaRepository {
         userUploadMediaTable,
         eq(mediaTable.id, userUploadMediaTable.mediaId),
       )
-      .where(
-        and(
-          eq(mediaTable.id, mediaId),
-          eq(userUploadMediaTable.userId, userId),
-        ),
-      );
+      .where(and(eq(mediaTable.id, mediaId)));
 
     const [media] = await (
       transaction?.lock ? query.for('update', { of: mediaTable }) : query
     ).execute();
 
     return media;
+  }
+  areMediaUsed(records: TMedia[]) {
+    return records.some((record) => record.usedAt !== null);
+  }
+
+  async useMedia(mediaIds: string[], tx: DrizzleTx) {
+    await tx
+      .update(mediaTable)
+      .set({ usedAt: new Date() })
+      .where(inArray(mediaTable.id, mediaIds))
+      .returning();
+  }
+
+  areValidMediaType(
+    records: TMedia[],
+    validTypes: TAllowedMimeType[],
+  ): boolean {
+    const uniqueMimeTypes = new Set(validTypes);
+    return records.every((record) => uniqueMimeTypes.has(record.mimeType));
   }
 }

@@ -1,31 +1,29 @@
-export const allowedMimeTypes = [
+export const AllowedMimeType = {
   // Images
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
+  JPEG: 'image/jpeg',
+  PNG: 'image/png',
+  GIF: 'image/gif',
+  WEBP: 'image/webp',
+  SVG: 'image/svg+xml',
 
   // Videos
-  'video/mp4',
-  'video/webm',
-  'video/ogg',
+  MP4: 'video/mp4',
+  WEBM_VIDEO: 'video/webm',
+  OGG_VIDEO: 'video/ogg',
 
   // Audio
-  'audio/mpeg', // mp3
-  'audio/wav',
-  'audio/ogg',
-  'audio/webm',
+  MP3: 'audio/mpeg',
+  WAV: 'audio/wav',
+  OGG_AUDIO: 'audio/ogg',
+  WEBM_AUDIO: 'audio/webm',
 
   // Documents
-  'application/pdf', // PDF
-  'application/msword', // DOC
-  //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-  'application/vnd.ms-excel', // XLS
-  //   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
-  'application/vnd.ms-powerpoint', // PPT
-  //   'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
-  'text/plain', // TXT
-] as const;
+  PDF: 'application/pdf',
+  DOC: 'application/msword',
+  XLS: 'application/vnd.ms-excel',
+  PPT: 'application/vnd.ms-powerpoint',
+  TXT: 'text/plain',
+} as const;
 
-export type MimeType = (typeof allowedMimeTypes)[number];
+export type TAllowedMimeType =
+  (typeof AllowedMimeType)[keyof typeof AllowedMimeType];

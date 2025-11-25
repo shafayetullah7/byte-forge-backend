@@ -1,8 +1,12 @@
-import { businessAccountTable } from '@/_db/drizzle/schema';
-import { BaseRepository } from '@/_repositories/_base/base.repository';
+import {
+  businessAccountTable,
+  TBusinessAccount,
+  TNewBusinessAccount,
+} from '@/_db/drizzle/schema';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { eq, SQL } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface BusinessAccountQuery {
   id?: string;
@@ -11,24 +15,58 @@ export interface BusinessAccountQuery {
 }
 
 @Injectable()
-export class BusinessAccountRepository extends BaseRepository<
-  typeof businessAccountTable,
-  BusinessAccountQuery
-> {
-  constructor(protected readonly db: DrizzleService) {
-    super(db, businessAccountTable);
+export class BusinessAccountRepository {
+  constructor(protected readonly db: DrizzleService) {}
+
+  async findBusinessAccountById(
+    businessAccountId: string,
+    transaction?: {
+      tx: DrizzleTx;
+      lock: boolean;
+    },
+  ): Promise<TBusinessAccount | null> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(businessAccountTable)
+      .where(eq(businessAccountTable.id, businessAccountId));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [account] = await lockQuery.execute();
+
+    return account ?? null;
   }
 
-  protected buildWhere(options?: BusinessAccountQuery): SQL[] {
-    if (!options) return [];
+  async findBusinessAccountByOwnerId(
+    ownerId: string,
+    transaction?: {
+      tx: DrizzleTx;
+      lock: boolean;
+    },
+  ): Promise<TBusinessAccount | null> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(businessAccountTable)
+      .where(eq(businessAccountTable.ownerId, ownerId));
 
-    const conditions: SQL[] = [];
-    const { id, ownerId, name } = options;
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [account] = await lockQuery.execute();
 
-    if (id) conditions.push(eq(businessAccountTable.id, id));
-    if (ownerId) conditions.push(eq(businessAccountTable.ownerId, ownerId));
-    if (name) conditions.push(eq(businessAccountTable.name, name));
+    return account ?? null;
+  }
 
-    return conditions;
+  async createBusinessAccount(
+    businessAccount: TNewBusinessAccount,
+    transaction?: DrizzleTx,
+  ): Promise<TBusinessAccount> {
+    const executor = this.db.getExecutor(transaction);
+    const [newAccount] = await executor
+      .insert(businessAccountTable)
+      .values(businessAccount)
+      .returning()
+      .execute();
+
+    return newAccount;
   }
 }

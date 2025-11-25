@@ -7,5 +7,6 @@ import { CloudinaryModule } from '@/common/modules/cloudinary/cloudinary.module'
   controllers: [MediaController],
   providers: [MediaService],
   imports: [CloudinaryModule],
+  exports: [MediaService],
 })
 export class MediaModule {}

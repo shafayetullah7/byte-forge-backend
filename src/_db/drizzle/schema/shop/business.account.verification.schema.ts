@@ -1,5 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { businessAccountTable } from './business.account.schema';
+import { mediaTable } from '../media';
 
 export const BusinessVerificationStatusEnum = pgEnum(
   'business_verification_status_enum',
@@ -17,12 +18,18 @@ export const businessAccountVerificationTable = pgTable(
 
     // Business-specific documents
     tradeLicenseNumber: varchar('trade_license_number', { length: 100 }),
-    tradeLicenseDocument: varchar('trade_license_document', { length: 255 }), // URL/path
+    tradeLicenseDocument: uuid('trade_license_document').references(
+      () => mediaTable.id,
+      { onDelete: 'no action' },
+    ),
     tinNumber: varchar('tin_number', { length: 100 }),
-    tinDocument: varchar('tin_document', { length: 255 }), // URL/path
-    otherSupportingDocument: varchar('other_supporting_document', {
-      length: 255,
-    }), // optional
+    tinDocument: uuid('tin_document').references(() => mediaTable.id, {
+      onDelete: 'no action',
+    }),
+    otherSupportingDocument: uuid('other_supporting_document').references(
+      () => mediaTable.id,
+      { onDelete: 'no action' },
+    ), // optional
 
     status: BusinessVerificationStatusEnum('status')
       .default('PENDING')

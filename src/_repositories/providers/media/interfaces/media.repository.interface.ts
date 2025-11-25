@@ -1,12 +1,12 @@
 import { TMedia, TNewMedia, TUserUploadMedia } from '@/_db/drizzle/schema';
-import { PgTransaction } from 'drizzle-orm/pg-core';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export type TUserMediaQueryOption = {
   userId?: string;
   used?: boolean;
   mediaIds?: string[];
   transactionInfo?: {
-    transaction?: PgTransaction<any, any, any>;
+    transaction?: DrizzleTx;
     lock?: boolean;
   };
 };
@@ -20,21 +20,19 @@ export interface IMediaRepository {
       cloudinary?: { publicKey: string };
       userId: string;
     },
-    tx?: PgTransaction<any, any, any>,
+    tx?: DrizzleTx,
   ): Promise<any>;
-  deleteMedia(
-    mediaId: string,
-    tx?: PgTransaction<any, any, any>,
-  ): Promise<void>;
+  deleteMedia(mediaId: string, tx?: DrizzleTx): Promise<void>;
   findUserMedia(
     options: TUserMediaQueryOption,
   ): Promise<TUserMediaQueryResult[]>;
-  findMediaById(
+  findMediaDetailsById(
     mediaId: string,
-    userId: string,
     transaction: {
-      tx: PgTransaction<any, any, any>;
+      tx: DrizzleTx;
       lock: boolean;
     },
   ): Promise<any>;
+  areMediaUsed(records: TMedia[]): boolean;
+  useMedia(mediaIds: string[], tx: DrizzleTx): Promise<void>;
 }

@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DrizzleClient } from './types';
+import { DrizzleClient, DrizzleTx } from './types';
 import { DRIZZLE } from './types/drizzle.token';
-import { PgTransaction } from 'drizzle-orm/pg-core';
 
 @Injectable()
 export class DrizzleService {
@@ -14,9 +13,7 @@ export class DrizzleService {
     return this.db;
   }
 
-  async transaction<T>(
-    callback: (tx: PgTransaction<any, any, any>) => Promise<T>,
-  ): Promise<T> {
+  async transaction<T>(callback: (tx: DrizzleTx) => Promise<T>): Promise<T> {
     return await this.db.transaction(async (tx) => {
       try {
         const result = await callback(tx);
@@ -26,5 +23,9 @@ export class DrizzleService {
         throw error; // rollback is automatic on throw
       }
     });
+  }
+
+  getExecutor(tx?: DrizzleTx) {
+    return tx ?? this.db;
   }
 }
