@@ -1,0 +1,2 @@
+ALTER TABLE "business_account" ALTER COLUMN "verification_status" SET DEFAULT 'UNVERIFIED';--> statement-breakpoint
+ALTER TABLE "business_account" ADD CONSTRAINT "business_account_owner_id_unique" UNIQUE("owner_id");

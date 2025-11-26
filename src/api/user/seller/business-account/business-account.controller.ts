@@ -6,7 +6,7 @@ import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
 import { AuthenticUser } from '@/common/types';
 
-@Controller('business-account')
+@Controller('user/business-account')
 export class BusinessAccountController {
   constructor(
     private readonly businessAccountService: BusinessAccountService,
@@ -24,6 +24,7 @@ export class BusinessAccountController {
     );
   }
 
+  @UseGuards(UserAuthGuard)
   @Get('')
   async getBusiness(@AuthenticUserParam() userAuth: AuthenticUser) {
     return this.businessAccountService.getBusiness(userAuth.user.id);

@@ -34,7 +34,7 @@ export class MediaController {
   @UseGuards(UserAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit
       fileFilter: (req, file, callback) => {
         if (
           !Object.values(AllowedMimeType).includes(

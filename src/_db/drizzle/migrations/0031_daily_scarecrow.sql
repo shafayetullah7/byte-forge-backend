@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD CONSTRAINT "business_account_id_shop_name_unique" UNIQUE("business_account_id","shop_name");
