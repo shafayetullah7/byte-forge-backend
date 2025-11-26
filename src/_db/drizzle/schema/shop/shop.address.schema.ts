@@ -34,5 +34,5 @@ export const shopAddressTable = pgTable('shop_address', {
 });
 
 // Types
-export type TShopBranchAddress = typeof shopAddressTable.$inferSelect;
-export type TNewShopBranchAddress = typeof shopAddressTable.$inferInsert;
+export type TShopAddress = typeof shopAddressTable.$inferSelect;
+export type TNewShopAddress = typeof shopAddressTable.$inferInsert;

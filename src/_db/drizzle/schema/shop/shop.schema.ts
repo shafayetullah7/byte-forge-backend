@@ -9,7 +9,7 @@ export const shopTable = pgTable(
   'shops',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id')
+    ownerId: uuid('owner_id')
       .notNull()
       .references(() => userTable.id, { onDelete: 'cascade' }),
     businessAccountId: uuid('business_account_id')
@@ -34,11 +34,17 @@ export const shopTable = pgTable(
       .notNull(),
   },
   (table) => {
-    return {
-      businessAccountIdShopNameUnique: unique(
-        'business_account_id_shop_name_unique',
-      ).on(table.businessAccountId, table.shopName),
-    };
+    // return {
+    //   businessAccountIdShopNameUnique: unique(
+    //     'business_account_id_shop_name_unique',
+    //   ).on(table.businessAccountId, table.shopName),
+    // };
+    return [
+      unique('business_account_id_shop_name_unique').on(
+        table.businessAccountId,
+        table.shopName,
+      ),
+    ];
   },
 );
 

@@ -1,36 +1,169 @@
-import { SQL, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../_base/base.repository';
-import { shopTable } from '@/_db/drizzle/schema';
+import {
+  shopAddressTable,
+  shopBusinessTable,
+  shopContactTable,
+  shopManagerTable,
+  shopSocialMediaTable,
+  shopTable,
+  shopVerificationTable,
+  TNewShop,
+  TNewShopAddress,
+  TNewShopBusiness,
+  TNewShopContact,
+  TNewShopManager,
+  TNewShopSocialMedia,
+  TNewShopVerification,
+  TShop,
+  TShopAddress,
+  TShopBusiness,
+  TShopContact,
+  TShopManager,
+  TShopSocialMedia,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
-
-export interface ShopQuery {
-  id?: string;
-  userId?: string;
-  shopName?: string;
-  businessType?: string;
-}
+import { DrizzleTx } from '@/_db/drizzle/types';
+import { TLockTransaction } from '../_types/lock.transaction';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
-export class ShopRepository extends BaseRepository<
-  typeof shopTable,
-  ShopQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopTable);
+export class ShopRepository {
+  constructor(private readonly db: DrizzleService) {
+    this.db = db;
+  }
+  async createShop(payload: TNewShop, tx?: DrizzleTx): Promise<TShop> {
+    const executor = this.db.getExecutor(tx);
+    const [createdShop] = await executor
+      .insert(shopTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdShop;
   }
 
-  protected buildWhere(options?: ShopQuery): SQL[] {
-    if (!options) return [];
-
-    const where: SQL[] = [];
-
-    if (options.id) where.push(eq(shopTable.id, options.id));
-    if (options.userId) where.push(eq(shopTable.userId, options.userId));
-    if (options.shopName) where.push(eq(shopTable.shopName, options.shopName));
-    if (options.businessType)
-      where.push(eq(shopTable.businessType, options.businessType));
-
-    return where;
+  async createShopAddress(
+    payload: TNewShopAddress,
+    tx?: DrizzleTx,
+  ): Promise<TShopAddress> {
+    const executor = this.db.getExecutor(tx);
+    const [createdShop] = await executor
+      .insert(shopAddressTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdShop;
   }
+
+  async createShopBusiness(
+    payload: TNewShopBusiness,
+    tx?: DrizzleTx,
+  ): Promise<TShopBusiness> {
+    const executor = this.db.getExecutor(tx);
+    const [createdShop] = await executor
+      .insert(shopBusinessTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdShop;
+  }
+
+  async createShopContact(
+    payload: TNewShopContact,
+    tx?: DrizzleTx,
+  ): Promise<TShopContact> {
+    const executor = this.db.getExecutor(tx);
+    const [createdShop] = await executor
+      .insert(shopContactTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdShop;
+  }
+
+  async createShopManager(
+    payload: TNewShopManager,
+    tx?: DrizzleTx,
+  ): Promise<TShopManager> {
+    const executor = this.db.getExecutor(tx);
+    const [shopManager] = await executor
+      .insert(shopManagerTable)
+      .values(payload)
+      .returning()
+      .execute();
+
+    return shopManager;
+  }
+
+  async createShopSocialMedia(
+    payload: TNewShopSocialMedia,
+    tx?: DrizzleTx,
+  ): Promise<TShopSocialMedia> {
+    const executor = this.db.getExecutor(tx);
+
+    const [shopSocialMedia] = await executor
+      .insert(shopSocialMediaTable)
+      .values(payload)
+      .returning()
+      .execute();
+
+    return shopSocialMedia;
+  }
+
+  async createShopVerification(payload: TNewShopVerification, tx?: DrizzleTx) {
+    const executor = this.db.getExecutor(tx);
+    const [createdShopVerification] = await executor
+      .insert(shopVerificationTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdShopVerification;
+  }
+
+  async getShopById(id: string, transaction?: TLockTransaction) {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(shopTable)
+      .where(eq(shopTable.id, id));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [shop] = await lockQuery.execute();
+    return shop;
+  }
+
+  async getShopByOwnerId(ownerId: string, transaction?: TLockTransaction) {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(shopTable)
+      .where(eq(shopTable.ownerId, ownerId));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [shop] = await lockQuery.execute();
+    return shop;
+  }
+
+  async getShopByBusinessAccountId(
+    businessAccountId: string,
+    transaction?: TLockTransaction,
+  ) {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(shopTable)
+      .where(eq(shopTable.businessAccountId, businessAccountId));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [shop] = await lockQuery.execute();
+    return shop;
+  }
+
+  // async getShopDetails(id: string, transaction?: TLockTransaction) {
+  //   const executor = this.db.getExecutor(transaction?.tx);
+  //   const baseQuery = executor
+  //     .select()
+  //     .from(shopTable)
+  //     .where(eq(shopTable.id, id));
+
+  // }
 }

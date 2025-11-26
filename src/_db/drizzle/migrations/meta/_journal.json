@@ -211,6 +211,13 @@
       "when": 1764126741120,
       "tag": "0031_daily_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1764140825734,
+      "tag": "0032_pale_starjammers",
+      "breakpoints": true
     }
   ]
 }
