@@ -34,11 +34,6 @@ export const shopTable = pgTable(
       .notNull(),
   },
   (table) => {
-    // return {
-    //   businessAccountIdShopNameUnique: unique(
-    //     'business_account_id_shop_name_unique',
-    //   ).on(table.businessAccountId, table.shopName),
-    // };
     return [
       unique('business_account_id_shop_name_unique').on(
         table.businessAccountId,

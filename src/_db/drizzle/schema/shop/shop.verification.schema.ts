@@ -18,6 +18,7 @@ export const shopVerificationTable = pgTable('shop_verification', {
 
   shopId: uuid('shop_id')
     .notNull()
+    .unique()
     .references(() => shopTable.id, { onDelete: 'cascade' }),
 
   // Shop-specific documents

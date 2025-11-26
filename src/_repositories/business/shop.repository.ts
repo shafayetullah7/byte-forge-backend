@@ -131,7 +131,10 @@ export class ShopRepository {
     return shop;
   }
 
-  async getShopByOwnerId(ownerId: string, transaction?: TLockTransaction) {
+  async getShopsByOwnerId(
+    ownerId: string,
+    transaction?: TLockTransaction,
+  ): Promise<TShop[]> {
     const executor = this.db.getExecutor(transaction?.tx);
     const baseQuery = executor
       .select()
@@ -139,11 +142,11 @@ export class ShopRepository {
       .where(eq(shopTable.ownerId, ownerId));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
-    const [shop] = await lockQuery.execute();
-    return shop;
+    const shops = await lockQuery.execute();
+    return shops;
   }
 
-  async getShopByBusinessAccountId(
+  async getShopsByBusinessAccountId(
     businessAccountId: string,
     transaction?: TLockTransaction,
   ) {
@@ -154,16 +157,22 @@ export class ShopRepository {
       .where(eq(shopTable.businessAccountId, businessAccountId));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
-    const [shop] = await lockQuery.execute();
-    return shop;
+    const shops = await lockQuery.execute();
+    return shops;
   }
 
-  // async getShopDetails(id: string, transaction?: TLockTransaction) {
-  //   const executor = this.db.getExecutor(transaction?.tx);
-  //   const baseQuery = executor
-  //     .select()
-  //     .from(shopTable)
-  //     .where(eq(shopTable.id, id));
+  async getShopDetailsById(shopId: string, transaction?: TLockTransaction) {
+    const executor = this.db.getExecutor(transaction?.tx);
 
-  // }
+    const data = await executor.query.shopTable
+      .findFirst({
+        where: eq(shopTable.id, shopId),
+        with: {
+          shopAddressTable: true,
+          shopBusinessTable: true,
+        },
+      })
+      .execute();
+    return data;
+  }
 }

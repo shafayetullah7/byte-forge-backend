@@ -1,0 +1,1 @@
+ALTER TABLE "shop_verification" ADD CONSTRAINT "shop_verification_shop_id_unique" UNIQUE("shop_id");
