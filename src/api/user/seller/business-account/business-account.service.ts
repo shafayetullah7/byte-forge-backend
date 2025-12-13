@@ -8,7 +8,17 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository';
 import { MediaService } from '@/api/media/media.service';
 import { AllowedMimeType, TAllowedMimeType } from '@/_db/drizzle/enum';
-import { TBusinessAccount } from '@/_db/drizzle/schema';
+import {
+  businessAccountTable,
+  mediaTable,
+  TBusinessAccount,
+  TMedia,
+} from '@/_db/drizzle/schema';
+import { eq, getTableColumns } from 'drizzle-orm';
+
+type BusinessAccountDetails = TBusinessAccount & {
+  logo: Pick<TMedia, 'id' | 'url' | 'mimeType' | 'fileName' | 'size'> | null;
+};
 
 @Injectable()
 export class BusinessAccountService {
@@ -63,13 +73,35 @@ export class BusinessAccountService {
   }
 
   async getBusiness(userId: string): Promise<TBusinessAccount> {
-    const businessAccount =
-      await this.businessAccountRepository.findBusinessAccountByOwnerId(userId);
+    const baseQuery = this.db.client
+      .select({
+        businessAccount: getTableColumns(businessAccountTable),
+        logo: getTableColumns(mediaTable),
+      })
+      .from(businessAccountTable)
+      .leftJoin(mediaTable, eq(businessAccountTable.logoId, mediaTable.id))
+      .where(eq(businessAccountTable.ownerId, userId));
 
-    if (!businessAccount) {
+    const [account] = await baseQuery.execute();
+
+    if (!account?.businessAccount) {
       throw new NotFoundException('Business account not found');
     }
 
-    return businessAccount;
+    const { businessAccount, logo } = account;
+
+    const result: BusinessAccountDetails = {
+      ...businessAccount,
+      logo: logo
+        ? {
+            id: logo?.id,
+            url: logo?.url,
+            mimeType: logo?.mimeType,
+            fileName: logo?.fileName,
+            size: logo?.size,
+          }
+        : null,
+    };
+    return result;
   }
 }

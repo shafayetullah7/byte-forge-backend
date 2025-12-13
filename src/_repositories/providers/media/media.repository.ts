@@ -158,6 +158,63 @@ export class MediaRepository implements IMediaRepository {
 
     return media;
   }
+
+  async findMediaDetailsByIds(
+    mediaIds: string[],
+    transaction?: {
+      tx: DrizzleTx;
+      lock: boolean;
+    },
+  ): Promise<SingleMedia[]> {
+    if (mediaIds.length === 0) {
+      return [];
+    }
+
+    const executor = this.getExecutor(transaction?.tx);
+
+    const query = executor
+      .select({
+        media: getTableColumns(mediaTable),
+        userUploadMedia: getTableColumns(userUploadMediaTable),
+        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
+      })
+      .from(mediaTable)
+      .leftJoin(
+        cloudinaryMediaTable,
+        eq(mediaTable.id, cloudinaryMediaTable.mediaId),
+      )
+      .innerJoin(
+        userUploadMediaTable,
+        eq(mediaTable.id, userUploadMediaTable.mediaId),
+      )
+      // --- KEY CHANGE: Use inArray to check against the list of IDs ---
+      .where(inArray(mediaTable.id, mediaIds));
+
+    const mediaRecords = await (
+      transaction?.lock ? query.for('update', { of: mediaTable }) : query
+    ).execute();
+
+    return mediaRecords;
+  }
+
+  verifyMediaExistence(
+    requestedIds: string[],
+    mediaRecords: SingleMedia[],
+  ): boolean {
+    if (requestedIds.length !== mediaRecords.length) {
+      return false;
+    }
+
+    const foundIdSet = new Set(mediaRecords.map((record) => record.media.id));
+
+    for (const id of requestedIds) {
+      if (!foundIdSet.has(id)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
   areMediaUsed(records: TMedia[]) {
     return records.some((record) => record.usedAt !== null);
   }
