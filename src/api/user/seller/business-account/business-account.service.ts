@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBusinessAccountDto } from './dto/setup.business.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository';
@@ -58,9 +62,13 @@ export class BusinessAccountService {
     return result;
   }
 
-  async getBusiness(userId: string): Promise<TBusinessAccount | null> {
+  async getBusiness(userId: string): Promise<TBusinessAccount> {
     const businessAccount =
       await this.businessAccountRepository.findBusinessAccountByOwnerId(userId);
+
+    if (!businessAccount) {
+      throw new NotFoundException('Business account not found');
+    }
 
     return businessAccount;
   }

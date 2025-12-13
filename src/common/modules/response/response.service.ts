@@ -47,7 +47,7 @@ export class ResponseService {
   //   statusCode = 200,
   // }: {
   //   message: string;
-  //   warnings: Warning[];
+  //   warnings: WarningDto[];
   //   statusCode?: number;
   // }): SuccessResponse<null> {
   //   return {
@@ -69,7 +69,7 @@ export class ResponseService {
   // }: {
   //   message: string;
   //   data: T;
-  //   warnings: Warning[];
+  //   warnings: WarningDto[];
   //   meta?: any;
   //   statusCode?: number;
   // }): SuccessResponse<T> {

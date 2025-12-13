@@ -5,11 +5,14 @@ import { TBusinessAccount } from '@/_db/drizzle/schema';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
 import { AuthenticUser } from '@/common/types';
+import { ResponseService } from '@/common/modules/response/response.service';
+import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 
 @Controller('user/business-account')
 export class BusinessAccountController {
   constructor(
     private readonly businessAccountService: BusinessAccountService,
+    private readonly responseService: ResponseService,
   ) {}
 
   @UseGuards(UserAuthGuard)
@@ -17,16 +20,30 @@ export class BusinessAccountController {
   async createBusinessAccount(
     @Body() body: CreateBusinessAccountDto,
     @AuthenticUserParam() userAuth: AuthenticUser,
-  ): Promise<TBusinessAccount> {
-    return this.businessAccountService.createBusinessAccount(
+  ): Promise<SuccessResponse<TBusinessAccount>> {
+    const result = await this.businessAccountService.createBusinessAccount(
       body,
       userAuth.user.id,
     );
+
+    return this.responseService.success({
+      data: result,
+      message: 'Business account created',
+    });
   }
 
   @UseGuards(UserAuthGuard)
   @Get('')
-  async getBusiness(@AuthenticUserParam() userAuth: AuthenticUser) {
-    return this.businessAccountService.getBusiness(userAuth.user.id);
+  async getBusiness(
+    @AuthenticUserParam() userAuth: AuthenticUser,
+  ): Promise<SuccessResponse<TBusinessAccount>> {
+    const result = await this.businessAccountService.getBusiness(
+      userAuth.user.id,
+    );
+
+    return this.responseService.success({
+      data: result,
+      message: 'Business account retrieved',
+    });
   }
 }
