@@ -3,8 +3,8 @@ import { BusinessAccountService } from './business-account.service';
 import { CreateBusinessAccountDto } from './dto/setup.business.dto';
 import { TBusinessAccount } from '@/_db/drizzle/schema';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
-import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
-import { AuthenticUser } from '@/common/types';
+import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
+import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 
@@ -19,7 +19,7 @@ export class BusinessAccountController {
   @Post('')
   async createBusinessAccount(
     @Body() body: CreateBusinessAccountDto,
-    @AuthenticUserParam() userAuth: AuthenticUser,
+    @AuthenticUser() userAuth: TAuthenticUser,
   ): Promise<SuccessResponse<TBusinessAccount>> {
     const result = await this.businessAccountService.createBusinessAccount(
       body,
@@ -35,7 +35,7 @@ export class BusinessAccountController {
   @UseGuards(UserAuthGuard)
   @Get('')
   async getBusiness(
-    @AuthenticUserParam() userAuth: AuthenticUser,
+    @AuthenticUser() userAuth: TAuthenticUser,
   ): Promise<SuccessResponse<TBusinessAccount>> {
     const result = await this.businessAccountService.getBusiness(
       userAuth.user.id,

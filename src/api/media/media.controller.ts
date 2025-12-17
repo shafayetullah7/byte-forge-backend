@@ -14,9 +14,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
 import { Request } from 'express';
-import { AuthenticUser } from '@/common/types';
+import { TAuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
-import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
+import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { DeleteMediaDto } from './dto/delete.media.dto';
 import {
   AllowedMimeType,
@@ -54,7 +54,7 @@ export class MediaController {
   )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @AuthenticUserParam() authenticUser: AuthenticUser,
+    @AuthenticUser() authenticUser: TAuthenticUser,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -80,7 +80,7 @@ export class MediaController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMedia(
     @Param() params: DeleteMediaDto,
-    @AuthenticUserParam() authenticUser: AuthenticUser,
+    @AuthenticUser() authenticUser: TAuthenticUser,
   ): Promise<void> {
     console.log('inside delete media controller');
     await this.mediaService.deleteMedia(params.id, authenticUser);
@@ -89,7 +89,7 @@ export class MediaController {
   @Get()
   @UseGuards(UserAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getMedia(@AuthenticUserParam() authenticUser: AuthenticUser) {
+  async getMedia(@AuthenticUser() authenticUser: TAuthenticUser) {
     console.log('inside delete media controller');
     const result = await this.mediaService.getAllMedia(authenticUser);
     return result;

@@ -1,6 +1,6 @@
 import { CloudinaryService } from '@/common/modules/cloudinary/cloudinary.service';
 import { AppLoggerService } from '@/common/modules/logger/app.logger.service';
-import { AuthenticUser } from '@/common/types';
+import { TAuthenticUser } from '@/common/types';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   cloudinaryMediaTable,
@@ -25,7 +25,7 @@ import {
   SQL,
 } from 'drizzle-orm';
 import { PgTransaction } from 'drizzle-orm/pg-core';
-import { MediaRepository } from '@/_repositories/providers/media/media.repository';
+import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
 import { TAllowedMimeType } from '@/_db/drizzle/enum/mime.type.enum';
 import { DrizzleTx } from '@/_db/drizzle/types';
 
@@ -50,7 +50,7 @@ export class MediaService {
 
   async saveFile(payload: {
     file: Express.Multer.File;
-    authenticUser: AuthenticUser;
+    authenticUser: TAuthenticUser;
     folder?: string;
   }) {
     const { file, authenticUser, folder } = payload;
@@ -112,7 +112,7 @@ export class MediaService {
 
   async deleteMedia(
     mediaId: string,
-    authenticUser: AuthenticUser,
+    authenticUser: TAuthenticUser,
   ): Promise<void> {
     try {
       await this.db.client.transaction(async (tx) => {
@@ -146,7 +146,7 @@ export class MediaService {
     }
   }
 
-  async getAllMedia(authenticUser: AuthenticUser) {
+  async getAllMedia(authenticUser: TAuthenticUser) {
     const mediaRecords = await this.db.client
       .select({
         media: getTableColumns(mediaTable),

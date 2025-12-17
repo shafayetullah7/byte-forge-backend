@@ -2,8 +2,8 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Request } from 'express';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
-import { AuthenticUserParam } from '@/common/pipes/authentic-user.pipe';
-import { AuthenticUser } from '@/common/types';
+import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
+import { TAuthenticUser } from '@/common/types';
 
 @Controller('user')
 export class UserController {
@@ -11,7 +11,7 @@ export class UserController {
 
   @UseGuards(UserAuthGuard)
   @Get()
-  async getUser(@AuthenticUserParam() userAuth: AuthenticUser) {
+  async getUser(@AuthenticUser() userAuth: TAuthenticUser) {
     const { user } = userAuth;
 
     const result = await this.userService.getUser(user.id);

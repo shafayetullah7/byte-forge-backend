@@ -16,8 +16,8 @@ import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
-import { LocalAuthenticUserParam } from '@/common/pipes/local-authentic-user.pipe';
-import { LocalAuthenticUser } from '@/common/types';
+import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
+import { TLocalAuthenticUser } from '@/common/types';
 // import { LocalLoginDto } from './dto/local-login.dto';
 
 @Controller('user/auth')
@@ -36,7 +36,7 @@ export class UserAuthController {
   @UseGuards(UserLocalAuthGuard)
   @Post('login')
   async login(
-    @LocalAuthenticUserParam() userAuth: LocalAuthenticUser,
+    @LocalAuthenticUser() userAuth: TLocalAuthenticUser,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     // @Body() payload: LocalLoginDto,

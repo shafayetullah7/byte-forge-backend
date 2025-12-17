@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateBusinessAccountDto } from './dto/setup.business.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository';
+import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository/business.account.repository';
 import { MediaService } from '@/api/media/media.service';
 import { AllowedMimeType, TAllowedMimeType } from '@/_db/drizzle/enum';
 import {
