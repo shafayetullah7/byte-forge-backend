@@ -225,6 +225,13 @@
       "when": 1764176437565,
       "tag": "0033_busy_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1765988687128,
+      "tag": "0034_cultured_luckman",
+      "breakpoints": true
     }
   ]
 }

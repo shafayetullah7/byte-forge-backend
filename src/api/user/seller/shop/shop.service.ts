@@ -46,11 +46,11 @@ export class ShopService {
       }
 
       const mediaIds: string[] = [];
-      if (payload.logo) {
-        mediaIds.push(payload.logo);
+      if (payload.logoId) {
+        mediaIds.push(payload.logoId);
       }
-      if (payload.banner) {
-        mediaIds.push(payload.banner);
+      if (payload.bannerId) {
+        mediaIds.push(payload.bannerId);
       }
 
       if (mediaIds.length > 0) {
@@ -85,7 +85,7 @@ export class ShopService {
         ...payload,
         ownerId: userId,
         businessAccountId: businessAccount.id,
-        establishDate: payload.establishDate?.toISOString(),
+        establishDate: payload.establishDate,
       };
 
       const shop = await this.shopRepository.createShop(shopPayload, tx);

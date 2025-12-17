@@ -24,11 +24,11 @@ export const setupShopSchema = z.object({
     })
     .max(2000, { message: 'About section must not exceed 2000 characters.' }),
 
-  establishDate: z.date().optional(),
+  establishDate: z.iso.date().optional(),
 
-  logo: z.uuid({ message: 'Logo must be a valid UUID.' }).optional(),
+  logoId: z.uuid({ message: 'Logo must be a valid UUID.' }).optional(),
 
-  banner: z.uuid({ message: 'Banner must be a valid UUID.' }).optional(),
+  bannerId: z.uuid({ message: 'Banner must be a valid UUID.' }).optional(),
 });
 
 export class SetupShopDto extends createZodDto(setupShopSchema) {}

@@ -19,10 +19,10 @@ export const shopTable = pgTable(
     about: text('about'),
     establishDate: date('eestablish_dates', { mode: 'string' }),
     businessType: varchar('business_type', { length: 100 }),
-    logo: uuid('logo').references(() => mediaTable.id, {
+    logoId: uuid('logo_id').references(() => mediaTable.id, {
       onDelete: 'no action',
     }),
-    banner: uuid('banner').references(() => mediaTable.id, {
+    bannerId: uuid('banner_id').references(() => mediaTable.id, {
       onDelete: 'no action',
     }),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })

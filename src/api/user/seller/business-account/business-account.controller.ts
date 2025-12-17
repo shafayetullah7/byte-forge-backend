@@ -8,7 +8,7 @@ import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 
-@Controller('user/business-account')
+@Controller('user/seller/business-account')
 export class BusinessAccountController {
   constructor(
     private readonly businessAccountService: BusinessAccountService,

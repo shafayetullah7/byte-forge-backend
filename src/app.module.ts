@@ -20,12 +20,13 @@ import { AppConfigModule } from './common/modules/app-config/app-config.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { SellerModule } from './api/user/seller/seller.module';
 import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
+import { BusinessAccountModule } from './api/user/seller/business-account/business-account.module';
+import { ShopModule } from './api/user/seller/shop/shop.module';
 
 @Module({
   imports: [
@@ -51,17 +52,11 @@ import { AppEnvModule } from './_config/app-env/app-env.module';
     ConfigModule,
     AppConfigModule,
     GraphqlModule,
-    SellerModule,
-    RouterModule.register([
-      {
-        path: 'seller',
-        module: SellerModule,
-      },
-    ]),
     MediaModule,
     CloudinaryModule,
     LoggerModule,
-
+    BusinessAccountModule,
+    ShopModule,
     AppEnvModule,
   ],
   controllers: [],

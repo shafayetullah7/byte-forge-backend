@@ -23,6 +23,7 @@ import { ErrorCode } from '../modules/response/dto/error.schema';
 import { ResponseValidationError } from '../modules/response/dto/response.validation.error.schema';
 import { ValidationError } from 'class-validator';
 import { AppEnvService } from '../../_config/app-env/app-env.service';
+import { ZodValidationException } from 'nestjs-zod';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -76,7 +77,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private handleException(exception: unknown) {
     // 1. Zod Validation Errors
-    if (exception instanceof ZodError) {
+    if (exception instanceof ZodValidationException) {
       const validationErrors = this.formatZodErrors(exception);
       return this.responseService.error({
         code: ErrorCode.VALIDATION_ERROR,
@@ -143,6 +144,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private handleBadRequestException(exception: BadRequestException) {
     const res = exception.getResponse();
     let validationErrors: ResponseValidationError[] = [];
+
+    console.log(res);
+
+    if (res instanceof ZodValidationException) {
+      validationErrors = this.formatZodErrors(res);
+      return this.responseService.error({
+        code: ErrorCode.VALIDATION_ERROR,
+        message: 'Validation failed',
+        details: 'Check validationErrors array for details',
+        validationErrors,
+      });
+    }
 
     if (Array.isArray(res)) {
       validationErrors = (res as ValidationError[]).map((err) => ({
@@ -255,8 +268,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
   }
 
-  private formatZodErrors(zodError: ZodError): ResponseValidationError[] {
-    return zodError.issues.map((issue) => {
+  private formatZodErrors(
+    zodError: ZodValidationException,
+  ): ResponseValidationError[] {
+    const error = zodError.getZodError() as ZodError;
+    // console.log('zodError', zodError);
+    return error.issues.map((issue) => {
       return {
         field: issue.path.join('.') || 'unknown_field',
         message: issue.message,
