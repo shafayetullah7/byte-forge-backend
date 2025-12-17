@@ -41,6 +41,7 @@ export class ShopService {
       ...payload,
       ownerId: userId,
       businessAccountId: businessAccount.id,
+      establishDate: payload.establishDate?.toISOString(),
     };
 
     const medias = await this.mediaRepository.findMediaDetailsByIds(mediaIds);
@@ -55,7 +56,6 @@ export class ShopService {
       throw new BadRequestException('Media already used');
     }
 
-    
     const shop = await this.shopRepository.createShop(shopPayload);
     return shop;
   }

@@ -1,4 +1,4 @@
-import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const createLocalUserSchema = z.object({
@@ -54,6 +54,4 @@ const createLocalUserSchema = z.object({
     }),
 });
 
-export class CreateLocalUserDto extends ZodDtoFactory.create(
-  createLocalUserSchema,
-) {}
+export class CreateLocalUserDto extends createZodDto(createLocalUserSchema) {}

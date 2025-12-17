@@ -1,4 +1,4 @@
-import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const localLoginSchema = z.object({
@@ -15,4 +15,4 @@ const localLoginSchema = z.object({
     .max(255, { message: 'Password must not exceed 255 characters' }),
 });
 
-export class LocalLoginDto extends ZodDtoFactory.create(localLoginSchema) {}
+export class LocalLoginDto extends createZodDto(localLoginSchema) {}

@@ -1,8 +1,8 @@
-import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const deleteMediaSchema = z.object({
   id: z.uuid(),
 });
 
-export class DeleteMediaDto extends ZodDtoFactory.create(deleteMediaSchema) {}
+export class DeleteMediaDto extends createZodDto(deleteMediaSchema) {}

@@ -1,4 +1,4 @@
-import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 // const createBusinessVerificationSchema = z.object({
@@ -43,6 +43,6 @@ const createBusinessAccountSchema = z.object({
   //   verification: createBusinessVerificationSchema,
 });
 
-export class CreateBusinessAccountDto extends ZodDtoFactory.create(
+export class CreateBusinessAccountDto extends createZodDto(
   createBusinessAccountSchema,
 ) {}

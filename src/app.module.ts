@@ -3,7 +3,7 @@ import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
 import { APP_FILTER, APP_PIPE, RouterModule } from '@nestjs/core';
-import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
+// import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserAuthModule } from './api/user/user-auth/user-auth.module';
 import { UserModule } from './api/user/user/user.module';
 import { HashingModule } from './common/modules/hashing/hashing.module';
@@ -19,11 +19,13 @@ import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { SellerModule } from './api/user/seller/seller.module';
 import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
 import { RepositoriesModule } from './_repositories/repositories.module';
+import { AppEnvModule } from './_config/app-env/app-env.module';
 
 @Module({
   imports: [
@@ -60,6 +62,7 @@ import { RepositoriesModule } from './_repositories/repositories.module';
     CloudinaryModule,
     LoggerModule,
     RepositoriesModule,
+    AppEnvModule,
   ],
   controllers: [],
   providers: [

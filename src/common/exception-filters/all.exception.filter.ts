@@ -10,6 +10,7 @@ import {
   ForbiddenException,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { GqlArgumentsHost } from '@nestjs/graphql';
 import { GraphQLError } from 'graphql';
@@ -21,10 +22,16 @@ import { CustomException } from '../exceptions/custom.exception';
 import { ErrorCode } from '../modules/response/dto/error.schema';
 import { ResponseValidationError } from '../modules/response/dto/response.validation.error.schema';
 import { ValidationError } from 'class-validator';
+import { AppEnvService } from '../../_config/app-env/app-env.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly responseService: ResponseService) {}
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  constructor(
+    private readonly responseService: ResponseService,
+    private readonly appEnvService: AppEnvService,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const contextType = host.getType<'graphql' | 'http' | 'ws' | 'rpc'>();
@@ -39,212 +46,155 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // fallback
     return this.handleHttpException(exception, host);
-
-    // console.log({ contextType });
-
-    // Try to detect GraphQL
-    // try {
-    //   GqlArgumentsHost.create(host); // Will succeed only in GraphQL context
-    //   return this.handleGraphQLException(exception, host);
-    // } catch {
-    //   // Fallback to HTTP handling for other contexts (ws, rpc, etc.)
-    //   return this.handleHttpException(exception, host);
-    // }
   }
 
   private handleHttpException(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    // Handle Zod validation errors
-    if (exception instanceof ZodError) {
-      const validationErrors = this.formatZodErrors(exception);
+    const errorResponse = this.handleException(exception);
 
-      const errorResponse = this.responseService.error({
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Please review the provided data',
-        details: 'Check the validationErrors array for details',
-        validationErrors,
-      });
-
-      return response.status(HttpStatus.BAD_REQUEST).json(errorResponse);
-    }
-
-    if (exception instanceof BadRequestException) {
-      const res = exception.getResponse();
-
-      // console.log(exception);
-
-      let validationErrors: ResponseValidationError[] = [];
-
-      if (Array.isArray(res)) {
-        // Type res as ValidationError[]
-        validationErrors = (res as ValidationError[]).map((err) => ({
-          field: err.property,
-          message: err.constraints
-            ? Object.values(err.constraints).join(', ')
-            : 'Unknown validation error',
-        }));
-      } else if (
-        typeof res === 'object' &&
-        res !== null &&
-        'message' in res &&
-        Array.isArray((res as { message: string }).message)
-      ) {
-        validationErrors = (res as { message: string[] }).message.map(
-          (msg) => ({
-            field: 'unknown_field',
-            message: msg,
-          }),
-        );
-      }
-
-      return response.status(HttpStatus.BAD_REQUEST).json(
-        this.responseService.error({
-          code: ErrorCode.VALIDATION_ERROR,
-          message: exception.message,
-          details: 'Check validationErrors array for details',
-          validationErrors,
-        }),
-      );
-    }
-
-    // Handle Drizzle database errors
-    if (exception instanceof DrizzleError) {
-      const errorResponse = this.responseService.error({
-        code: ErrorCode.DATABASE_ERROR,
-        message: 'Something went wrong',
-        details: exception.message,
-        validationErrors: [],
-      });
-
-      return response
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json(errorResponse);
-    }
-
-    // Handle custom exceptions
-    if (exception instanceof CustomException) {
-      const { statusCode, message, errorCode, details } = exception;
-      return response.status(statusCode).json(
-        this.responseService.error({
-          code: errorCode,
-          message,
-          details: details || message || 'Unknown error',
-        }),
-      );
-    }
-
-    // Handle NestJS HTTP exceptions
-    if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-
-      return response.status(status).json(
-        this.responseService.error({
-          code: this.getErrorCode(exception, status),
-          message: this.getErrorMessage(exception, status),
-          details: exception.message,
-        }),
-      );
-    }
-
-    // Fallback for unhandled errors
-    return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
-      this.responseService.error({
-        code: ErrorCode.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-      }),
-    );
+    return response
+      .status(
+        this.getHttpStatus(
+          errorResponse.error.code || ErrorCode.INTERNAL_SERVER_ERROR,
+        ),
+      )
+      .json(errorResponse);
   }
 
   private handleGraphQLException(exception: unknown, host: ArgumentsHost) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const gqlHost = GqlArgumentsHost.create(host);
 
-    // Handle Zod validation errors in GraphQL context
+    const errorResponse = this.handleException(exception);
+
+    throw new GraphQLError(errorResponse.message, {
+      extensions: errorResponse,
+    });
+  }
+
+  private handleException(exception: unknown) {
+    // 1. Zod Validation Errors
     if (exception instanceof ZodError) {
       const validationErrors = this.formatZodErrors(exception);
-
-      const payload = this.responseService.error({
+      return this.responseService.error({
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Please review the provided data',
         details: 'Check the validationErrors array for details',
         validationErrors,
       });
-
-      throw new GraphQLError(payload.message, { extensions: payload });
     }
 
+    // 2. NestJS BadRequestException (often from ClassValidator)
     if (exception instanceof BadRequestException) {
-      const res = exception.getResponse();
-      let validationErrors: ResponseValidationError[] = [];
-
-      if (typeof res === 'object') {
-        console.log((res as { message: string }).message);
-        if (Array.isArray(res)) {
-          validationErrors = res.map(
-            (err: {
-              property: string;
-              constraints: Record<string, string>;
-            }) => {
-              console.log({ err });
-              return {
-                field: err.property,
-                message: Object.values(err.constraints || {}).join(', '),
-              };
-            },
-          );
-        }
-      }
-
-      const payload = this.responseService.error({
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation failed',
-        details: 'Check validationErrors array for details',
-        validationErrors,
-      });
-
-      throw new GraphQLError(payload.message, { extensions: payload });
+      return this.handleBadRequestException(exception);
     }
 
-    // Handle Drizzle database errors in GraphQL context
+    // 3. Drizzle Database Errors
     if (exception instanceof DrizzleError) {
-      const payload = this.responseService.error({
+      this.logger.error(
+        `Database Error: ${exception.message}`,
+        exception.stack,
+      );
+      return this.responseService.error({
         code: ErrorCode.DATABASE_ERROR,
-        message: 'Something went wrong',
-        details: exception.message,
+        message: 'Database error occurred',
+        details: this.isProduction()
+          ? 'Internal server error'
+          : exception.message,
         validationErrors: [],
       });
-
-      throw new GraphQLError(payload.message, { extensions: payload });
     }
 
-    // Handle custom exceptions in GraphQL context
+    // 4. Custom Exceptions
     if (exception instanceof CustomException) {
-      const payload = this.responseService.error({
+      return this.responseService.error({
         code: exception.errorCode,
         message: exception.message,
-        details: exception.details,
+        details: exception.details || exception.message || 'Unknown error',
       });
-      throw new GraphQLError(payload.message, { extensions: payload });
     }
 
-    // Handle NestJS HttpException in GraphQL context
+    // 5. NestJS HTTP Exceptions
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const payload = this.responseService.error({
-        code: status as unknown as ErrorCode,
-        message: exception.message,
+      return this.responseService.error({
+        code: this.getErrorCode(exception, status),
+        message: this.getErrorMessage(exception, status),
+        details: exception.message,
       });
-      throw new GraphQLError(payload.message, { extensions: payload });
     }
 
-    // Fallback for GraphQL
-    const payload = this.responseService.error({
+    // 6. Unknown / Internal Server Error
+    this.logger.error(
+      `Unexpected Error: ${(exception as Error).message}`,
+      (exception as Error).stack,
+    );
+    return this.responseService.error({
       code: ErrorCode.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
+      details: this.isProduction()
+        ? 'An unexpected error occurred'
+        : (exception as Error).message,
     });
-    throw new GraphQLError(payload.message, { extensions: payload });
+  }
+
+  private handleBadRequestException(exception: BadRequestException) {
+    const res = exception.getResponse();
+    let validationErrors: ResponseValidationError[] = [];
+
+    if (Array.isArray(res)) {
+      validationErrors = (res as ValidationError[]).map((err) => ({
+        field: err.property,
+        message: err.constraints
+          ? Object.values(err.constraints).join(', ')
+          : 'Unknown validation error',
+      }));
+    } else if (
+      typeof res === 'object' &&
+      res !== null &&
+      'message' in res &&
+      Array.isArray((res as { message: string }).message)
+    ) {
+      validationErrors = (res as { message: string[] }).message.map((msg) => ({
+        field: 'unknown_field',
+        message: msg,
+      }));
+    }
+
+    return this.responseService.error({
+      code: ErrorCode.VALIDATION_ERROR,
+      message: exception.message,
+      details: 'Check validationErrors array for details',
+      validationErrors,
+    });
+  }
+
+  private isProduction(): boolean {
+    return this.appEnvService.NODE_ENV === 'production';
+  }
+
+  private getHttpStatus(code: ErrorCode): number {
+    switch (code) {
+      case ErrorCode.BAD_REQUEST:
+      case ErrorCode.VALIDATION_ERROR:
+        return HttpStatus.BAD_REQUEST;
+      case ErrorCode.UNAUTHORIZED:
+        return HttpStatus.UNAUTHORIZED;
+      case ErrorCode.FORBIDDEN:
+        return HttpStatus.FORBIDDEN;
+      case ErrorCode.NOT_FOUND:
+        return HttpStatus.NOT_FOUND;
+      case ErrorCode.CONFLICT:
+        return HttpStatus.CONFLICT;
+      case ErrorCode.TOO_MANY_REQUESTS:
+        return HttpStatus.TOO_MANY_REQUESTS;
+      case ErrorCode.METHOD_NOT_ALLOWED:
+        return HttpStatus.METHOD_NOT_ALLOWED;
+      default:
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
   }
 
   private getErrorCode(

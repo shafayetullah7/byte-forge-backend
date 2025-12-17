@@ -1,4 +1,4 @@
-import { ZodDtoFactory } from '@/common/factories/zod.dto.factory';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 // 🔹 Common reusable phone number schema
@@ -31,4 +31,4 @@ export const setupShopSchema = z.object({
   banner: z.uuid({ message: 'Banner must be a valid UUID.' }).optional(),
 });
 
-export class SetupShopDto extends ZodDtoFactory.create(setupShopSchema) {}
+export class SetupShopDto extends createZodDto(setupShopSchema) {}

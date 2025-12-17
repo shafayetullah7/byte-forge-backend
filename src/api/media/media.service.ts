@@ -8,8 +8,8 @@ import {
   TNewMedia,
   userUploadMediaTable,
 } from '@/_db/drizzle/schema';
-import { ForbiddenError } from '@nestjs/apollo';
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -131,7 +131,7 @@ export class MediaService {
           throw new NotFoundException('Media not found');
         }
         if (mediaRecord.media.usedAt != null) {
-          throw new ForbiddenError('File is already in use');
+          throw new ForbiddenException('File is already in use');
         }
         const { media, cloudinaryMedia } = mediaRecord;
         await this.mediaRepository.deleteMedia(media.id, tx);
@@ -248,11 +248,11 @@ export class MediaService {
     if (
       !this.mediaRepository.areValidMediaType(plainMediaRecords, validMimeTypes)
     ) {
-      throw new ForbiddenError('File type is not allowed');
+      throw new ForbiddenException('File type is not allowed');
     }
 
     if (this.mediaRepository.areMediaUsed(plainMediaRecords)) {
-      throw new ForbiddenError('File is already in use');
+      throw new ForbiddenException('File is already in use');
     }
 
     return this.mediaRepository.useMedia(mediaIds, tx);

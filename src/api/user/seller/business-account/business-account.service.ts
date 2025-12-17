@@ -13,6 +13,7 @@ import {
   mediaTable,
   TBusinessAccount,
   TMedia,
+  TNewBusinessAccount,
 } from '@/_db/drizzle/schema';
 import { eq, getTableColumns } from 'drizzle-orm';
 
@@ -56,14 +57,16 @@ export class BusinessAccountService {
         );
       }
 
+      const businessAccountPayload: TNewBusinessAccount = {
+        ownerId: userId,
+        address: basicInfo.address,
+        name: basicInfo.name,
+        ...(basicInfo.logoId ? { logoId: basicInfo.logoId } : {}),
+      };
+
       const newAccount =
         await this.businessAccountRepository.createBusinessAccount(
-          {
-            ownerId: userId,
-            address: basicInfo.address,
-            name: basicInfo.name,
-            ...(basicInfo.logoId && { logo: basicInfo.logoId }),
-          },
+          businessAccountPayload,
           tx,
         );
 
