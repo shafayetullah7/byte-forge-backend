@@ -1,10 +1,11 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-
-import { BaseRepository } from '../../_base/base.repository';
+import { DrizzleTx } from '@/_db/drizzle/types';
 import {
   ShopVerificationStatusEnum,
   shopVerificationTable,
+  TShopVerification,
+  TNewShopVerification,
 } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
 
@@ -15,15 +16,10 @@ export interface ShopVerificationQuery {
 }
 
 @Injectable()
-export class ShopVerificationRepository extends BaseRepository<
-  typeof shopVerificationTable,
-  ShopVerificationQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopVerificationTable);
-  }
+export class ShopVerificationRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ShopVerificationQuery): SQL[] {
+  private buildWhere(options?: ShopVerificationQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -35,5 +31,47 @@ export class ShopVerificationRepository extends BaseRepository<
       where.push(eq(shopVerificationTable.status, options.status));
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopVerificationQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopVerification | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopVerificationTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewShopVerification,
+    tx?: DrizzleTx,
+  ): Promise<TShopVerification> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopVerificationTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewShopVerification>,
+    options: ShopVerificationQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopVerification[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(shopVerificationTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
   }
 }

@@ -4,12 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { AuthAccess } from '../types';
 
 export const LocalUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const req = ctx.switchToHttp().getRequest<Request>();
 
-    const auth = req.user;
+    const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
       throw new UnauthorizedException('Unauthorized access');
     }

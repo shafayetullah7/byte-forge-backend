@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { shopAddressTable } from '@/_db/drizzle/schema';
+import {
+  shopAddressTable,
+  TShopAddress,
+  TNewShopAddress,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ShopAddressQuery {
   id?: string;
@@ -14,15 +18,10 @@ export interface ShopAddressQuery {
 }
 
 @Injectable()
-export class ShopAddressRepository extends BaseRepository<
-  typeof shopAddressTable,
-  ShopAddressQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopAddressTable);
-  }
+export class ShopAddressRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(q?: ShopAddressQuery): SQL[] {
+  private buildWhere(q?: ShopAddressQuery): SQL[] {
     if (!q) return [];
 
     const where: SQL[] = [];
@@ -36,5 +35,44 @@ export class ShopAddressRepository extends BaseRepository<
       where.push(eq(shopAddressTable.isVerified, q.isVerified));
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopAddressQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopAddress | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopAddressTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewShopAddress, tx?: DrizzleTx): Promise<TShopAddress> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopAddressTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewShopAddress>,
+    options: ShopAddressQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopAddress[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(shopAddressTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
   }
 }

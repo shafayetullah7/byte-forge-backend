@@ -5,8 +5,13 @@ import { SessionService } from '@/api/session/session.service';
 import {
   adminLocalAuthSessionTable,
   adminSessionTable,
+  adminTable,
+  sessionTable,
+  TAdmin,
+  TSession,
   TNewAdminSession,
 } from '@/_db/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class AdminSessionService {
@@ -55,5 +60,25 @@ export class AdminSessionService {
     });
 
     return result;
+  }
+
+  async getAdminSession(
+    sessionId: string,
+  ): Promise<{ admin: TAdmin; session: TSession } | null> {
+    const [adminSession] = await this.drizzle.client
+      .select({
+        admin: adminTable,
+        session: sessionTable,
+      })
+      .from(adminTable)
+      .innerJoin(
+        adminSessionTable,
+        eq(adminTable.id, adminSessionTable.adminId),
+      )
+      .innerJoin(sessionTable, eq(sessionTable.id, adminSessionTable.sessionId))
+      .where(eq(sessionTable.id, sessionId))
+      .execute();
+
+    return (adminSession as { admin: TAdmin; session: TSession }) || null;
   }
 }

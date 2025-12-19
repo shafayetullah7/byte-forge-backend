@@ -17,7 +17,7 @@ import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth.guard';
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
-import { TLocalAuthenticUser } from '@/common/types';
+import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 // import { LocalLoginDto } from './dto/local-login.dto';
 
 @Controller('user/auth')
@@ -66,7 +66,7 @@ export class UserAuthController {
   @UseGuards(UserAuthGuard)
   @Get('/check')
   checkAuth(@Req() req: Request) {
-    const auth = req.user;
+    const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
       throw new UnauthorizedException('Unauthorized access');
     }

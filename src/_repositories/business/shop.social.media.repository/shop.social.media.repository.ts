@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { shopSocialMediaTable } from '@/_db/drizzle/schema';
+import {
+  shopSocialMediaTable,
+  TShopSocialMedia,
+  TNewShopSocialMedia,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ShopSocialMediaQuery {
   id?: string;
@@ -13,15 +17,10 @@ export interface ShopSocialMediaQuery {
 }
 
 @Injectable()
-export class ShopSocialMediaRepository extends BaseRepository<
-  typeof shopSocialMediaTable,
-  ShopSocialMediaQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopSocialMediaTable);
-  }
+export class ShopSocialMediaRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ShopSocialMediaQuery): SQL[] {
+  private buildWhere(options?: ShopSocialMediaQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -36,5 +35,32 @@ export class ShopSocialMediaRepository extends BaseRepository<
     if (options.x) where.push(eq(shopSocialMediaTable.x, options.x));
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopSocialMediaQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopSocialMedia | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopSocialMediaTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewShopSocialMedia,
+    tx?: DrizzleTx,
+  ): Promise<TShopSocialMedia> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopSocialMediaTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }

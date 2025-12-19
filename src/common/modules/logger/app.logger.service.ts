@@ -39,6 +39,17 @@ export class AppLoggerService implements LoggerService {
 
   log(message: any, ...optionalParams: any[]) {
     const { context, messages } = this.extractContext(optionalParams);
+    // Suppress internal NestJS logs that are too verbose during startup
+    const internalContexts = [
+      'RoutesResolver',
+      'RouterExplorer',
+      'InstanceLoader',
+      'NestFactory',
+      'GraphQLModule',
+    ];
+    if (context && internalContexts.includes(context)) {
+      return;
+    }
     this.logger.info(message, { context, ...messages });
   }
 

@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { shopBusinessTable } from '@/_db/drizzle/schema';
+import {
+  shopBusinessTable,
+  TShopBusiness,
+  TNewShopBusiness,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ShopBusinessQuery {
   id?: string;
@@ -14,15 +18,10 @@ export interface ShopBusinessQuery {
 }
 
 @Injectable()
-export class ShopBusinessRepository extends BaseRepository<
-  typeof shopBusinessTable,
-  ShopBusinessQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopBusinessTable);
-  }
+export class ShopBusinessRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ShopBusinessQuery): SQL[] {
+  private buildWhere(options?: ShopBusinessQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -47,5 +46,44 @@ export class ShopBusinessRepository extends BaseRepository<
       );
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopBusinessQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopBusiness | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopBusinessTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewShopBusiness, tx?: DrizzleTx): Promise<TShopBusiness> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopBusinessTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewShopBusiness>,
+    options: ShopBusinessQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopBusiness[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(shopBusinessTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
   }
 }

@@ -1,8 +1,8 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { managerTable } from '@/_db/drizzle/schema';
+import { managerTable, TManager, TNewManager } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ManagerQuery {
   id?: string;
@@ -12,15 +12,10 @@ export interface ManagerQuery {
 }
 
 @Injectable()
-export class ManagerRepository extends BaseRepository<
-  typeof managerTable,
-  ManagerQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, managerTable);
-  }
+export class ManagerRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ManagerQuery): SQL[] {
+  private buildWhere(options?: ManagerQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -32,5 +27,26 @@ export class ManagerRepository extends BaseRepository<
     if (options.phone) where.push(eq(managerTable.phone, options.phone));
 
     return where;
+  }
+
+  async findOne(
+    options?: ManagerQuery,
+    tx?: DrizzleTx,
+  ): Promise<TManager | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(managerTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewManager, tx?: DrizzleTx): Promise<TManager> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor.insert(managerTable).values(data).returning();
+    return row;
   }
 }

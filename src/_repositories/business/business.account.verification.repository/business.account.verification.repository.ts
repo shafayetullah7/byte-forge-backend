@@ -4,9 +4,12 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   businessAccountVerificationTable,
   BusinessVerificationStatusEnum,
+  TBusinessAccountVerification,
+  TNewBusinessAccountVerification,
 } from '@/_db/drizzle/schema';
-import { BaseRepository } from '../../_base/base.repository';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
+import { and } from 'drizzle-orm';
 
 export interface BusinessAccountVerificationQuery {
   id?: string;
@@ -15,15 +18,10 @@ export interface BusinessAccountVerificationQuery {
 }
 
 @Injectable()
-export class BusinessAccountVerificationRepository extends BaseRepository<
-  typeof businessAccountVerificationTable,
-  BusinessAccountVerificationQuery
-> {
-  constructor(protected readonly db: DrizzleService) {
-    super(db, businessAccountVerificationTable);
-  }
+export class BusinessAccountVerificationRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: BusinessAccountVerificationQuery): SQL[] {
+  private buildWhere(options?: BusinessAccountVerificationQuery): SQL[] {
     if (!options) return [];
 
     const conditions: SQL[] = [];
@@ -47,5 +45,47 @@ export class BusinessAccountVerificationRepository extends BaseRepository<
     }
 
     return conditions;
+  }
+
+  async findOne(
+    options?: BusinessAccountVerificationQuery,
+    tx?: DrizzleTx,
+  ): Promise<TBusinessAccountVerification | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(businessAccountVerificationTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewBusinessAccountVerification,
+    tx?: DrizzleTx,
+  ): Promise<TBusinessAccountVerification> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(businessAccountVerificationTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewBusinessAccountVerification>,
+    options: BusinessAccountVerificationQuery,
+    tx?: DrizzleTx,
+  ): Promise<TBusinessAccountVerification[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(businessAccountVerificationTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
   }
 }

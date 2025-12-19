@@ -71,16 +71,4 @@ export class UserSessionService {
 
     return userSession;
   }
-
-  isSessionActive(payload: { user: TUser; session: TSession }) {
-    if (!payload) return false;
-    if (!payload.session) return false;
-
-    const now = new Date();
-    return (
-      !payload.session.revoked &&
-      payload.session.logoutAt === null &&
-      payload.session.expiresAt > now
-    );
-  }
 }

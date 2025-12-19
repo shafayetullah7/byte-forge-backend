@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { shopManagerTable } from '@/_db/drizzle/schema';
+import {
+  shopManagerTable,
+  TShopManager,
+  TNewShopManager,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ShopManagerQuery {
   id?: string;
@@ -12,15 +16,10 @@ export interface ShopManagerQuery {
 }
 
 @Injectable()
-export class ShopManagerRepository extends BaseRepository<
-  typeof shopManagerTable,
-  ShopManagerQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopManagerTable);
-  }
+export class ShopManagerRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ShopManagerQuery): SQL[] {
+  private buildWhere(options?: ShopManagerQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -33,5 +32,29 @@ export class ShopManagerRepository extends BaseRepository<
       where.push(eq(shopManagerTable.isPrimary, options.isPrimary));
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopManagerQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopManager | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopManagerTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewShopManager, tx?: DrizzleTx): Promise<TShopManager> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopManagerTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }

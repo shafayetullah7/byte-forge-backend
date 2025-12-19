@@ -4,7 +4,9 @@ import { AppLoggerService } from './common/modules/logger/app.logger.service';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'], // only show errors and warnings during initialization
+  });
   app.useLogger(app.get(AppLoggerService));
 
   app.use(cookieParser());

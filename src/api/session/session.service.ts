@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { sessionTable, TNewSession } from '@/_db/drizzle/schema';
+import { sessionTable, TNewSession, TSession } from '@/_db/drizzle/schema';
 import { DrizzlePgTransaction } from '@/_db/drizzle/types';
 
 @Injectable()
@@ -16,5 +16,14 @@ export class SessionService {
       .execute();
 
     return newSession;
+  }
+
+  isSessionActive(session: TSession | null | undefined): boolean {
+    if (!session) return false;
+
+    const now = new Date();
+    return (
+      !session.revoked && session.logoutAt === null && session.expiresAt > now
+    );
   }
 }

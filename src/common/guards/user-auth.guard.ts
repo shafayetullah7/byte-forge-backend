@@ -6,33 +6,32 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { UserSessionService } from '@/api/user/user-session/user-session.service';
+import { SessionService } from '@/api/session/session.service';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
-  constructor(private readonly userSessionService: UserSessionService) {}
+  constructor(
+    private readonly userSessionService: UserSessionService,
+    private readonly sessionService: SessionService,
+  ) {}
 
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<Request>();
     const sessionId = request.cookies?.sessionId as undefined | string;
 
-    console.log({ sessionId });
-
     if (!sessionId) {
       throw new UnauthorizedException('Unauthorized access');
-      //   return false;
     }
-    // console.log('here');
 
     const userSession = await this.userSessionService.getUserSession(sessionId);
-    // console.log(userSession);
+
     if (!userSession) {
       throw new UnauthorizedException('Unauthorized access');
-      //   return false;
     }
-    const active = this.userSessionService.isSessionActive(userSession);
+
+    const active = this.sessionService.isSessionActive(userSession.session);
     if (!active) {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
-      //   return false;
     }
 
     request.user = { ...userSession, role: 'user' };

@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { adminLocalAuthSessionTable } from '@/_db/drizzle/schema';
+import {
+  adminLocalAuthSessionTable,
+  TAdminLocalAuthSession,
+  TNewAdminLocalAuthSession,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface AdminLocalAuthSessionQuery {
   id?: string;
@@ -11,15 +15,10 @@ export interface AdminLocalAuthSessionQuery {
 }
 
 @Injectable()
-export class AdminLocalAuthSessionRepository extends BaseRepository<
-  typeof adminLocalAuthSessionTable,
-  AdminLocalAuthSessionQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, adminLocalAuthSessionTable);
-  }
+export class AdminLocalAuthSessionRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: AdminLocalAuthSessionQuery): SQL[] {
+  private buildWhere(options?: AdminLocalAuthSessionQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -33,5 +32,32 @@ export class AdminLocalAuthSessionRepository extends BaseRepository<
       );
 
     return where;
+  }
+
+  async findOne(
+    options?: AdminLocalAuthSessionQuery,
+    tx?: DrizzleTx,
+  ): Promise<TAdminLocalAuthSession | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(adminLocalAuthSessionTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewAdminLocalAuthSession,
+    tx?: DrizzleTx,
+  ): Promise<TAdminLocalAuthSession> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(adminLocalAuthSessionTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }

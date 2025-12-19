@@ -4,13 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthenticAdmin } from '../types';
+import { AccessAdminAuth, AuthenticAdmin } from '../types';
 
-export const AuthenticAdminParam = createParamDecorator(
+export const AuthenticAdminUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthenticAdmin => {
     const req = ctx.switchToHttp().getRequest<Request>();
 
-    const auth = req.user;
+    const auth = req.user as AccessAdminAuth | undefined;
     if (!auth || auth.role !== 'admin') {
       throw new UnauthorizedException('Unauthorized access');
     }

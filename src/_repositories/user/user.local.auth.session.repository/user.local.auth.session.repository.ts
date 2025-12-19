@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { userLocalAuthSessionTable } from '@/_db/drizzle/schema';
+import {
+  userLocalAuthSessionTable,
+  TUserLocalAuthSession,
+  TNewUserLocalAuthSession,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface UserLocalAuthSessionQuery {
   id?: string;
@@ -11,15 +15,10 @@ export interface UserLocalAuthSessionQuery {
 }
 
 @Injectable()
-export class UserLocalAuthSessionRepository extends BaseRepository<
-  typeof userLocalAuthSessionTable,
-  UserLocalAuthSessionQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, userLocalAuthSessionTable);
-  }
+export class UserLocalAuthSessionRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: UserLocalAuthSessionQuery): SQL[] {
+  private buildWhere(options?: UserLocalAuthSessionQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -33,5 +32,32 @@ export class UserLocalAuthSessionRepository extends BaseRepository<
       );
 
     return where;
+  }
+
+  async findOne(
+    options?: UserLocalAuthSessionQuery,
+    tx?: DrizzleTx,
+  ): Promise<TUserLocalAuthSession | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(userLocalAuthSessionTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewUserLocalAuthSession,
+    tx?: DrizzleTx,
+  ): Promise<TUserLocalAuthSession> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(userLocalAuthSessionTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }

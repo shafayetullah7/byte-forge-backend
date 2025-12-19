@@ -1,8 +1,8 @@
-import { SQL, eq, gt, gte, lt, lte, isNull, not } from 'drizzle-orm';
+import { SQL, eq, gt, gte, lt, lte, isNull, not, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { sessionTable } from '@/_db/drizzle/schema';
+import { sessionTable, TSession, TNewSession } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface SessionQuery {
   id?: string;
@@ -24,15 +24,10 @@ export interface SessionQuery {
 }
 
 @Injectable()
-export class SessionRepository extends BaseRepository<
-  typeof sessionTable,
-  SessionQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, sessionTable);
-  }
+export class SessionRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: SessionQuery): SQL[] {
+  private buildWhere(options?: SessionQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -68,5 +63,51 @@ export class SessionRepository extends BaseRepository<
     }
 
     return where;
+  }
+
+  async findOne(
+    options?: SessionQuery,
+    tx?: DrizzleTx,
+  ): Promise<TSession | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(sessionTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewSession, tx?: DrizzleTx): Promise<TSession> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor.insert(sessionTable).values(data).returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewSession>,
+    options: SessionQuery,
+    tx?: DrizzleTx,
+  ): Promise<TSession[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(sessionTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
+  }
+
+  async delete(where: SQL, tx?: DrizzleTx): Promise<boolean> {
+    const executor = this.db.getExecutor(tx);
+    const deleted = await executor
+      .delete(sessionTable)
+      .where(where)
+      .returning()
+      .execute();
+    return deleted.length > 0;
   }
 }

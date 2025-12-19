@@ -1,8 +1,8 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { adminTable } from '@/_db/drizzle/schema';
+import { adminTable, TAdmin, TNewAdmin } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface AdminQuery {
   id?: string;
@@ -12,15 +12,10 @@ export interface AdminQuery {
 }
 
 @Injectable()
-export class AdminRepository extends BaseRepository<
-  typeof adminTable,
-  AdminQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, adminTable);
-  }
+export class AdminRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: AdminQuery): SQL[] {
+  private buildWhere(options?: AdminQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -32,5 +27,17 @@ export class AdminRepository extends BaseRepository<
     if (options.lastName) where.push(eq(adminTable.lastName, options.lastName));
 
     return where;
+  }
+
+  async findOne(options?: AdminQuery, tx?: DrizzleTx): Promise<TAdmin | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(adminTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
   }
 }

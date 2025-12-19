@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { userSessionTable } from '@/_db/drizzle/schema';
+import {
+  userSessionTable,
+  TUserSession,
+  TNewUserSession,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface UserSessionQuery {
   id?: string;
@@ -11,15 +15,10 @@ export interface UserSessionQuery {
 }
 
 @Injectable()
-export class UserSessionRepository extends BaseRepository<
-  typeof userSessionTable,
-  UserSessionQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, userSessionTable);
-  }
+export class UserSessionRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: UserSessionQuery): SQL[] {
+  private buildWhere(options?: UserSessionQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -30,5 +29,39 @@ export class UserSessionRepository extends BaseRepository<
       where.push(eq(userSessionTable.sessionId, options.sessionId));
 
     return where;
+  }
+
+  async findOne(
+    options?: UserSessionQuery,
+    tx?: DrizzleTx,
+  ): Promise<TUserSession | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(userSessionTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewUserSession, tx?: DrizzleTx): Promise<TUserSession> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(userSessionTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async delete(where: SQL, tx?: DrizzleTx): Promise<boolean> {
+    const executor = this.db.getExecutor(tx);
+    const deleted = await executor
+      .delete(userSessionTable)
+      .where(where)
+      .returning()
+      .execute();
+    return deleted.length > 0;
   }
 }

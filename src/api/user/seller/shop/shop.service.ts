@@ -7,8 +7,13 @@ import {
 } from '@nestjs/common';
 import { SetupShopDto } from './dto/setup.shop.dto';
 import { BusinessAccountRepository } from '@/_repositories/business/business.account.repository/business.account.repository';
-import { TNewShop } from '@/_db/drizzle/schema';
+import { mediaTable, shopTable, TNewShop, TShop } from '@/_db/drizzle/schema';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
+import { eq } from 'drizzle-orm';
+
+type TShopWithLogo = TShop & {
+  logo: { id: string; url: string } | null;
+};
 
 @Injectable()
 export class ShopService {
@@ -93,7 +98,19 @@ export class ShopService {
     });
   }
 
-  async getShopsByUser(userId: string) {
-    return this.shopRepository.getShopsByOwnerId(userId);
+  async getShopsByUser(userId: string): Promise<TShopWithLogo[]> {
+    const shops = await this.db.client
+      .select({
+        shop: shopTable,
+        logo: mediaTable,
+      })
+      .from(shopTable)
+      .leftJoin(mediaTable, eq(mediaTable.id, shopTable.logoId))
+      .where(eq(shopTable.ownerId, userId));
+
+    return shops.map(({ shop, logo }) => ({
+      ...shop,
+      logo: logo ? { id: logo.id, url: logo.url } : null,
+    }));
   }
 }

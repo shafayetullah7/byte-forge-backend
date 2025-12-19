@@ -1,8 +1,8 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { userTable } from '@/_db/drizzle/schema';
+import { userTable, TUser, TNewUser } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface UserQuery {
   id?: string;
@@ -12,15 +12,10 @@ export interface UserQuery {
 }
 
 @Injectable()
-export class UserRepository extends BaseRepository<
-  typeof userTable,
-  UserQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, userTable);
-  }
+export class UserRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: UserQuery): SQL[] {
+  private buildWhere(options?: UserQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -32,5 +27,48 @@ export class UserRepository extends BaseRepository<
     if (options.lastName) where.push(eq(userTable.lastName, options.lastName));
 
     return where;
+  }
+
+  async findOne(options?: UserQuery, tx?: DrizzleTx): Promise<TUser | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(userTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewUser, tx?: DrizzleTx): Promise<TUser> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor.insert(userTable).values(data).returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewUser>,
+    options: UserQuery,
+    tx?: DrizzleTx,
+  ): Promise<TUser[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(userTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
+  }
+
+  async delete(where: SQL, tx?: DrizzleTx): Promise<boolean> {
+    const executor = this.db.getExecutor(tx);
+    const deleted = await executor
+      .delete(userTable)
+      .where(where)
+      .returning()
+      .execute();
+    return deleted.length > 0;
   }
 }

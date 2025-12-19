@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
@@ -27,6 +27,9 @@ import { LoggerModule } from './common/modules/logger/logger.module';
 import { AppEnvModule } from './_config/app-env/app-env.module';
 import { BusinessAccountModule } from './api/user/seller/business-account/business-account.module';
 import { ShopModule } from './api/user/seller/shop/shop.module';
+import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { AdminTreeCategoryModule } from './api/admin/admin-tree-category/admin-tree-category.module';
+import { SellerPlantModule } from './api/user/seller/seller-plant/seller-plant.module';
 
 @Module({
   imports: [
@@ -48,6 +51,7 @@ import { ShopModule } from './api/user/seller/shop/shop.module';
     AdminAuthModule,
     SessionModule,
     AdminSessionModule,
+    AdminTreeCategoryModule,
     EmailModule,
     ConfigModule,
     AppConfigModule,
@@ -87,4 +91,8 @@ import { ShopModule } from './api/user/seller/shop/shop.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

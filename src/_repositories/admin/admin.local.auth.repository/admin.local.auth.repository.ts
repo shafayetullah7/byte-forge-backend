@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { adminLocalAuthTable } from '@/_db/drizzle/schema';
+import {
+  adminLocalAuthTable,
+  TAdminLocalAuth,
+  TNewAdminLocalAuth,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface AdminLocalAuthQuery {
   adminId?: string;
@@ -11,15 +15,10 @@ export interface AdminLocalAuthQuery {
 }
 
 @Injectable()
-export class AdminLocalAuthRepository extends BaseRepository<
-  typeof adminLocalAuthTable,
-  AdminLocalAuthQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, adminLocalAuthTable);
-  }
+export class AdminLocalAuthRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: AdminLocalAuthQuery): SQL[] {
+  private buildWhere(options?: AdminLocalAuthQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -31,5 +30,32 @@ export class AdminLocalAuthRepository extends BaseRepository<
       where.push(eq(adminLocalAuthTable.verfied, options.verified));
 
     return where;
+  }
+
+  async findOne(
+    options?: AdminLocalAuthQuery,
+    tx?: DrizzleTx,
+  ): Promise<TAdminLocalAuth | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(adminLocalAuthTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewAdminLocalAuth,
+    tx?: DrizzleTx,
+  ): Promise<TAdminLocalAuth> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(adminLocalAuthTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }

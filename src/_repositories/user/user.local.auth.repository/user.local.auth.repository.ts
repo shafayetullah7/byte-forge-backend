@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { userLocalAuthTable } from '@/_db/drizzle/schema';
+import {
+  userLocalAuthTable,
+  TUserLocalAuth,
+  TNewUserLocalAuth,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface UserLocalAuthQuery {
   id?: string;
@@ -12,15 +16,10 @@ export interface UserLocalAuthQuery {
 }
 
 @Injectable()
-export class UserLocalAuthRepository extends BaseRepository<
-  typeof userLocalAuthTable,
-  UserLocalAuthQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, userLocalAuthTable);
-  }
+export class UserLocalAuthRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: UserLocalAuthQuery): SQL[] {
+  private buildWhere(options?: UserLocalAuthQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -33,5 +32,47 @@ export class UserLocalAuthRepository extends BaseRepository<
       where.push(eq(userLocalAuthTable.verified, options.verified));
 
     return where;
+  }
+
+  async findOne(
+    options?: UserLocalAuthQuery,
+    tx?: DrizzleTx,
+  ): Promise<TUserLocalAuth | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(userLocalAuthTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(
+    data: TNewUserLocalAuth,
+    tx?: DrizzleTx,
+  ): Promise<TUserLocalAuth> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(userLocalAuthTable)
+      .values(data)
+      .returning();
+    return row;
+  }
+
+  async update(
+    data: Partial<TNewUserLocalAuth>,
+    options: UserLocalAuthQuery,
+    tx?: DrizzleTx,
+  ): Promise<TUserLocalAuth[]> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    return await executor
+      .update(userLocalAuthTable)
+      .set(data)
+      .where(and(...where))
+      .returning()
+      .execute();
   }
 }

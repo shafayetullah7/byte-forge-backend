@@ -1,8 +1,12 @@
-import { SQL, eq } from 'drizzle-orm';
+import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { BaseRepository } from '../../_base/base.repository';
-import { shopContactTable } from '@/_db/drizzle/schema';
+import {
+  shopContactTable,
+  TShopContact,
+  TNewShopContact,
+} from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface ShopContactQuery {
   id?: string;
@@ -12,15 +16,10 @@ export interface ShopContactQuery {
 }
 
 @Injectable()
-export class ShopContactRepository extends BaseRepository<
-  typeof shopContactTable,
-  ShopContactQuery
-> {
-  constructor(db: DrizzleService) {
-    super(db, shopContactTable);
-  }
+export class ShopContactRepository {
+  constructor(private readonly db: DrizzleService) {}
 
-  protected buildWhere(options?: ShopContactQuery): SQL[] {
+  private buildWhere(options?: ShopContactQuery): SQL[] {
     if (!options) return [];
 
     const where: SQL[] = [];
@@ -32,5 +31,29 @@ export class ShopContactRepository extends BaseRepository<
       where.push(eq(shopContactTable.businessEmail, options.businessEmail));
 
     return where;
+  }
+
+  async findOne(
+    options?: ShopContactQuery,
+    tx?: DrizzleTx,
+  ): Promise<TShopContact | null> {
+    const executor = this.db.getExecutor(tx);
+    const where = this.buildWhere(options);
+    const [row] = await executor
+      .select()
+      .from(shopContactTable)
+      .where(and(...where))
+      .limit(1)
+      .execute();
+    return row ?? null;
+  }
+
+  async create(data: TNewShopContact, tx?: DrizzleTx): Promise<TShopContact> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor
+      .insert(shopContactTable)
+      .values(data)
+      .returning();
+    return row;
   }
 }
