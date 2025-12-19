@@ -73,7 +73,7 @@ export class AppLoggerService implements LoggerService {
 
     // Re-evaluating extractContext for error:
     let trace: any;
-    let ctx = context;
+    const ctx = context;
 
     if (optionalParams.length > 0) {
       // Assume last string is context if we didn't find one via extractContext/or if we assume Nest structure
