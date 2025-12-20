@@ -5,14 +5,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { UserSessionService } from '@/api/user/user-session/user-session.service';
-import { SessionService } from '@/api/session/session.service';
+import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
+import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
   constructor(
-    private readonly userSessionService: UserSessionService,
-    private readonly sessionService: SessionService,
+    private readonly userSessionRepository: UserSessionRepository,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async canActivate(context: ExecutionContext) {
@@ -23,13 +23,16 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access');
     }
 
-    const userSession = await this.userSessionService.getUserSession(sessionId);
+    const userSession =
+      await this.userSessionRepository.findUserSessionDetailsBySessionId(
+        sessionId,
+      );
 
     if (!userSession) {
       throw new UnauthorizedException('Unauthorized access');
     }
 
-    const active = this.sessionService.isSessionActive(userSession.session);
+    const active = this.sessionRepository.isSessionActive(userSession.session);
     if (!active) {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
     }

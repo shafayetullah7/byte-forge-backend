@@ -1,19 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { UserAuth } from './types/user-auth.type';
-import { UserSessionService } from '../user-session/user-session.service';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { UserLocalAuthService } from './user-local-auth.service';
 import { UserService } from '../user/user.service';
-import { DeviceInfo } from '@/_db/drizzle/schema';
+import { DeviceInfo, TSession } from '@/_db/drizzle/schema';
+import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
+import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
+import { UserLocalAuthSessionRepositoryService } from '@/_repositories/auth/user-local-auth-session-repository/user-local-auth-session-repository.service';
 
 @Injectable()
 export class UserAuthService {
   constructor(
     private readonly drizzle: DrizzleService,
-    private readonly userSessionService: UserSessionService,
     private readonly userLocalAuthService: UserLocalAuthService,
     private readonly userService: UserService,
+    private readonly userSessionRepository: UserSessionRepository,
+    private readonly sessionRepository: SessionRepository,
+    private readonly userLocalAuthSessionRepository: UserLocalAuthSessionRepositoryService,
   ) {}
 
   async register(payload: CreateLocalUserDto) {
@@ -43,15 +47,39 @@ export class UserAuthService {
     userAuth: UserAuth;
     deviceInfo: DeviceInfo;
     ip: string;
-  }) {
-    const { userAuth, deviceInfo, ip } = payload;
+  }): Promise<TSession> {
+    const result = await this.drizzle.transaction(async (tx) => {
+      const { userAuth, deviceInfo, ip } = payload;
+      const { user } = userAuth;
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // now + 7 days
 
-    const session = await this.userSessionService.createAuthSession({
-      userAuth,
-      deviceInfo,
-      ip,
+      const sessionData = {
+        deviceInfo,
+        ip,
+        expiresAt,
+      };
+
+      const newSession = await this.sessionRepository.create(sessionData, tx);
+      const userSessionData = {
+        sessionId: newSession.id,
+        userId: user.id,
+      };
+      await this.userSessionRepository.createUserSession(userSessionData, tx);
+
+      if (userAuth.userLocalAuth) {
+        const userSessionLocalAuthData = {
+          sessionId: newSession.id,
+          localAuthId: userAuth.userLocalAuth.userId,
+        };
+        await this.userLocalAuthSessionRepository.createUserLocalAuthSession(
+          userSessionLocalAuthData,
+          tx,
+        );
+      }
+
+      return newSession;
     });
 
-    return session;
+    return result;
   }
 }

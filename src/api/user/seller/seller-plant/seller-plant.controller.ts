@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 import { SellerPlantService } from './seller-plant.service';
 import {
   CreatePlantDto,

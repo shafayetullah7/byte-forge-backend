@@ -15,7 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
 import { Request } from 'express';
 import { TAuthenticUser } from '@/common/types';
-import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { DeleteMediaDto } from './dto/delete.media.dto';
 import {

@@ -6,14 +6,14 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AdminSessionService } from '@/api/admin/admin-session/admin-session.service';
-import { AccessAdminAuth } from '../types';
-import { SessionService } from '@/api/session/session.service';
+import { AccessAdminAuth } from '@/common/types';
+import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
   constructor(
     private readonly adminSessionService: AdminSessionService,
-    private readonly sessionService: SessionService,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async canActivate(context: ExecutionContext) {
@@ -31,7 +31,7 @@ export class AdminAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access');
     }
 
-    const active = this.sessionService.isSessionActive(adminSession.session);
+    const active = this.sessionRepository.isSessionActive(adminSession.session);
     if (!active) {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
     }

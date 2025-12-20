@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AdminAuthGuard } from '@/common/guards/admin-auth.guard';
+import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { AdminTreeCategoryService } from './admin-tree-category.service';
 import {
   CategoryFilterDto,

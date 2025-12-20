@@ -110,4 +110,11 @@ export class SessionRepository {
       .execute();
     return deleted.length > 0;
   }
+
+  isSessionActive(session: TSession): boolean {
+    const now = new Date();
+    return (
+      !session.revoked && session.logoutAt === null && session.expiresAt > now
+    );
+  }
 }

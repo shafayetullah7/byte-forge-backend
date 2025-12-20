@@ -17,13 +17,4 @@ export class SessionService {
 
     return newSession;
   }
-
-  isSessionActive(session: TSession | null | undefined): boolean {
-    if (!session) return false;
-
-    const now = new Date();
-    return (
-      !session.revoked && session.logoutAt === null && session.expiresAt > now
-    );
-  }
 }

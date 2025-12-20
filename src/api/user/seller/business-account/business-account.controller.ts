@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { BusinessAccountService } from './business-account.service';
 import { CreateBusinessAccountDto } from './dto/setup.business.dto';
 import { TBusinessAccount } from '@/_db/drizzle/schema';
-import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';

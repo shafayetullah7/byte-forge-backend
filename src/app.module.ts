@@ -7,7 +7,6 @@ import { APP_FILTER, APP_PIPE, RouterModule } from '@nestjs/core';
 import { UserAuthModule } from './api/user/user-auth/user-auth.module';
 import { UserModule } from './api/user/user/user.module';
 import { HashingModule } from './common/modules/hashing/hashing.module';
-import { UserSessionModule } from './api/user/user-session/user-session.module';
 import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
 import { TreeCategoriesModule } from './api/library/tree-categories/tree-categories.module';
@@ -30,6 +29,13 @@ import { ShopModule } from './api/user/seller/shop/shop.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AdminTreeCategoryModule } from './api/admin/admin-tree-category/admin-tree-category.module';
 import { SellerPlantModule } from './api/user/seller/seller-plant/seller-plant.module';
+import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
+import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
+import { RolesGuardModule } from './common/guards/roles-guard/roles-guard.module';
+import { AdminLocalAuthGuardModule } from './common/guards/admin-local-auth-guard/admin-local-auth-guard.module';
+import { UserLocalAuthGuardModule } from './common/guards/user-local-auth-guard/user-local-auth-guard.module';
+import { UserSessionRepositoryModule } from './_repositories/auth/user-session-repository/user-session-repository.module';
+import { UserLocalAuthSessionRepositoryModule } from './_repositories/auth/user-local-auth-session-repository/user-local-auth-session-repository.module';
 
 @Module({
   imports: [
@@ -43,7 +49,6 @@ import { SellerPlantModule } from './api/user/seller/seller-plant/seller-plant.m
     UserAuthModule,
     UserModule,
     HashingModule,
-    UserSessionModule,
     CookieModule,
     ResponseModule,
     TreeCategoriesModule,
@@ -62,6 +67,13 @@ import { SellerPlantModule } from './api/user/seller/seller-plant/seller-plant.m
     BusinessAccountModule,
     ShopModule,
     AppEnvModule,
+    UserAuthGuardModule,
+    AdminAuthGuardModule,
+    RolesGuardModule,
+    AdminLocalAuthGuardModule,
+    UserLocalAuthGuardModule,
+    UserSessionRepositoryModule,
+    UserLocalAuthSessionRepositoryModule,
   ],
   controllers: [],
   providers: [

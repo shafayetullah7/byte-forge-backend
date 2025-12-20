@@ -9,13 +9,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
-import { UserLocalAuthGuard } from '@/common/guards/user-local.-auth.guard';
+import { UserLocalAuthGuard } from '@/common/guards/user-local-auth-guard/user-local-auth.guard';
 import { Request, Response } from 'express';
 import { parseDeviceInfo } from '@/common/utils/get-divice-info';
 import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
-import { UserAuthGuard } from '@/common/guards/user-auth.guard';
+import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 // import { LocalLoginDto } from './dto/local-login.dto';
