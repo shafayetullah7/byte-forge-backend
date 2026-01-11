@@ -20,7 +20,7 @@ import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.dec
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 // import { LocalLoginDto } from './dto/local-login.dto';
 
-@Controller('user/auth')
+@Controller('auth')
 export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,

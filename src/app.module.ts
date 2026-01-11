@@ -35,6 +35,17 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       expandVariables: true,
     }),
     UserApiModule,
+    AdminApiModule,
+    RouterModule.register([
+      {
+        path: 'user',
+        module: UserApiModule,
+      },
+      {
+        path: 'admin',
+        module: AdminApiModule,
+      },
+    ]),
     HashingModule,
     CookieModule,
     ResponseModule,
