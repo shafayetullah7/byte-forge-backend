@@ -61,7 +61,40 @@ export class AppEnvService {
     return this.configService.get('SALT_ROUNDS', { infer: true });
   }
 
-  // === SMTP ===
+  // === Email / SMTP ===
+  get MAIL_PROVIDER() {
+    return this.configService.get('MAIL_PROVIDER', { infer: true });
+  }
+
+  get MAIL_HOST() {
+    return this.configService.get('MAIL_HOST', { infer: true });
+  }
+
+  get MAIL_PORT() {
+    return this.configService.get('MAIL_PORT', { infer: true });
+  }
+
+  get MAIL_SECURE() {
+    return this.configService.get('MAIL_SECURE', { infer: true });
+  }
+
+  get MAIL_USER() {
+    return this.configService.get('MAIL_USER', { infer: true });
+  }
+
+  get MAIL_PASSWORD() {
+    return this.configService.get('MAIL_PASSWORD', { infer: true });
+  }
+
+  get MAIL_FROM_NAME() {
+    return this.configService.get('MAIL_FROM_NAME', { infer: true });
+  }
+
+  get MAIL_FROM_EMAIL() {
+    return this.configService.get('MAIL_FROM_EMAIL', { infer: true });
+  }
+
+  // === Legacy SMTP ===
   get GMAIL_USER() {
     return this.configService.get('GMAIL_USER', { infer: true });
   }

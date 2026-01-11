@@ -232,6 +232,34 @@
       "when": 1765988687128,
       "tag": "0034_cultured_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1768149692821,
+      "tag": "0035_omniscient_shocker",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1768150078539,
+      "tag": "0036_amazing_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1768150340445,
+      "tag": "0037_bright_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1768150682160,
+      "tag": "0038_melted_talos",
+      "breakpoints": true
     }
   ]
 }

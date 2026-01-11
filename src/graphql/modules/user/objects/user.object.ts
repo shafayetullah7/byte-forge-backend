@@ -13,6 +13,12 @@ export class User extends BaseEntity implements TUser {
   @Field()
   userName: string;
 
-  @Field({ nullable: true })
-  avatar: string;
+  @Field(() => String, { nullable: true })
+  avatar: string | null;
+
+  @Field(() => Date, { nullable: true })
+  emailVerifiedAt: Date | null;
+
+  @Field(() => Boolean)
+  emailVerified: boolean;
 }

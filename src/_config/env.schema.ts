@@ -22,10 +22,20 @@ export const envSchema = z
     DB_EXTERNAL_PORT: z.coerce.number().default(5432),
     SALT_ROUNDS: z.coerce.number().default(10),
 
-    // smtp
-    GMAIL_USER: z.string(),
-    GMAIL_APP_PASSWORD: z.string(),
-    DEFAULT_FROM_EMAIL: z.string().email(),
+    // Email / SMTP
+    MAIL_PROVIDER: z.enum(['gmail', 'smtp', 'console']).default('console'),
+    MAIL_HOST: z.string().default('smtp.gmail.com'),
+    MAIL_PORT: z.coerce.number().default(587),
+    MAIL_SECURE: z.string().default('false'),
+    MAIL_USER: z.string().optional(),
+    MAIL_PASSWORD: z.string().optional(),
+    MAIL_FROM_NAME: z.string().default('ByteForge Auth'),
+    MAIL_FROM_EMAIL: z.string().email().default('noreply@byteforge.com'),
+
+    // Legacy SMTP (kept for backwards compatibility)
+    GMAIL_USER: z.string().optional(),
+    GMAIL_APP_PASSWORD: z.string().optional(),
+    DEFAULT_FROM_EMAIL: z.string().email().optional(),
 
     CLOUDINARY_CLOUD_NAME: z.string().nonempty().max(255),
     CLOUDINARY_API_KEY: z.string().nonempty().max(255),

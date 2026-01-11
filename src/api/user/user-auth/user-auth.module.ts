@@ -9,6 +9,8 @@ import { CookieModule } from '@/common/modules/cookie/cookie.module';
 import { UserSessionRepositoryModule } from '@/_repositories/auth/user-session-repository/user-session-repository.module';
 import { SessionRepositoryModule } from '@/_repositories/auth/session.repository/session.repository.module';
 import { UserLocalAuthSessionRepositoryModule } from '@/_repositories/auth/user-local-auth-session-repository/user-local-auth-session-repository.module';
+import { OtpModule } from '@/common/modules/otp/otp.module';
+import { EmailModule } from '@/common/modules/email/email.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { UserLocalAuthSessionRepositoryModule } from '@/_repositories/auth/user-
     UserLocalAuthSessionRepositoryModule,
     HashingModule,
     CookieModule,
+    OtpModule,
+    EmailModule,
   ],
   controllers: [UserAuthController],
   providers: [UserAuthService, UserLocalAuthService, UserLocalStrategy],

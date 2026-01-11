@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "email_verified" boolean GENERATED ALWAYS AS (email_verified_at IS NOT NULL) STORED NOT NULL;
