@@ -11,6 +11,18 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Handle global unhandled rejections/exceptions
+  process.on('unhandledRejection', (reason, promise) => {
+    const logger = app.get(AppLoggerService);
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (error) => {
+    const logger = app.get(AppLoggerService);
+    logger.error('Uncaught Exception thrown:', error);
+    process.exit(1);
+  });
+
   // CORS for development
   app.enableCors({
     origin: 'http://localhost:3001',
@@ -25,11 +37,13 @@ async function bootstrap() {
   //   }),
   // );
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.APP_EXTERNAL_PORT ?? 3000);
 }
 bootstrap()
   .then(() => {
-    console.log('Application is running on: http://localhost:3000');
+    console.log(
+      `Application is running on: http://localhost:${process.env.APP_EXTERNAL_PORT}`,
+    );
   })
   .catch((err) => {
     console.error('Application failed to start', err);

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateAdminSession } from './types';
-import { SessionService } from '@/api/session/session.service';
+import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import {
   adminLocalAuthSessionTable,
   adminSessionTable,
@@ -17,7 +17,7 @@ import { eq } from 'drizzle-orm';
 export class AdminSessionService {
   constructor(
     private readonly drizzle: DrizzleService,
-    private readonly sessionService: SessionService,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async createAdminAuthSession(payload: CreateAdminSession) {
@@ -35,10 +35,7 @@ export class AdminSessionService {
     };
 
     const result = await this.drizzle.client.transaction(async (tx) => {
-      const newSession = await this.sessionService.createSession(
-        sessionData,
-        tx,
-      );
+      const newSession = await this.sessionRepository.create(sessionData, tx);
       const adminSessionData: TNewAdminSession = {
         adminId: admin.id,
         sessionId: newSession.id,

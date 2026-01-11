@@ -3,14 +3,14 @@ import { SellerPlantController } from './seller-plant.controller';
 import { SellerPlantService } from './seller-plant.service';
 import { PlantRepositoryModule } from '@/_repositories/business/plant.repository/plant.repository.module';
 import { AdminSessionModule } from '@/api/admin/admin-session/admin-session.module';
-import { SessionModule } from '@/api/session/session.module';
+import { SessionRepositoryModule } from '@/_repositories/auth/session.repository/session.repository.module';
 import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 
 @Module({
   imports: [
     PlantRepositoryModule,
     AdminSessionModule,
-    SessionModule,
+    SessionRepositoryModule,
     DrizzleModule,
   ],
   controllers: [SellerPlantController],

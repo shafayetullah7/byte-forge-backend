@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AdminSessionService } from './admin-session.service';
 import { AdminSessionController } from './admin-session.controller';
-import { SessionModule } from '@/api/session/session.module';
+import { SessionRepositoryModule } from '@/_repositories/auth/session.repository/session.repository.module';
 
 @Module({
-  imports: [SessionModule],
+  imports: [SessionRepositoryModule],
   controllers: [AdminSessionController],
   providers: [AdminSessionService],
   exports: [AdminSessionService],

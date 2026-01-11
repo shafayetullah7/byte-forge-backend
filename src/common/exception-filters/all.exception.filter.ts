@@ -93,17 +93,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // 3. Drizzle Database Errors
-    if (exception instanceof DrizzleError) {
+    if (exception instanceof DrizzleError || (exception as any).code) {
+      const error = exception as any;
+      const pgCode = error.code || (error.originalError as any)?.code;
+
       this.logger.error(
-        `Database Error: ${exception.message}`,
-        exception.stack,
+        `Database Error [${pgCode || 'unknown'}]: ${error.message}`,
+        error.stack,
       );
+
+      // Map unique_violation (23505) to CONFLICT
+      if (pgCode === '23505') {
+        return this.responseService.error({
+          code: ErrorCode.CONFLICT,
+          message: 'Entry already exists',
+          details: this.isProduction()
+            ? 'A record with this information already exists'
+            : error.detail || error.message,
+        });
+      }
+
       return this.responseService.error({
         code: ErrorCode.DATABASE_ERROR,
         message: 'Database error occurred',
-        details: this.isProduction()
-          ? 'Internal server error'
-          : exception.message,
+        details: this.isProduction() ? 'Internal server error' : error.message,
         validationErrors: [],
       });
     }
