@@ -8,7 +8,7 @@ import { ResponseService } from '@/common/modules/response/response.service';
 import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 import { TShop } from '@/_db/drizzle/schema';
 
-@Controller('user/seller/shops')
+@Controller({ path: 'user/seller/shops', version: '1' })
 export class ShopController {
   constructor(
     private readonly shopService: ShopService,

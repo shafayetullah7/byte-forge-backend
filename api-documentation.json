@@ -3,7 +3,7 @@
     "name": "ByteForge Auth API",
     "description": "Complete API documentation for ByteForge authentication and backend services",
     "version": "1.0.0",
-    "baseUrl": "http://localhost:3000/api"
+    "baseUrl": "http://localhost:3005/api/v1"
   },
   "auth": {
     "type": "cookie",
@@ -12,13 +12,13 @@
   },
   "endpoints": {
     "user_auth": {
-      "basePath": "/auth",
+      "basePath": "/user/auth",
       "description": "User authentication endpoints",
       "endpoints": [
         {
           "name": "Register User",
           "method": "POST",
-          "path": "/auth/register",
+          "path": "/user/auth/register",
           "authentication": false,
           "description": "Register a new user account",
           "requestBody": {
@@ -72,15 +72,76 @@
             }
           },
           "responses": {
-            "200": {
+            "201": {
               "description": "User successfully registered",
               "example": {
                 "success": true,
                 "message": "New user created",
                 "data": {
-                  "id": "user_id",
-                  "email": "john@example.com"
+                  "user": {
+                    "id": "68b45d92-0bc8-43c9-873e-ef225fe39666",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "userName": "johndoe_123",
+                    "avatar": null,
+                    "emailVerifiedAt": null,
+                    "emailVerified": false,
+                    "createdAt": "2026-01-13T02:26:10.246Z",
+                    "updatedAt": "2026-01-13T02:26:10.246Z"
+                  },
+                  "localAuth": {
+                    "id": "4d03a726-bcf3-45e5-bb27-585195343219",
+                    "userId": "68b45d92-0bc8-43c9-873e-ef225fe39666",
+                    "email": "john@example.com",
+                    "verified": false,
+                    "createdAt": "2026-01-13T02:26:10.246Z",
+                    "updatedAt": "2026-01-13T02:26:10.246Z"
+                  }
                 }
+              }
+            },
+            "409": {
+              "description": "Duplicate username or email",
+              "examples": {
+                "duplicateUsername": {
+                  "success": false,
+                  "message": "Username already exists",
+                  "error": {
+                    "code": "DUPLICATE_ENTRY",
+                    "details": "Username already exists"
+                  },
+                  "statusCode": 409,
+                  "timestamp": "2026-01-13T13:23:35.604Z"
+                },
+                "duplicateEmail": {
+                  "success": false,
+                  "message": "Email already exists",
+                  "error": {
+                    "code": "DUPLICATE_ENTRY",
+                    "details": "Email already exists"
+                  },
+                  "statusCode": 409,
+                  "timestamp": "2026-01-13T13:26:40.300Z"
+                }
+              }
+            },
+            "400": {
+              "description": "Validation error - invalid input data",
+              "example": {
+                "success": false,
+                "message": "Validation failed",
+                "error": {
+                  "code": "VALIDATION_ERROR",
+                  "details": "Check validationErrors array for details",
+                  "validationErrors": [
+                    {
+                      "field": "email",
+                      "message": "Invalid email"
+                    }
+                  ]
+                },
+                "statusCode": 400,
+                "timestamp": "2026-01-13T13:23:35.604Z"
               }
             }
           }

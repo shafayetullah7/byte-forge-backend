@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { AdminSessionService } from './admin-session.service';
 
-@Controller('session')
+@Controller({ path: 'admin/session', version: '1' })
 export class AdminSessionController {
   constructor(private readonly adminSessionService: AdminSessionService) {}
 }

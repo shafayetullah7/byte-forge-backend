@@ -5,7 +5,7 @@ import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 
-@Controller('user/profile')
+@Controller({ path: 'user/profile', version: '1' })
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

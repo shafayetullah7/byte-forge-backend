@@ -18,7 +18,7 @@ import {
 } from './dto/category.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
 
-@Controller('tree-categories')
+@Controller({ path: 'admin/tree-categories', version: '1' })
 @UseGuards(AdminAuthGuard)
 export class AdminTreeCategoryController {
   constructor(private readonly service: AdminTreeCategoryService) {}

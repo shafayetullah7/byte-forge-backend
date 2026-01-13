@@ -23,7 +23,7 @@ import {
   TAllowedMimeType,
 } from '@/_db/drizzle/enum/mime.type.enum';
 
-@Controller('media')
+@Controller({ path: 'media', version: '1' })
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 

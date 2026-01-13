@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AppLoggerService } from './common/modules/logger/app.logger.service';
+import { VersioningType } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -9,8 +10,14 @@ async function bootstrap() {
   });
   app.useLogger(app.get(AppLoggerService));
 
-  // Set global API prefix with versioning
-  app.setGlobalPrefix('api/v1');
+  // Enable URI versioning (e.g., /api/v1/users, /api/v2/users)
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1', // Default version if not specified
+  });
+
+  // Set global API prefix (without version)
+  app.setGlobalPrefix('api');
 
   app.use(cookieParser());
 
@@ -28,7 +35,7 @@ async function bootstrap() {
 
   // CORS for development
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: ['http://localhost:3001', 'http://localhost:3000'],
     credentials: true,
   });
 
