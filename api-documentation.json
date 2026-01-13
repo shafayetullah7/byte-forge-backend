@@ -1,0 +1,564 @@
+{
+  "info": {
+    "name": "ByteForge Auth API",
+    "description": "Complete API documentation for ByteForge authentication and backend services",
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:3000/api"
+  },
+  "auth": {
+    "type": "cookie",
+    "cookieName": "session",
+    "description": "Authentication is handled via HTTP-only session cookies"
+  },
+  "endpoints": {
+    "user_auth": {
+      "basePath": "/auth",
+      "description": "User authentication endpoints",
+      "endpoints": [
+        {
+          "name": "Register User",
+          "method": "POST",
+          "path": "/auth/register",
+          "authentication": false,
+          "description": "Register a new user account",
+          "requestBody": {
+            "type": "application/json",
+            "schema": {
+              "firstName": {
+                "type": "string",
+                "required": true,
+                "minLength": 1,
+                "maxLength": 50,
+                "pattern": "^[a-zA-Z]+$",
+                "description": "User's first name (letters only)"
+              },
+              "lastName": {
+                "type": "string",
+                "required": true,
+                "minLength": 1,
+                "maxLength": 50,
+                "pattern": "^[a-zA-Z]+$",
+                "description": "User's last name (letters only)"
+              },
+              "userName": {
+                "type": "string",
+                "required": true,
+                "minLength": 3,
+                "maxLength": 50,
+                "pattern": "^[a-z0-9_]+$",
+                "description": "Unique username (lowercase letters, numbers, underscores only)"
+              },
+              "email": {
+                "type": "string",
+                "required": true,
+                "format": "email",
+                "maxLength": 255,
+                "description": "Valid email address"
+              },
+              "password": {
+                "type": "string",
+                "required": true,
+                "minLength": 8,
+                "maxLength": 255,
+                "description": "Password must contain: uppercase, lowercase, number, special character"
+              }
+            },
+            "example": {
+              "firstName": "John",
+              "lastName": "Doe",
+              "userName": "johndoe_123",
+              "email": "john@example.com",
+              "password": "SecurePass123!"
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "User successfully registered",
+              "example": {
+                "success": true,
+                "message": "New user created",
+                "data": {
+                  "id": "user_id",
+                  "email": "john@example.com"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "method": "POST",
+          "path": "/auth/login",
+          "authentication": false,
+          "description": "Login with email and password, returns session cookie",
+          "requestBody": {
+            "type": "application/json",
+            "schema": {
+              "email": {
+                "type": "string",
+                "required": true,
+                "format": "email"
+              },
+              "password": {
+                "type": "string",
+                "required": true
+              }
+            },
+            "example": {
+              "email": "john@example.com",
+              "password": "SecurePass123!"
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Login successful, session cookie set",
+              "example": {
+                "success": true,
+                "message": "User logged in",
+                "data": {
+                  "session": {
+                    "id": "session_id",
+                    "userId": "user_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Check Auth Status",
+          "method": "GET",
+          "path": "/auth/check",
+          "authentication": true,
+          "description": "Check if user is authenticated and get user details",
+          "responses": {
+            "200": {
+              "description": "User is authenticated",
+              "example": {
+                "id": "user_id",
+                "email": "john@example.com",
+                "firstName": "John",
+                "lastName": "Doe"
+              }
+            },
+            "401": {
+              "description": "Unauthorized access"
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "method": "POST",
+          "path": "/auth/verify-email",
+          "authentication": true,
+          "description": "Verify user email with OTP code",
+          "requestBody": {
+            "type": "application/json",
+            "schema": {
+              "otp": {
+                "type": "string",
+                "required": true,
+                "description": "6-digit OTP code sent to email"
+              }
+            },
+            "example": {
+              "otp": "123456"
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Email verified successfully",
+              "example": {
+                "success": true,
+                "message": "Email verified successfully"
+              }
+            }
+          }
+        },
+        {
+          "name": "Send Verification Email",
+          "method": "POST",
+          "path": "/auth/send-verification-email",
+          "authentication": true,
+          "description": "Resend email verification code",
+          "responses": {
+            "200": {
+              "description": "Verification code sent",
+              "example": {
+                "success": true,
+                "message": "Verification code sent to your email"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "user_profile": {
+      "basePath": "/profile",
+      "description": "User profile management",
+      "endpoints": [
+        {
+          "name": "Get User Profile",
+          "method": "GET",
+          "path": "/profile",
+          "authentication": true,
+          "description": "Get authenticated user's profile information",
+          "responses": {
+            "200": {
+              "description": "User profile data"
+            }
+          }
+        }
+      ]
+    },
+    "media": {
+      "basePath": "/media",
+      "description": "Media upload and management",
+      "endpoints": [
+        {
+          "name": "Upload Media",
+          "method": "POST",
+          "path": "/media/upload",
+          "authentication": true,
+          "description": "Upload image or video file",
+          "requestBody": {
+            "type": "multipart/form-data",
+            "schema": {
+              "file": {
+                "type": "file",
+                "required": true,
+                "description": "Image or video file to upload"
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "File uploaded successfully",
+              "example": {
+                "success": true,
+                "data": {
+                  "url": "https://cloudinary.com/...",
+                  "publicId": "media_id"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Media",
+          "method": "DELETE",
+          "path": "/media/:id",
+          "authentication": true,
+          "description": "Delete uploaded media by ID",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true,
+              "description": "Media ID to delete"
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Media deleted successfully"
+            }
+          }
+        },
+        {
+          "name": "Get All Media",
+          "method": "GET",
+          "path": "/media",
+          "authentication": true,
+          "description": "Get all media uploaded by authenticated user",
+          "responses": {
+            "200": {
+              "description": "List of media files"
+            }
+          }
+        }
+      ]
+    },
+    "business_account": {
+      "basePath": "/business-account",
+      "description": "Business account management for sellers",
+      "endpoints": [
+        {
+          "name": "Create Business Account",
+          "method": "POST",
+          "path": "/business-account",
+          "authentication": true,
+          "description": "Create a business account for selling",
+          "requestBody": {
+            "type": "application/json",
+            "description": "Business account details"
+          },
+          "responses": {
+            "200": {
+              "description": "Business account created"
+            }
+          }
+        },
+        {
+          "name": "Get Business Account",
+          "method": "GET",
+          "path": "/business-account",
+          "authentication": true,
+          "description": "Get authenticated user's business account",
+          "responses": {
+            "200": {
+              "description": "Business account data"
+            }
+          }
+        }
+      ]
+    },
+    "shops": {
+      "basePath": "/shops",
+      "description": "Shop management for sellers",
+      "endpoints": [
+        {
+          "name": "Create Shop",
+          "method": "POST",
+          "path": "/shops",
+          "authentication": true,
+          "description": "Create a new shop",
+          "requestBody": {
+            "type": "application/json",
+            "description": "Shop details"
+          },
+          "responses": {
+            "200": {
+              "description": "Shop created successfully"
+            }
+          }
+        },
+        {
+          "name": "Get Shops",
+          "method": "GET",
+          "path": "/shops",
+          "authentication": true,
+          "description": "Get all shops owned by authenticated user",
+          "responses": {
+            "200": {
+              "description": "List of shops"
+            }
+          }
+        }
+      ]
+    },
+    "plants": {
+      "basePath": "/plants",
+      "description": "Plant product management for sellers",
+      "endpoints": [
+        {
+          "name": "Create Plant",
+          "method": "POST",
+          "path": "/plants",
+          "authentication": true,
+          "description": "Add a new plant product for sale",
+          "requestBody": {
+            "type": "application/json",
+            "description": "Plant product details"
+          },
+          "responses": {
+            "200": {
+              "description": "Plant created successfully"
+            }
+          }
+        },
+        {
+          "name": "Get All Plants",
+          "method": "GET",
+          "path": "/plants",
+          "authentication": true,
+          "description": "Get all plants listed by authenticated seller",
+          "responses": {
+            "200": {
+              "description": "List of plants"
+            }
+          }
+        },
+        {
+          "name": "Get Plant by ID",
+          "method": "GET",
+          "path": "/plants/:id",
+          "authentication": true,
+          "description": "Get specific plant details",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Plant details"
+            }
+          }
+        },
+        {
+          "name": "Update Plant",
+          "method": "PATCH",
+          "path": "/plants/:id",
+          "authentication": true,
+          "description": "Update plant product details",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "requestBody": {
+            "type": "application/json",
+            "description": "Updated plant details"
+          },
+          "responses": {
+            "200": {
+              "description": "Plant updated successfully"
+            }
+          }
+        },
+        {
+          "name": "Delete Plant",
+          "method": "DELETE",
+          "path": "/plants/:id",
+          "authentication": true,
+          "description": "Delete a plant product",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Plant deleted successfully"
+            }
+          }
+        }
+      ]
+    },
+    "tree_categories": {
+      "basePath": "/tree-categories",
+      "description": "Public tree category library",
+      "endpoints": [
+        {
+          "name": "Get Tree Categories",
+          "method": "GET",
+          "path": "/tree-categories",
+          "authentication": false,
+          "description": "Get all tree categories (public endpoint)",
+          "responses": {
+            "200": {
+              "description": "List of tree categories"
+            }
+          }
+        }
+      ]
+    },
+    "admin_tree_categories": {
+      "basePath": "/admin/tree-categories",
+      "description": "Admin tree category management",
+      "endpoints": [
+        {
+          "name": "Create Tree Category",
+          "method": "POST",
+          "path": "/admin/tree-categories",
+          "authentication": true,
+          "description": "Create a new tree category (admin only)",
+          "requestBody": {
+            "type": "application/json",
+            "description": "Category details"
+          },
+          "responses": {
+            "200": {
+              "description": "Category created"
+            }
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "method": "GET",
+          "path": "/admin/tree-categories",
+          "authentication": true,
+          "description": "Get all tree categories (admin)",
+          "responses": {
+            "200": {
+              "description": "List of categories"
+            }
+          }
+        },
+        {
+          "name": "Get Category by ID",
+          "method": "GET",
+          "path": "/admin/tree-categories/:id",
+          "authentication": true,
+          "description": "Get specific category details",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Category details"
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "method": "PUT",
+          "path": "/admin/tree-categories/:id",
+          "authentication": true,
+          "description": "Update tree category",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "requestBody": {
+            "type": "application/json",
+            "description": "Updated category details"
+          },
+          "responses": {
+            "200": {
+              "description": "Category updated"
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "method": "DELETE",
+          "path": "/admin/tree-categories/:id",
+          "authentication": true,
+          "description": "Delete tree category",
+          "parameters": {
+            "id": {
+              "type": "string",
+              "in": "path",
+              "required": true
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Category deleted"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "notes": {
+    "authentication": "Most endpoints require authentication via session cookie. Public endpoints are marked with 'authentication: false'",
+    "baseUrl": "The base URL should be configured based on your environment (development/production)",
+    "errorHandling": "All endpoints return standard error responses with appropriate HTTP status codes",
+    "validation": "Request bodies are validated using Zod schemas. Validation errors will return 400 Bad Request with detailed error messages"
+  }
+}

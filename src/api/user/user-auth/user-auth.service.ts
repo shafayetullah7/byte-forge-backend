@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { UserAuth } from './types/user-auth.type';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
@@ -15,6 +15,8 @@ import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { HttpStatus } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { UserRepository } from '@/_repositories/user/user.repository/user.repository';
+import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
 
 @Injectable()
 export class UserAuthService {
@@ -27,29 +29,70 @@ export class UserAuthService {
     private readonly userLocalAuthSessionRepository: UserLocalAuthSessionRepositoryService,
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
+    private readonly userRepository: UserRepository,
+    private readonly userLocalAuthRepository: UserLocalAuthRepository,
   ) {}
 
   async register(payload: CreateLocalUserDto) {
     const { email, password, firstName, lastName, userName } = payload;
 
-    const result = await this.drizzle.client.transaction(async (tx) => {
-      const user = await this.userService.createUser(
-        {
-          firstName,
-          lastName,
-          userName,
-        },
-        tx,
-      );
-      const localAuth = await this.userLocalAuthService.createUserLocalAuth(
-        { email, password, userId: user.id },
-        tx,
-      );
-
-      return { user, localAuth };
+    // Check if username already exists using UserRepository
+    const existingUserByUsername = await this.userRepository.findOne({
+      userName,
     });
+    if (existingUserByUsername) {
+      throw new CustomException({
+        message: 'Username already exists',
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: ErrorCode.DUPLICATE_ENTRY,
+      });
+    }
 
-    return result;
+    // Check if email already exists using UserLocalAuthRepository
+    const existingUserByEmail = await this.userLocalAuthRepository.findOne({
+      email,
+    });
+    if (existingUserByEmail) {
+      throw new CustomException({
+        message: 'Email already exists',
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: ErrorCode.DUPLICATE_ENTRY,
+      });
+    }
+
+    // Create user in transaction
+    try {
+      const result = await this.drizzle.client.transaction(async (tx) => {
+        const user = await this.userService.createUser(
+          {
+            firstName,
+            lastName,
+            userName,
+          },
+          tx,
+        );
+        const localAuth = await this.userLocalAuthService.createUserLocalAuth(
+          { email, password, userId: user.id },
+          tx,
+        );
+
+        return { user, localAuth };
+      });
+
+      return result;
+    } catch (error) {
+      // Handle ConflictException from service layer (race condition fallback)
+      if (error instanceof ConflictException) {
+        throw new CustomException({
+          message: error.message,
+          statusCode: HttpStatus.CONFLICT,
+          errorCode: ErrorCode.DUPLICATE_ENTRY,
+        });
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   async login(payload: {
@@ -119,20 +162,20 @@ export class UserAuthService {
       .limit(1);
 
     if (!user) {
-      throw new CustomException(
-        'User not found',
-        HttpStatus.NOT_FOUND,
-        ErrorCode.NOT_FOUND,
-      );
+      throw new CustomException({
+        message: 'User not found',
+        statusCode: HttpStatus.NOT_FOUND,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
     }
 
     // Check if already verified
     if (user.emailVerifiedAt) {
-      throw new CustomException(
-        'Email already verified',
-        HttpStatus.CONFLICT,
-        ErrorCode.EMAIL_ALREADY_VERIFIED,
-      );
+      throw new CustomException({
+        message: 'Email already verified',
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
+      });
     }
 
     // Get user's local auth email
@@ -141,11 +184,11 @@ export class UserAuthService {
     });
 
     if (!localUser) {
-      throw new CustomException(
-        'User email not found',
-        HttpStatus.NOT_FOUND,
-        ErrorCode.NOT_FOUND,
-      );
+      throw new CustomException({
+        message: 'User email not found',
+        statusCode: HttpStatus.NOT_FOUND,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
     }
 
     // Generate and send OTP (handles both initial send and resend)

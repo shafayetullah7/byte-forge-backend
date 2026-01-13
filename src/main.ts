@@ -9,6 +9,9 @@ async function bootstrap() {
   });
   app.useLogger(app.get(AppLoggerService));
 
+  // Set global API prefix with versioning
+  app.setGlobalPrefix('api/v1');
+
   app.use(cookieParser());
 
   // Handle global unhandled rejections/exceptions

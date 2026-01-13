@@ -78,11 +78,11 @@ export class OtpService {
         .for('update'); // Lock the row to prevent concurrent access
 
       if (!otpRecord) {
-        throw new CustomException(
-          'Invalid or expired OTP',
-          HttpStatus.BAD_REQUEST,
-          ErrorCode.INVALID_OTP,
-        );
+        throw new CustomException({
+          message: 'Invalid or expired OTP',
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorCode: ErrorCode.INVALID_OTP,
+        });
       }
 
       // Verify OTP
@@ -92,11 +92,11 @@ export class OtpService {
       );
 
       if (!isValid) {
-        throw new CustomException(
-          'Invalid OTP',
-          HttpStatus.BAD_REQUEST,
-          ErrorCode.INVALID_OTP,
-        );
+        throw new CustomException({
+          message: 'Invalid OTP',
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorCode: ErrorCode.INVALID_OTP,
+        });
       }
 
       // Delete the OTP after successful verification

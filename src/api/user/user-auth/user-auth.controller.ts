@@ -21,7 +21,7 @@ import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 // import { LocalLoginDto } from './dto/local-login.dto';
 
-@Controller('auth')
+@Controller('user/auth')
 export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,

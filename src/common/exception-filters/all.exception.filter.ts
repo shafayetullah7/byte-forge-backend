@@ -55,13 +55,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const errorResponse = this.handleException(exception);
 
-    return response
-      .status(
-        this.getHttpStatus(
-          errorResponse.error.code || ErrorCode.INTERNAL_SERVER_ERROR,
-        ),
-      )
-      .json(errorResponse);
+    // ✅ Use statusCode from error response (set by handleException)
+    return response.status(errorResponse.statusCode).json(errorResponse);
   }
 
   private handleGraphQLException(exception: unknown, host: ArgumentsHost) {
@@ -80,6 +75,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof ZodValidationException) {
       const validationErrors = this.formatZodErrors(exception);
       return this.responseService.error({
+        statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Please review the provided data',
         details: 'Check the validationErrors array for details',
@@ -105,6 +101,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // Map unique_violation (23505) to CONFLICT
       if (pgCode === '23505') {
         return this.responseService.error({
+          statusCode: HttpStatus.CONFLICT,
           code: ErrorCode.CONFLICT,
           message: 'Entry already exists',
           details: this.isProduction()
@@ -114,6 +111,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
 
       return this.responseService.error({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         code: ErrorCode.DATABASE_ERROR,
         message: 'Database error occurred',
         details: this.isProduction() ? 'Internal server error' : error.message,
@@ -124,6 +122,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 4. Custom Exceptions
     if (exception instanceof CustomException) {
       return this.responseService.error({
+        statusCode: exception.statusCode, // ✅ Use explicit status from CustomException
         code: exception.errorCode,
         message: exception.message,
         details: exception.details || exception.message || 'Unknown error',
@@ -134,6 +133,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       return this.responseService.error({
+        statusCode: status, // ✅ Use status from HttpException
         code: this.getErrorCode(exception, status),
         message: this.getErrorMessage(exception, status),
         details: exception.message,
@@ -146,6 +146,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       (exception as Error).stack,
     );
     return this.responseService.error({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       code: ErrorCode.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
       details: this.isProduction()
@@ -163,6 +164,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (res instanceof ZodValidationException) {
       validationErrors = this.formatZodErrors(res);
       return this.responseService.error({
+        statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Validation failed',
         details: 'Check validationErrors array for details',
@@ -190,6 +192,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     return this.responseService.error({
+      statusCode: HttpStatus.BAD_REQUEST,
       code: ErrorCode.VALIDATION_ERROR,
       message: exception.message,
       details: 'Check validationErrors array for details',

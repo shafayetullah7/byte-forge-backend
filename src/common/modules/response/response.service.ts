@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { SuccessResponse } from './dto/success.response.dto';
 import { ErrorResponse } from './dto/error.response.dto';
 import { ErrorCode } from './dto/error.schema';
@@ -23,6 +23,7 @@ export class ResponseService {
 
   error(payload: {
     message: string;
+    statusCode: HttpStatus; // ✅ Added: Required HTTP status code
     code?: ErrorCode;
     details?: string;
     warnings?: WarningDto[];
@@ -37,6 +38,7 @@ export class ResponseService {
         details: payload.details,
         validationErrors: payload.validationErrors,
       },
+      statusCode: payload.statusCode, // ✅ Added: Include in response
       timestamp: new Date().toISOString(),
     };
   }

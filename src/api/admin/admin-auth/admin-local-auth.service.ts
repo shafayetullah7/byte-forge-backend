@@ -23,11 +23,11 @@ export class AdminLocalAuthService {
       .execute();
 
     if (existingLocalAuth) {
-      throw new CustomException(
-        `User already exist with '${payload.email}'`,
-        HttpStatus.CONFLICT,
-        ErrorCode.DUPLICATE_ENTRY,
-      );
+      throw new CustomException({
+        message: `User already exist with '${payload.email}'`,
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: ErrorCode.DUPLICATE_ENTRY,
+      });
     }
 
     const [adminLocalAuth] = await db

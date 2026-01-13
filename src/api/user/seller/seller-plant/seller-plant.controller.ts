@@ -20,7 +20,7 @@ import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AccessUserAuth } from '@/common/types';
 import { ZodValidationPipe } from 'nestjs-zod';
 
-@Controller('plants')
+@Controller('user/seller/plants')
 @UseGuards(UserAuthGuard)
 export class SellerPlantController {
   constructor(private readonly service: SellerPlantService) {}

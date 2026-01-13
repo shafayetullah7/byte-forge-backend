@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
-import { APP_FILTER, APP_PIPE, RouterModule } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 // import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserApiModule } from './api/user/user-api.module';
 import { HashingModule } from './common/modules/hashing/hashing.module';
@@ -36,24 +36,14 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     }),
     UserApiModule,
     AdminApiModule,
-    RouterModule.register([
-      {
-        path: 'user',
-        module: UserApiModule,
-      },
-      {
-        path: 'admin',
-        module: AdminApiModule,
-      },
-    ]),
+    TreeCategoriesModule,
+    MediaModule,
     HashingModule,
     CookieModule,
     ResponseModule,
-    AdminApiModule,
     EmailModule,
     AppConfigModule,
     GraphqlModule,
-    MediaModule,
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,

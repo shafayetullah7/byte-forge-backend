@@ -28,11 +28,11 @@ export class AdminService {
       .where(eq(adminTable.userName, userName));
 
     if (existingAdmin) {
-      throw new CustomException(
-        `'${userName}' is already in use.`,
-        HttpStatus.CONFLICT,
-        ErrorCode.DUPLICATE_ENTRY,
-      );
+      throw new CustomException({
+        message: `'${userName}' is already in use.`,
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: ErrorCode.DUPLICATE_ENTRY,
+      });
     }
 
     const [newAdmin] = await db

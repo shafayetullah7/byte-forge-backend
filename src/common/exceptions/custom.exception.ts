@@ -2,16 +2,30 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { ErrorCode } from '../modules/response/dto/error.schema';
 
 export class CustomException extends HttpException {
-  constructor(
-    message: string,
-    public readonly statusCode: HttpStatus,
-    public readonly errorCode?: ErrorCode,
-    public readonly details?: string,
-    public readonly validationErrors?: Array<{
+  public readonly statusCode: HttpStatus;
+  public readonly errorCode?: ErrorCode;
+  public readonly details?: string;
+  public readonly validationErrors?: Array<{
+    field: string;
+    message: string;
+  }>;
+
+  constructor({
+    message,
+    statusCode,
+    errorCode,
+    details,
+    validationErrors,
+  }: {
+    message: string;
+    statusCode: HttpStatus;
+    errorCode?: ErrorCode;
+    details?: string;
+    validationErrors?: Array<{
       field: string;
       message: string;
-    }>,
-  ) {
+    }>;
+  }) {
     super(
       {
         message,
@@ -22,6 +36,11 @@ export class CustomException extends HttpException {
       },
       statusCode,
     );
+
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    this.details = details;
+    this.validationErrors = validationErrors;
   }
 
   // Factory methods with flexible status codes
@@ -38,13 +57,13 @@ export class CustomException extends HttpException {
     details?: string;
     validationErrors?: Array<{ field: string; message: string }>;
   }) {
-    return new CustomException(
+    return new CustomException({
       message,
       statusCode,
       errorCode,
       details,
       validationErrors,
-    );
+    });
   }
 
   // Common error factories with proper typing

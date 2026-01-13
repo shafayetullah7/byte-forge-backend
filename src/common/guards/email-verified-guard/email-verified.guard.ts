@@ -20,11 +20,11 @@ export class EmailVerifiedGuard implements CanActivate {
     }
 
     if (!auth.user.emailVerified) {
-      throw new CustomException(
-        'Email verification required',
-        HttpStatus.FORBIDDEN,
-        ErrorCode.EMAIL_NOT_VERIFIED,
-      );
+      throw new CustomException({
+        message: 'Email verification required',
+        statusCode: HttpStatus.FORBIDDEN,
+        errorCode: ErrorCode.EMAIL_NOT_VERIFIED,
+      });
     }
 
     return true;
