@@ -20,6 +20,7 @@ import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
 import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
+import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 
@@ -47,6 +48,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,
+    VerifiedUserAuthGuardModule,
     AppEnvModule,
   ],
   controllers: [],

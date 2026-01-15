@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { SetupShopDto } from './dto/setup.shop.dto';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
+import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';
@@ -16,7 +17,7 @@ export class ShopController {
   ) {}
 
   @Post()
-  @UseGuards(UserAuthGuard)
+  @UseGuards(VerifiedUserAuthGuard)
   async createShop(
     @Body() dto: SetupShopDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
@@ -29,7 +30,7 @@ export class ShopController {
   }
 
   @Get()
-  @UseGuards(UserAuthGuard)
+  @UseGuards(VerifiedUserAuthGuard)
   async getMyShops(
     @AuthenticUser() authenticUser: TAuthenticUser,
   ): Promise<SuccessResponse<TShop[]>> {

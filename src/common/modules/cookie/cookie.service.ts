@@ -20,4 +20,18 @@ export class CookieService {
       path: '/',
     });
   }
+
+  clearSessionCookie(res: Response) {
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+
+    res.clearCookie('sessionId', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      domain: isProduction
+        ? this.configService.get('COOKIE_DOMAIN')
+        : undefined,
+      path: '/',
+    });
+  }
 }

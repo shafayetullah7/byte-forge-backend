@@ -16,6 +16,7 @@ import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
+import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -64,7 +65,7 @@ export class UserAuthController {
     };
   }
 
-  @UseGuards(UserAuthGuard)
+  @UseGuards(VerifiedUserAuthGuard)
   @Get('/check')
   checkAuth(@Req() req: Request) {
     const auth = req.user as AuthAccess;
@@ -106,6 +107,21 @@ export class UserAuthController {
     return {
       success: true,
       message: 'Verification code sent to your email',
+    };
+  }
+
+  @UseGuards(UserAuthGuard)
+  @Post('logout')
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const sessionId = req.cookies?.sessionId;
+    if (sessionId) {
+      await this.userAuthService.logout(sessionId);
+    }
+    this.cookieService.clearSessionCookie(res);
+
+    return {
+      success: true,
+      message: 'User logged out successfully',
     };
   }
 }

@@ -5,6 +5,7 @@ import { PlantRepositoryModule } from '@/_repositories/business/plant.repository
 import { AdminSessionModule } from '@/api/admin/admin-session/admin-session.module';
 import { SessionRepositoryModule } from '@/_repositories/auth/session.repository/session.repository.module';
 import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
+import { VerifiedUserAuthGuardModule } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
     AdminSessionModule,
     SessionRepositoryModule,
     DrizzleModule,
+    VerifiedUserAuthGuardModule,
   ],
   controllers: [SellerPlantController],
   providers: [SellerPlantService],

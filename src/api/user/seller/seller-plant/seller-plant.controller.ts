@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
+import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { SellerPlantService } from './seller-plant.service';
 import {
   CreatePlantDto,
@@ -21,7 +22,7 @@ import { AccessUserAuth } from '@/common/types';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 @Controller({ path: 'user/seller/plants', version: '1' })
-@UseGuards(UserAuthGuard)
+@UseGuards(VerifiedUserAuthGuard)
 export class SellerPlantController {
   constructor(private readonly service: SellerPlantService) {}
 

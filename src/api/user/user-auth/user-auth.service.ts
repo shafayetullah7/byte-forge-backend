@@ -201,4 +201,14 @@ export class UserAuthService {
       otp,
     );
   }
+
+  async logout(sessionId: string): Promise<void> {
+    await this.sessionRepository.update(
+      {
+        revoked: true,
+        logoutAt: new Date(),
+      },
+      { id: sessionId },
+    );
+  }
 }
