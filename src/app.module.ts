@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
+import { envSchema } from './_config/env.schema';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 // import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserApiModule } from './api/user/user-api.module';
@@ -31,8 +32,9 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     DrizzleModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
+      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
       load: [configuration],
+      validate: (config) => envSchema.parse(config),
       expandVariables: true,
     }),
     UserApiModule,

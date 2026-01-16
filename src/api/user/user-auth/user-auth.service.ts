@@ -18,6 +18,8 @@ import { eq } from 'drizzle-orm';
 import { UserRepository } from '@/_repositories/user/user.repository/user.repository';
 import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
 
+import { HashingService } from '@/common/modules/hashing/hashing.service';
+
 @Injectable()
 export class UserAuthService {
   constructor(
@@ -31,7 +33,11 @@ export class UserAuthService {
     private readonly emailService: EmailService,
     private readonly userRepository: UserRepository,
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
+
+    private readonly hashingService: HashingService,
   ) {}
+
+
 
   async register(payload: CreateLocalUserDto) {
     const { email, password, firstName, lastName, userName } = payload;
@@ -136,21 +142,37 @@ export class UserAuthService {
   }
 
   async verifyEmail(userId: string, otp: string): Promise<void> {
-    // Verify OTP
-    await this.otpService.verifyOtp(
-      userId,
-      otp,
-      OtpPurpose.ACCOUNT_VERIFICATION,
-    );
+    await this.drizzle.client.transaction(async (tx) => {
+      // Check if already verified to handle race conditions/redundant requests
+      const user = await this.userRepository.findById(userId, {
+        tx,
+        lock: true,
+      });
 
-    // Update user's emailVerifiedAt
-    await this.drizzle.client
-      .update(userTable)
-      .set({ emailVerifiedAt: new Date() })
-      .where(eq(userTable.id, userId));
+      if (user?.emailVerifiedAt) {
+        throw new CustomException({
+          message: 'Email already verified',
+          statusCode: HttpStatus.CONFLICT,
+          errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
+        });
+      }
+
+      // Verify OTP
+      await this.otpService.verifyOtp(
+        userId,
+        otp,
+        OtpPurpose.ACCOUNT_VERIFICATION,
+      );
+
+      // Update user's emailVerifiedAt
+      await this.drizzle.client
+        .update(userTable)
+        .set({ emailVerifiedAt: new Date() })
+        .where(eq(userTable.id, userId));
+    });
   }
 
-  async resendVerification(userId: string): Promise<void> {
+  async resendVerification(userId: string): Promise<{ expiresAt: Date }> {
     // Get user's email verification status
     const [user] = await this.drizzle.client
       .select({
@@ -160,6 +182,8 @@ export class UserAuthService {
       .from(userTable)
       .where(eq(userTable.id, userId))
       .limit(1);
+
+    console.log('[DEBUG] resendVerification for user:', userId, 'Found:', !!user);
 
     if (!user) {
       throw new CustomException({
@@ -192,14 +216,19 @@ export class UserAuthService {
     }
 
     // Generate and send OTP (handles both initial send and resend)
-    const otp = await this.otpService.createOtp(
+    const { otp, expiresAt } = await this.otpService.createOtp(
       userId,
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
+    console.log('[DEBUG] Sending verification email to:', localUser.userLocalAuth.email);
+    console.log('[DEBUG] OTP generated:', otp); // REMOVE IN PRODUCTION
     await this.emailService.sendVerificationEmail(
       localUser.userLocalAuth.email,
       otp,
     );
+    console.log('[DEBUG] Verification email sent successfully (service layer)');
+
+    return { expiresAt };
   }
 
   async logout(sessionId: string): Promise<void> {

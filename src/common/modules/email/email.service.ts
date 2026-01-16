@@ -26,6 +26,7 @@ export class EmailService {
         this.provider = this.consoleProvider;
         break;
     }
+    console.log('[DEBUG] EmailService initialized with provider:', providerType || 'default(console)');
   }
 
   async sendVerificationEmail(to: string, otp: string): Promise<void> {

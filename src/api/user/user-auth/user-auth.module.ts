@@ -14,6 +14,8 @@ import { EmailModule } from '@/common/modules/email/email.module';
 import { UserRepositoryModule } from '@/_repositories/user/user.repository/user.repository.module';
 import { UserLocalAuthRepositoryModule } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository.module';
 
+
+
 @Module({
   imports: [
     HashingModule,
@@ -28,6 +30,10 @@ import { UserLocalAuthRepositoryModule } from '@/_repositories/user/user.local.a
     UserLocalAuthRepositoryModule,
   ],
   controllers: [UserAuthController],
-  providers: [UserAuthService, UserLocalAuthService, UserLocalStrategy],
+  providers: [
+    UserAuthService, 
+    UserLocalAuthService, 
+    UserLocalStrategy,
+  ],
 })
 export class UserAuthModule {}

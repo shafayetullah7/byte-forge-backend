@@ -20,6 +20,7 @@ import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+
 // import { LocalLoginDto } from './dto/local-login.dto';
 
 @Controller({ path: 'user/auth', version: '1' })
@@ -103,11 +104,12 @@ export class UserAuthController {
       throw new UnauthorizedException('Unauthorized access');
     }
 
-    await this.userAuthService.resendVerification(auth.user.id);
+    const { expiresAt } = await this.userAuthService.resendVerification(auth.user.id);
 
     return {
       success: true,
       message: 'Verification code sent to your email',
+      data: { expiresAt },
     };
   }
 
@@ -125,4 +127,8 @@ export class UserAuthController {
       message: 'User logged out successfully',
     };
   }
+
+  // === Password Reset Flow ===
+
+
 }

@@ -118,4 +118,12 @@ export class UserLocalAuthService {
 
     return localAuth;
   }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.drizzle.client
+      .update(userLocalAuthTable)
+      .set({ password: hashedPassword })
+      .where(eq(userLocalAuthTable.userId, userId))
+      .execute();
+  }
 }

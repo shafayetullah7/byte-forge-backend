@@ -70,8 +70,12 @@ export class UserSessionRepository {
       .where(eq(userSessionTable.sessionId, sessionId))
       .limit(1)
       .execute();
+    
+    if (!result) {
+      return null;
+    }
 
-    const userSession = result?.userSession;
+    const userSession = result.userSession;
     const session = result?.session;
     const user = result.user;
     return { userSession, session, user };

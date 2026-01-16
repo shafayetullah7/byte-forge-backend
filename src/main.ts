@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { AppLoggerService } from './common/modules/logger/app.logger.service';
 import { VersioningType } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { AppEnvService } from './_config/app-env/app-env.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -47,13 +48,16 @@ async function bootstrap() {
   //   }),
   // );
 
-  await app.listen(process.env.APP_EXTERNAL_PORT ?? 3000);
+  const appEnv = app.get(AppEnvService);
+  await app.listen(appEnv.APP_EXTERNAL_PORT);
 }
 bootstrap()
   .then(() => {
-    console.log(
-      `Application is running on: http://localhost:${process.env.APP_EXTERNAL_PORT}`,
-    );
+    // We can't access appEnv here easily without returning app from bootstrap, 
+    // but we can trust the port was set correctly or just log generic success.
+    // Or better, let's just log "Application started".
+    // Alternatively, we can rely on Nest's internal logger which logs the port.
+    console.log(`Application started`);
   })
   .catch((err) => {
     console.error('Application failed to start', err);

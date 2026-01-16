@@ -27,7 +27,7 @@ export class OtpService {
   /**
    * Create and store a hashed OTP for a user
    */
-  async createOtp(userId: string, purpose: OtpPurpose): Promise<string> {
+  async createOtp(userId: string, purpose: OtpPurpose): Promise<{ otp: string; expiresAt: Date }> {
     const otp = this.generateOtp();
     const hashedOtp = await this.hashingService.hash(otp);
 
@@ -50,7 +50,7 @@ export class OtpService {
       });
     });
 
-    return otp; // Return plain OTP to send via email
+    return { otp, expiresAt }; // Return plain OTP and expiry
   }
 
   /**
@@ -61,6 +61,14 @@ export class OtpService {
     otp: string,
     purpose: OtpPurpose,
   ): Promise<boolean> {
+    if (!/^\d+$/.test(otp)) {
+       throw new CustomException({
+          message: 'OTP must contain only digits',
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorCode: ErrorCode.VALIDATION_ERROR,
+       });
+    }
+
     // Use transaction to prevent race conditions
     return await this.drizzle.client.transaction(async (tx) => {
       // Find and lock the OTP record

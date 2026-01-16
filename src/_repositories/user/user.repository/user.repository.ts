@@ -3,6 +3,7 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { userTable, TUser, TNewUser } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
+import { TLockTransaction } from '../../_types/lock.transaction';
 
 export interface UserQuery {
   id?: string;
@@ -29,16 +30,30 @@ export class UserRepository {
     return where;
   }
 
-  async findOne(options?: UserQuery, tx?: DrizzleTx): Promise<TUser | null> {
-    const executor = this.db.getExecutor(tx);
+  async findOne(
+    options?: UserQuery,
+    transaction?: TLockTransaction,
+  ): Promise<TUser | null> {
+    const executor = this.db.getExecutor(transaction?.tx);
     const where = this.buildWhere(options);
-    const [row] = await executor
+
+    const baseQuery = executor
       .select()
       .from(userTable)
       .where(and(...where))
-      .limit(1)
-      .execute();
+      .limit(1);
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [row] = await lockQuery.execute();
+
     return row ?? null;
+  }
+
+  async findById(
+    id: string,
+    transaction?: TLockTransaction,
+  ): Promise<TUser | null> {
+    return this.findOne({ id }, transaction);
   }
 
   async create(data: TNewUser, tx?: DrizzleTx): Promise<TUser> {
