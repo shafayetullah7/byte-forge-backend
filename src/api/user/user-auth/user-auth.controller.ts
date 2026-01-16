@@ -61,11 +61,12 @@ export class UserAuthController {
       message: 'User logged in',
       data: {
         session: result,
+        user: userAuth.user,
       },
     };
   }
 
-  @UseGuards(VerifiedUserAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Get('/check')
   checkAuth(@Req() req: Request) {
     const auth = req.user as AuthAccess;

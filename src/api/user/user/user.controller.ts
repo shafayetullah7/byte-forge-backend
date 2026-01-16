@@ -10,7 +10,7 @@ import { TAuthenticUser } from '@/common/types';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(VerifiedUserAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Get()
   async getUser(@AuthenticUser() userAuth: TAuthenticUser) {
     const { user } = userAuth;
