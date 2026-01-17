@@ -1,0 +1,15 @@
+{
+  "validation": {
+    "error": "Validation failed",
+    "details": "Check validationErrors array for details"
+  },
+  "error": {
+    "conflict": "Entry already exists",
+    "conflictDetails": "A record with this information already exists",
+    "database": "Database error occurred",
+    "internal": "Internal server error",
+    "unauthorized": "Unauthorized access",
+    "forbidden": "Access forbidden",
+    "notFound": "Resource not found"
+  }
+}
