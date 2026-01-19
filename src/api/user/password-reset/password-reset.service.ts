@@ -8,6 +8,7 @@ import { OtpService } from '@/common/modules/otp/otp.service';
 import { EmailService } from '@/common/modules/email/email.service';
 import { HashingService } from '@/common/modules/hashing/hashing.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
+import { I18nService } from 'nestjs-i18n';
 
 export interface ResetTokenPayload {
   email: string;
@@ -23,6 +24,7 @@ export class PasswordResetService {
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
     private readonly hashingService: HashingService,
+    private readonly i18n: I18nService,
   ) {}
 
   // === Token Logic ===
@@ -38,7 +40,7 @@ export class PasswordResetService {
     return { token, expiresAt };
   }
 
-  async verifyRequestToken(token: string): Promise<string> {
+  async verifyRequestToken(token: string, lang: string = 'en'): Promise<string> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_REQUEST');
     try {
       const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(token, { secret });
@@ -50,7 +52,7 @@ export class PasswordResetService {
       return payload.email;
     } catch (error) {
       throw new CustomException({
-        message: 'Invalid or expired request token',
+        message: this.i18n.t('message.error.invalidRequestToken', { lang }),
         statusCode: HttpStatus.UNAUTHORIZED,
         errorCode: ErrorCode.UNAUTHORIZED,
       });
@@ -68,7 +70,7 @@ export class PasswordResetService {
     return { token, expiresAt };
   }
 
-  async verifyAccessToken(token: string): Promise<string> {
+  async verifyAccessToken(token: string, lang: string = 'en'): Promise<string> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_ACCESS');
     try {
       const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(token, { secret });
@@ -80,7 +82,7 @@ export class PasswordResetService {
       return payload.email;
     } catch (error) {
       throw new CustomException({
-        message: 'Invalid or expired access token',
+        message: this.i18n.t('message.error.invalidAccessToken', { lang }),
         statusCode: HttpStatus.UNAUTHORIZED,
         errorCode: ErrorCode.UNAUTHORIZED,
       });
@@ -89,7 +91,7 @@ export class PasswordResetService {
 
   // === Business Logic ===
 
-  async forgotPassword(email: string): Promise<{ token: string; expiresAt: Date }> {
+  async forgotPassword(email: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
     // 1. Check if user exists
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
     
@@ -101,7 +103,7 @@ export class PasswordResetService {
       );
 
       console.log('[DEBUG] Password Reset OTP:', otp);
-      await this.emailService.sendVerificationEmail(email, otp); 
+      await this.emailService.sendPasswordResetEmail(email, otp, lang); 
     } else {
       // Security: Simulate work to mitigate timing attacks (optional/advanced)
       // For now, we simply do not send the email but proceed to generate a token
@@ -112,16 +114,16 @@ export class PasswordResetService {
     return this.generateRequestToken(email);
   }
 
-  async verifyResetOtp(token: string, otp: string): Promise<{ token: string; expiresAt: Date }> {
+  async verifyResetOtp(token: string, otp: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
     // 1. Verify Request Token
-    const email = await this.verifyRequestToken(token);
+    const email = await this.verifyRequestToken(token, lang);
 
     // 2. Get User ID
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
     if (!userLocalAuth) {
         // Security: Mask user existence. Throw same error as invalid OTP.
         throw new CustomException({
-            message: 'Invalid or expired OTP', 
+            message: this.i18n.t('message.error.invalidOtp', { lang }), 
             statusCode: HttpStatus.BAD_REQUEST, // Match valid-user-wrong-otp status
             errorCode: ErrorCode.INVALID_OTP,
         });
@@ -138,9 +140,9 @@ export class PasswordResetService {
     return this.generateAccessToken(email);
   }
 
-  async resendResetOtp(token: string): Promise<{ token: string; expiresAt: Date }> {
+  async resendResetOtp(token: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
     // 1. Verify Request Token
-    const email = await this.verifyRequestToken(token);
+    const email = await this.verifyRequestToken(token, lang);
 
      // 2. Get User ID
      const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
@@ -154,16 +156,16 @@ export class PasswordResetService {
     
          // 4. Send Email
          console.log('[DEBUG] Resent Password Reset OTP:', otp);
-         await this.emailService.sendVerificationEmail(email, otp);
+         await this.emailService.sendPasswordResetEmail(email, otp, lang);
      }
 
      // 5. Generate NEW Request Token (Always return to keep flow alive)
      return this.generateRequestToken(email);
   }
 
-  async resetPassword(token: string, password: string): Promise<void> {
+  async resetPassword(token: string, password: string, lang: string = 'en'): Promise<void> {
     // 1. Verify Access Token
-    const email = await this.verifyAccessToken(token);
+    const email = await this.verifyAccessToken(token, lang);
 
     // 2. Hash New Password
     const hashedPassword = await this.hashingService.hash(password);
@@ -172,7 +174,7 @@ export class PasswordResetService {
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
     if (!userLocalAuth) {
         throw new CustomException({
-            message: 'User not found',
+            message: this.i18n.t('message.error.userNotFound', { lang }),
             statusCode: HttpStatus.UNAUTHORIZED,
             errorCode: ErrorCode.UNAUTHORIZED,
         });

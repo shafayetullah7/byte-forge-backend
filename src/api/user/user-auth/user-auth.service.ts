@@ -19,6 +19,7 @@ import { UserRepository } from '@/_repositories/user/user.repository/user.reposi
 import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
 
 import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class UserAuthService {
@@ -35,11 +36,12 @@ export class UserAuthService {
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
 
     private readonly hashingService: HashingService,
+    private readonly i18n: I18nService,
   ) {}
 
 
 
-  async register(payload: CreateLocalUserDto) {
+  async register(payload: CreateLocalUserDto, lang: string = 'en') {
     const { email, password, firstName, lastName, userName } = payload;
 
     // Check if username already exists using UserRepository
@@ -48,7 +50,7 @@ export class UserAuthService {
     });
     if (existingUserByUsername) {
       throw new CustomException({
-        message: 'Username already exists',
+        message: this.i18n.t('message.error.usernameExists', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.DUPLICATE_ENTRY,
       });
@@ -60,7 +62,7 @@ export class UserAuthService {
     });
     if (existingUserByEmail) {
       throw new CustomException({
-        message: 'Email already exists',
+        message: this.i18n.t('message.error.emailExists', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.DUPLICATE_ENTRY,
       });
@@ -151,7 +153,7 @@ export class UserAuthService {
 
       if (user?.emailVerifiedAt) {
         throw new CustomException({
-          message: 'Email already verified',
+          message: this.i18n.t('message.error.emailAlreadyVerified'),
           statusCode: HttpStatus.CONFLICT,
           errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
         });
@@ -172,7 +174,7 @@ export class UserAuthService {
     });
   }
 
-  async resendVerification(userId: string): Promise<{ expiresAt: Date }> {
+  async resendVerification(userId: string, lang: string = 'en'): Promise<{ expiresAt: Date }> {
     // Get user's email verification status
     const [user] = await this.drizzle.client
       .select({
@@ -187,7 +189,7 @@ export class UserAuthService {
 
     if (!user) {
       throw new CustomException({
-        message: 'User not found',
+        message: this.i18n.t('message.error.userNotFound', { lang }),
         statusCode: HttpStatus.NOT_FOUND,
         errorCode: ErrorCode.NOT_FOUND,
       });
@@ -196,7 +198,7 @@ export class UserAuthService {
     // Check if already verified
     if (user.emailVerifiedAt) {
       throw new CustomException({
-        message: 'Email already verified',
+        message: this.i18n.t('message.error.emailAlreadyVerified', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
       });
@@ -209,7 +211,7 @@ export class UserAuthService {
 
     if (!localUser) {
       throw new CustomException({
-        message: 'User email not found',
+        message: this.i18n.t('message.error.userEmailNotFound', { lang }),
         statusCode: HttpStatus.NOT_FOUND,
         errorCode: ErrorCode.NOT_FOUND,
       });
@@ -225,6 +227,7 @@ export class UserAuthService {
     await this.emailService.sendVerificationEmail(
       localUser.userLocalAuth.email,
       otp,
+      lang,
     );
     console.log('[DEBUG] Verification email sent successfully (service layer)');
 

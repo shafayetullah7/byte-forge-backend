@@ -20,6 +20,7 @@ import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
@@ -28,12 +29,15 @@ export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,
     private readonly cookieService: CookieService,
+    private readonly i18n: I18nService,
   ) {}
 
   @Post('register')
-  async register(@Body() payload: CreateLocalUserDto) {
-    const result = await this.userAuthService.register(payload);
-    return { success: true, message: 'New user created', data: { ...result } };
+  async register(@Body() payload: CreateLocalUserDto, @Req() req: Request) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
+    const result = await this.userAuthService.register(payload, lang);
+    return { success: true, message: this.i18n.t('message.success.userCreated', { lang }), data: { ...result } };
   }
 
   @UseGuards(UserLocalAuthGuard)
@@ -44,6 +48,8 @@ export class UserAuthController {
     @Res({ passthrough: true }) res: Response,
     // @Body() payload: LocalLoginDto,
   ) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
@@ -59,7 +65,7 @@ export class UserAuthController {
 
     return {
       success: true,
-      message: 'User logged in',
+      message: this.i18n.t('message.success.userLoggedIn', { lang }),
       data: {
         session: result,
         user: userAuth.user,
@@ -70,45 +76,51 @@ export class UserAuthController {
   @UseGuards(UserAuthGuard)
   @Get('/check')
   checkAuth(@Req() req: Request) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
     }
 
     const { user } = auth;
 
-    return { success: true, message: 'User authenticated', data: user };
+    return { success: true, message: this.i18n.t('message.success.userAuthenticated', { lang }), data: user };
   }
 
   @UseGuards(UserAuthGuard)
   @Post('verify-email')
   async verifyEmail(@Req() req: Request, @Body() payload: VerifyEmailDto) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
     }
 
     await this.userAuthService.verifyEmail(auth.user.id, payload.otp);
 
     return {
       success: true,
-      message: 'Email verified successfully',
+      message: this.i18n.t('message.success.emailVerified', { lang }),
     };
   }
 
   @UseGuards(UserAuthGuard)
   @Post('send-verification-email')
   async sendVerificationEmail(@Req() req: Request) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
+      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
     }
 
-    const { expiresAt } = await this.userAuthService.resendVerification(auth.user.id);
+    const { expiresAt } = await this.userAuthService.resendVerification(auth.user.id, lang);
 
     return {
       success: true,
-      message: 'Verification code sent to your email',
+      message: this.i18n.t('message.success.verificationSent', { lang }),
       data: { expiresAt },
     };
   }
@@ -116,6 +128,8 @@ export class UserAuthController {
   @UseGuards(UserAuthGuard)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
     const sessionId = req.cookies?.sessionId;
     if (sessionId) {
       await this.userAuthService.logout(sessionId);
@@ -124,7 +138,7 @@ export class UserAuthController {
 
     return {
       success: true,
-      message: 'User logged out successfully',
+      message: this.i18n.t('message.success.loggedOut', { lang }),
     };
   }
 

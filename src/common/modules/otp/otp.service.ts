@@ -7,6 +7,7 @@ import { and, eq, gt } from 'drizzle-orm';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '../response/dto/error.schema';
 import { HttpStatus } from '@nestjs/common';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class OtpService {
@@ -15,6 +16,7 @@ export class OtpService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly hashingService: HashingService,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -61,9 +63,12 @@ export class OtpService {
     otp: string,
     purpose: OtpPurpose,
   ): Promise<boolean> {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
+
     if (!/^\d+$/.test(otp)) {
        throw new CustomException({
-          message: 'OTP must contain only digits',
+          message: this.i18n.t('message.error.invalidOtp', { lang }),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
        });
@@ -87,7 +92,7 @@ export class OtpService {
 
       if (!otpRecord) {
         throw new CustomException({
-          message: 'Invalid or expired OTP',
+          message: this.i18n.t('message.error.invalidOtp', { lang }),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.INVALID_OTP,
         });
@@ -101,7 +106,7 @@ export class OtpService {
 
       if (!isValid) {
         throw new CustomException({
-          message: 'Invalid OTP',
+          message: this.i18n.t('message.error.invalidOtp', { lang }),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.INVALID_OTP,
         });
