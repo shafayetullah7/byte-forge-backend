@@ -24,13 +24,16 @@ import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module'
 import { LoggerModule } from './common/modules/logger/logger.module';
 import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
 import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
+import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({ global: true }),
     DrizzleModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
@@ -64,6 +67,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     LoggerModule,
     UserAuthGuardModule,
     VerifiedUserAuthGuardModule,
+    AdminAuthGuardModule,
     AppEnvModule,
   ],
   controllers: [],

@@ -56,13 +56,13 @@ export class AppConfigService {
 
   // === Email ===
   get gmailUser(): AppEnv['GMAIL_USER'] {
-    return this.configService.getOrThrow('GMAIL_USER');
+    return this.configService.get('GMAIL_USER');
   }
   get gmailAppPassword(): AppEnv['GMAIL_APP_PASSWORD'] {
-    return this.configService.getOrThrow('GMAIL_APP_PASSWORD');
+    return this.configService.get('GMAIL_APP_PASSWORD');
   }
   get defaultFromEmail(): AppEnv['DEFAULT_FROM_EMAIL'] {
-    return this.configService.getOrThrow('DEFAULT_FROM_EMAIL');
+    return this.configService.get('DEFAULT_FROM_EMAIL');
   }
 
   get cloudinaryCloudName(): AppEnv['CLOUDINARY_CLOUD_NAME'] {
@@ -73,5 +73,61 @@ export class AppConfigService {
   }
   get cloudinaryApiSecret(): AppEnv['CLOUDINARY_API_SECRET'] {
     return this.configService.getOrThrow('CLOUDINARY_API_SECRET');
+  }
+
+  // === JWT Secrets ===
+  get jwtSecretResetRequest(): AppEnv['JWT_SECRET_RESET_REQUEST'] {
+    return this.configService.getOrThrow('JWT_SECRET_RESET_REQUEST');
+  }
+  get jwtSecretResetAccess(): AppEnv['JWT_SECRET_RESET_ACCESS'] {
+    return this.configService.getOrThrow('JWT_SECRET_RESET_ACCESS');
+  }
+
+  // === Session & Cookie ===
+  get sessionMaxAge(): AppEnv['SESSION_MAX_AGE'] {
+    return this.configService.get('SESSION_MAX_AGE') || 604800000;
+  }
+  get cookieDomain(): AppEnv['COOKIE_DOMAIN'] {
+    return this.configService.get('COOKIE_DOMAIN');
+  }
+
+  // === Mail ===
+  get mailProvider(): AppEnv['MAIL_PROVIDER'] {
+    return this.configService.getOrThrow('MAIL_PROVIDER');
+  }
+  get mailHost(): AppEnv['MAIL_HOST'] {
+    return this.configService.getOrThrow('MAIL_HOST');
+  }
+  get mailPort(): AppEnv['MAIL_PORT'] {
+    return this.configService.getOrThrow('MAIL_PORT');
+  }
+  get mailSecure(): AppEnv['MAIL_SECURE'] {
+    return this.configService.getOrThrow('MAIL_SECURE');
+  }
+  get mailUser(): AppEnv['MAIL_USER'] {
+    return this.configService.get('MAIL_USER');
+  }
+  get mailPassword(): AppEnv['MAIL_PASSWORD'] {
+    return this.configService.get('MAIL_PASSWORD');
+  }
+  get mailFromName(): AppEnv['MAIL_FROM_NAME'] {
+    return this.configService.getOrThrow('MAIL_FROM_NAME');
+  }
+  get mailFromEmail(): AppEnv['MAIL_FROM_EMAIL'] {
+    return this.configService.getOrThrow('MAIL_FROM_EMAIL');
+  }
+
+  // === Admin JWT ===
+  get jwtAdminAccessSecret(): AppEnv['JWT_ADMIN_ACCESS_SECRET'] {
+    return this.configService.getOrThrow('JWT_ADMIN_ACCESS_SECRET');
+  }
+  get jwtAdminAccessExp(): AppEnv['JWT_ADMIN_ACCESS_EXP'] {
+    return this.configService.getOrThrow('JWT_ADMIN_ACCESS_EXP');
+  }
+  get jwtAdminRefreshSecret(): AppEnv['JWT_ADMIN_REFRESH_SECRET'] {
+    return this.configService.getOrThrow('JWT_ADMIN_REFRESH_SECRET');
+  }
+  get jwtAdminRefreshExp(): AppEnv['JWT_ADMIN_REFRESH_EXP'] {
+    return this.configService.getOrThrow('JWT_ADMIN_REFRESH_EXP');
   }
 }

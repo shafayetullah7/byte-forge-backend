@@ -78,4 +78,11 @@ export class AdminSessionService {
 
     return (adminSession as { admin: TAdmin; session: TSession }) || null;
   }
+
+  async revokeSession(sessionId: string) {
+    return await this.sessionRepository.update(
+      { revoked: true, logoutAt: new Date() },
+      { id: sessionId },
+    );
+  }
 }

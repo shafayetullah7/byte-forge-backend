@@ -11,7 +11,6 @@ import { AdminAuthGuardModule } from '@/common/guards/admin-auth-guard/admin-aut
     AdminSessionModule,
     SessionRepositoryModule,
     TreeCategoryRepositoryModule,
-    AdminAuthGuardModule,
   ],
   controllers: [AdminTreeCategoryController],
   providers: [AdminTreeCategoryService],
