@@ -1,0 +1,75 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CreateTagDto } from './dto/create-tag.dto';
+import { UpdateTagDto } from './dto/update-tag.dto';
+import { eq } from 'drizzle-orm';
+import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
+import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
+
+// Note: simple slugifier. 
+// In production, consider a robust library or moving to a utility.
+const generateSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+@Injectable()
+export class AdminTagsService {
+  constructor(
+    private readonly tagRepository: TagRepository,
+    private readonly tagGroupRepository: TagGroupRepository,
+  ) {}
+
+  async create(createTagDto: CreateTagDto) {
+    // 1. Verify the group exists
+    const group = await this.tagGroupRepository.findOne(createTagDto.groupId);
+    if (!group) throw new BadRequestException(`Tag Group ${createTagDto.groupId} does not exist.`);
+
+    const slug = generateSlug(createTagDto.name);
+
+    return this.tagRepository.create({
+      name: createTagDto.name,
+      slug: slug,
+      groupId: createTagDto.groupId,
+      description: createTagDto.description,
+      isActive: createTagDto.isActive ?? true,
+    });
+  }
+
+  async findAll(query: any) {
+    return this.tagRepository.findMany(query);
+  }
+
+  async findOne(id: string) {
+    const tag = await this.tagRepository.findOne(id);
+    if (!tag) throw new NotFoundException(`Tag ${id} not found`);
+    return tag;
+  }
+
+  async update(id: string, updateTagDto: UpdateTagDto) {
+    const tag = await this.findOne(id);
+    
+    // Create update payload
+    const payload: any = { ...updateTagDto };
+    
+    // Handle groupId change validation
+    if (updateTagDto.groupId && updateTagDto.groupId !== tag.groupId) {
+        const group = await this.tagGroupRepository.findOne(updateTagDto.groupId);
+        if (!group) throw new BadRequestException(`Tag Group ${updateTagDto.groupId} does not exist.`);
+    }
+
+    // Handle slug recalculation if name changes
+    if (updateTagDto.name && updateTagDto.name !== tag.name) {
+        payload.slug = generateSlug(updateTagDto.name);
+    }
+
+    return this.tagRepository.update(tag.id, payload);
+  }
+
+  async remove(id: string) {
+    const tag = await this.findOne(id);
+    
+    // Check usage before deletion
+    if (tag.usageCount > 0) {
+      throw new BadRequestException("Cannot delete tag. It is currently being used by products.");
+    }
+    
+    await this.tagRepository.softDelete(tag.id);
+  }
+}

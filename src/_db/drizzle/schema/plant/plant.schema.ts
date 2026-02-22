@@ -7,7 +7,7 @@ import {
   boolean,
 } from 'drizzle-orm/pg-core';
 import { shopTable } from '../shop';
-import { treeCategoryTable } from '../tree-category/tree-category.schema';
+import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media';
 
 export const plantTable = pgTable('plants', {
@@ -15,7 +15,7 @@ export const plantTable = pgTable('plants', {
   shopId: uuid('shop_id')
     .references(() => shopTable.id, { onDelete: 'cascade' })
     .notNull(),
-  categoryId: uuid('category_id').references(() => treeCategoryTable.id, {
+  categoryId: uuid('category_id').references(() => categoriesTable.id, {
     onDelete: 'set null',
   }),
 
