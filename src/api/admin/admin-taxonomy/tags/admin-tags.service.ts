@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { TagQueryDto } from './dto/tag-query.dto';
 import { eq } from 'drizzle-orm';
 import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
@@ -32,8 +33,20 @@ export class AdminTagsService {
     });
   }
 
-  async findAll(query: any) {
-    return this.tagRepository.findMany(query);
+  async findAll(query: TagQueryDto) {
+    const [data, total] = await Promise.all([
+      this.tagRepository.findMany(query),
+      this.tagRepository.count(query)
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: query.page ? Number(query.page) : 1,
+        limit: query.limit ? Number(query.limit) : 10,
+      }
+    };
   }
 
   async findOne(id: string) {

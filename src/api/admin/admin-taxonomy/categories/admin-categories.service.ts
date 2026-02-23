@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoryQueryDto } from './dto/category-query.dto';
 import { CategoryRepository } from '@/_repositories/library/taxonomy/category.repository';
 import { CategoryHierarchyRepository } from '@/_repositories/library/taxonomy/category-hierarchy.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
@@ -41,12 +42,15 @@ export class AdminCategoriesService {
     const slug = generateSlug(catData.name);
 
     return await this.db.transaction(async (tx) => {
-      // 1. Create the category
-      const newCat = await this.categoryRepository.create(tx, {
+      const categoryPayload = {
         ...catData,
         slug,
         isActive: catData.isActive ?? false,
-      });
+        commissionRate: catData.commissionRate !== undefined ? catData.commissionRate.toString() : null,
+      };
+
+      // 1. Create the category
+      const newCat = await this.categoryRepository.create(tx, categoryPayload);
 
       // 2. Insert into hierarchy closure model
       await this.hierarchyRepository.insertNode(tx, parentId || null, newCat.id);
@@ -55,8 +59,20 @@ export class AdminCategoriesService {
     });
   }
 
-  async findAll(query: any) {
-    return this.categoryRepository.findMany(query);
+  async findAll(query: CategoryQueryDto) {
+    const [data, total] = await Promise.all([
+      this.categoryRepository.findMany(query),
+      this.categoryRepository.count(query)
+    ]);
+    
+    return {
+      data,
+      meta: {
+        total,
+        page: query.page ? Number(query.page) : 1,
+        limit: query.limit ? Number(query.limit) : 10,
+      }
+    };
   }
 
   async getTree() {
@@ -112,6 +128,10 @@ export class AdminCategoriesService {
 
     if (payload.name && payload.name !== category.name) {
       payload.slug = generateSlug(payload.name);
+    }
+    
+    if (payload.commissionRate !== undefined) {
+      payload.commissionRate = payload.commissionRate.toString();
     }
 
     return await this.db.transaction(async (tx) => {

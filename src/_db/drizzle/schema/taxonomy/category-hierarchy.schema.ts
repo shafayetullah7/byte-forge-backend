@@ -1,4 +1,5 @@
 import { pgTable, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { categoriesTable } from './category.schema';
 
 export const categoryHierarchyTable = pgTable(
@@ -19,3 +20,19 @@ export const categoryHierarchyTable = pgTable(
 
 export type TCategoryHierarchy = typeof categoryHierarchyTable.$inferSelect;
 export type TNewCategoryHierarchy = typeof categoryHierarchyTable.$inferInsert;
+
+export const categoryHierarchyRelations = relations(
+  categoryHierarchyTable,
+  ({ one }) => ({
+    ancestor: one(categoriesTable, {
+      fields: [categoryHierarchyTable.ancestorId],
+      references: [categoriesTable.id],
+      relationName: 'ancestorToDescendant',
+    }),
+    descendant: one(categoriesTable, {
+      fields: [categoryHierarchyTable.descendantId],
+      references: [categoriesTable.id],
+      relationName: 'descendantToAncestor',
+    }),
+  }),
+);

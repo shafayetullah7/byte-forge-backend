@@ -1,4 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { tagsTable } from './tag.schema';
 
 export const tagGroupsTable = pgTable('tag_groups', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -17,3 +19,7 @@ export const tagGroupsTable = pgTable('tag_groups', {
 
 export type TTagGroup = typeof tagGroupsTable.$inferSelect;
 export type TNewTagGroup = typeof tagGroupsTable.$inferInsert;
+
+export const tagGroupsRelations = relations(tagGroupsTable, ({ many }) => ({
+  tags: many(tagsTable),
+}));

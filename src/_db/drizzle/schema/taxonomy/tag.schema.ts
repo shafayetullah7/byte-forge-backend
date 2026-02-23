@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { tagGroupsTable } from './tag-group.schema';
 
 export const tagsTable = pgTable('tags', {
@@ -23,3 +24,10 @@ export const tagsTable = pgTable('tags', {
 
 export type TTag = typeof tagsTable.$inferSelect;
 export type TNewTag = typeof tagsTable.$inferInsert;
+
+export const tagsRelations = relations(tagsTable, ({ one }) => ({
+  group: one(tagGroupsTable, {
+    fields: [tagsTable.groupId],
+    references: [tagGroupsTable.id],
+  }),
+}));

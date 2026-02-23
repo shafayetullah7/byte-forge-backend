@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { eq, ilike, isNotNull, isNull, and, SQL } from 'drizzle-orm';
+import { eq, ilike, isNotNull, isNull, and, SQL, count, asc, desc } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { categoriesTable, TNewCategory, TCategory } from '@/_db/drizzle/schema/taxonomy';
+
+import { CategoryQueryDto } from '@/api/admin/admin-taxonomy/categories/dto/category-query.dto';
 
 @Injectable()
 export class CategoryRepository {
   constructor(private readonly db: DrizzleService) {}
 
-  private buildWhere(options: any) {
+  private buildWhere(options: CategoryQueryDto) {
     const where:SQL[] = [];
 
     where.push(isNull(categoriesTable.deletedAt));
@@ -23,25 +25,41 @@ export class CategoryRepository {
     return and(...where);
   }
 
-  async findMany(query: any) {
+  async findMany(query: CategoryQueryDto): Promise<TCategory[]> {
     const where = this.buildWhere(query);
     const limit = query.limit ? Number(query.limit) : 20;
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
 
-    return this.db.client
+    const sortByField = query.sortBy === 'name' ? categoriesTable.name : query.sortBy === 'updatedAt' ? categoriesTable.updatedAt : categoriesTable.createdAt;
+    const sortFn = query.sortOrder === 'asc' ? asc : desc;
+
+    return await this.db.client
       .select()
       .from(categoriesTable)
       .where(where)
+      .orderBy(sortFn(sortByField))
       .limit(limit)
       .offset(offset);
   }
 
+  async count(query: CategoryQueryDto): Promise<number> {
+    const where = this.buildWhere(query);
+    const [{ total }] = await this.db.client
+      .select({ total: count() })
+      .from(categoriesTable)
+      .where(where);
+    return total;
+  }
+
   async findOne(id: string): Promise<TCategory | undefined> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const condition = isUuid ? eq(categoriesTable.id, id) : eq(categoriesTable.slug, id);
+    
     const result = await this.db.client
       .select()
       .from(categoriesTable)
-      .where(and(eq(categoriesTable.id, id), isNull(categoriesTable.deletedAt)))
+      .where(and(condition, isNull(categoriesTable.deletedAt)))
       .limit(1);
     return result[0];
   }
@@ -55,18 +73,24 @@ export class CategoryRepository {
   }
 
   async update(tx: any, id: string, data: Partial<TNewCategory>): Promise<TCategory> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const condition = isUuid ? eq(categoriesTable.id, id) : eq(categoriesTable.slug, id);
+
     const result = await tx
       .update(categoriesTable)
       .set(data)
-      .where(and(eq(categoriesTable.id, id), isNull(categoriesTable.deletedAt)))
+      .where(and(condition, isNull(categoriesTable.deletedAt)))
       .returning();
     return result[0];
   }
 
   async softDelete(tx: any, id: string): Promise<void> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const condition = isUuid ? eq(categoriesTable.id, id) : eq(categoriesTable.slug, id);
+
     await tx
       .update(categoriesTable)
       .set({ deletedAt: new Date(), isActive: false })
-      .where(eq(categoriesTable.id, id));
+      .where(condition);
   }
 }

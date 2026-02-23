@@ -1,16 +1,10 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class CreateTagGroupDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  name: string;
+const createTagGroupSchema = z.object({
+  name: z.string().min(1, 'Name cannot be empty').max(255),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
 
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
+export class CreateTagGroupDto extends createZodDto(createTagGroupSchema) {}

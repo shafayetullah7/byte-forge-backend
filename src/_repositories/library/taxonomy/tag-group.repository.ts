@@ -1,52 +1,61 @@
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagGroupsTable, TNewTagGroup, TTagGroup } from '@/_db/drizzle/schema/taxonomy';
 import { Injectable } from '@nestjs/common';
-import { eq, ilike, isNotNull, isNull, and, SQL } from 'drizzle-orm';
+import { eq, ilike, isNotNull, isNull, and, SQL, count, asc, desc } from 'drizzle-orm';
+
+import { TagGroupQueryDto } from '@/api/admin/admin-taxonomy/tag-groups/dto/tag-group-query.dto';
 
 @Injectable()
 export class TagGroupRepository {
   constructor(private readonly db: DrizzleService) {}
 
-  private buildWhere(options: any) {
+  private buildWhere(options: TagGroupQueryDto) {
     const where:SQL[] = [];
 
     if (options.id) where.push(eq(tagGroupsTable.id, options.id));
     if (options.name) where.push(eq(tagGroupsTable.name, options.name));
     
-    if (options.searchKey) {
-      where.push(ilike(tagGroupsTable.name, `%${options.searchKey}%`));
+    if (options.search) {
+      where.push(ilike(tagGroupsTable.name, `%${options.search}%`));
     }
 
     if (options.isActive !== undefined) {
-      where.push(eq(tagGroupsTable.isActive, options.isActive));
+      where.push(eq(tagGroupsTable.isActive, options.isActive === 'true'));
     }
 
-    if (options.isDeleted !== undefined) {
-      if (options.isDeleted) {
-        where.push(isNotNull(tagGroupsTable.deletedAt));
-      } else {
-        where.push(isNull(tagGroupsTable.deletedAt));
-      }
-    } else {
-        // Default to showing only non-deleted
-        where.push(isNull(tagGroupsTable.deletedAt));
-    }
+    // Default to showing only non-deleted
+    where.push(isNull(tagGroupsTable.deletedAt));
 
     return and(...where);
   }
 
-  async findMany(query: any): Promise<TTagGroup[]> {
+  async findMany(query: TagGroupQueryDto): Promise<Array<TTagGroup & { tags: any[] }>> {
     const where = this.buildWhere(query);
     const limit = query.limit ? Number(query.limit) : 10;
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
 
-    return this.db.client
-      .select()
+    const sortByField = query.sortBy === 'name' ? tagGroupsTable.name : query.sortBy === 'updatedAt' ? tagGroupsTable.updatedAt : tagGroupsTable.createdAt;
+    const sortFn = query.sortOrder === 'asc' ? asc : desc;
+
+    return await this.db.client.query.tagGroupsTable.findMany({
+      where,
+      orderBy: [sortFn(sortByField)],
+      limit,
+      offset,
+      with: {
+        tags: true,
+      },
+    });
+  }
+
+  async count(query: TagGroupQueryDto): Promise<number> {
+    const where = this.buildWhere(query);
+    const [{ total }] = await this.db.client
+      .select({ total: count() })
       .from(tagGroupsTable)
-      .where(where)
-      .limit(limit)
-      .offset(offset);
+      .where(where);
+    return total;
   }
 
   async findOne(id: string): Promise<TTagGroup | undefined> {

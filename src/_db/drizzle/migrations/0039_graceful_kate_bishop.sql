@@ -44,9 +44,10 @@ CREATE TABLE "tags" (
 	CONSTRAINT "tags_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
+ALTER TABLE "plants" DROP CONSTRAINT "plants_category_id_tree_categories_id_fk";
+
 ALTER TABLE "tree_categories" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
 DROP TABLE "tree_categories" CASCADE;--> statement-breakpoint
-ALTER TABLE "plants" DROP CONSTRAINT "plants_category_id_tree_categories_id_fk";
 --> statement-breakpoint
 ALTER TABLE "category_hierarchy" ADD CONSTRAINT "category_hierarchy_ancestor_id_categories_id_fk" FOREIGN KEY ("ancestor_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_hierarchy" ADD CONSTRAINT "category_hierarchy_descendant_id_categories_id_fk" FOREIGN KEY ("descendant_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

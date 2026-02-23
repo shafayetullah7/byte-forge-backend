@@ -1,4 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, decimal, integer } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { categoryHierarchyTable } from './category-hierarchy.schema';
 
 export const categoriesTable = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -20,3 +22,8 @@ export const categoriesTable = pgTable('categories', {
 
 export type TCategory = typeof categoriesTable.$inferSelect;
 export type TNewCategory = typeof categoriesTable.$inferInsert;
+
+export const categoriesRelations = relations(categoriesTable, ({ many }) => ({
+  parentHierarchies: many(categoryHierarchyTable, { relationName: 'descendantToAncestor' }),
+  childHierarchies: many(categoryHierarchyTable, { relationName: 'ancestorToDescendant' }),
+}));

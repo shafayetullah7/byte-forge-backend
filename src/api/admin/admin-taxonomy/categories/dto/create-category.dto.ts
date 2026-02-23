@@ -1,24 +1,12 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, Min, Max, IsUUID } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class CreateCategoryDto {
-  @IsString()
-  name: string;
+const createCategorySchema = z.object({
+  name: z.string().min(1, 'Name cannot be empty').max(255),
+  parentId: z.string().uuid('Invalid UUID for parent ID').optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+  commissionRate: z.number().min(0).max(100).optional(),
+});
 
-  @IsOptional()
-  @IsUUID(4)
-  parentId?: string; // Used to compute the hierarchy closure
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  commissionRate?: number;
-}
+export class CreateCategoryDto extends createZodDto(createCategorySchema) {}

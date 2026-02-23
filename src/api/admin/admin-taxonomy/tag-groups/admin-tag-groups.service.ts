@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTagGroupDto } from './dto/create-tag-group.dto';
 import { UpdateTagGroupDto } from './dto/update-tag-group.dto';
+import { TagGroupQueryDto } from './dto/tag-group-query.dto';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
 import { tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
 import { getTableColumns } from 'drizzle-orm';
@@ -23,16 +24,20 @@ export class AdminTagGroupsService {
     });
   }
 
-  async findAll(query: any) {
-    const records = await this.db.client
-        .select()
-        .from(tagGroupsTable)
-        .where(this.tagGroupRepository['buildWhere'](query))
-        .limit(query.limit ? Number(query.limit) : 10)
-        .offset(query.page ? (Number(query.page) - 1) * (query.limit || 10) : 0);
-        
-    // Optionally join count of tags here in standard production, mapping for now
-    return records;
+  async findAll(query: TagGroupQueryDto) {
+    const [data, total] = await Promise.all([
+      this.tagGroupRepository.findMany(query),
+      this.tagGroupRepository.count(query)
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: query.page ? Number(query.page) : 1,
+        limit: query.limit ? Number(query.limit) : 10,
+      }
+    };
   }
 
   async findOne(id: string) {

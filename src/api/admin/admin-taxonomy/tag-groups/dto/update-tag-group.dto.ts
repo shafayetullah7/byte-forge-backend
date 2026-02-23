@@ -1,4 +1,10 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateTagGroupDto } from './create-tag-group.dto';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class UpdateTagGroupDto extends PartialType(CreateTagGroupDto) {}
+const updateTagGroupSchema = z.object({
+  name: z.string().min(1, 'Name cannot be empty').max(255).optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export class UpdateTagGroupDto extends createZodDto(updateTagGroupSchema) {}
