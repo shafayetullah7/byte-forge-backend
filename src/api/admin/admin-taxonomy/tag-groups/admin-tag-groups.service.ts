@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateTagGroupDto } from './dto/create-tag-group.dto';
 import { UpdateTagGroupDto } from './dto/update-tag-group.dto';
 import { TagGroupQueryDto } from './dto/tag-group-query.dto';
@@ -6,8 +6,10 @@ import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.r
 import { tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
 import { getTableColumns } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { tagsTable } from '@/_db/drizzle/schema/taxonomy';
+
+import { paginate } from '../../../../common/utils/pagination.util';
 
 @Injectable()
 export class AdminTagGroupsService {
@@ -30,14 +32,12 @@ export class AdminTagGroupsService {
       this.tagGroupRepository.count(query)
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page: query.page ? Number(query.page) : 1,
-        limit: query.limit ? Number(query.limit) : 10,
-      }
-    };
+    const groups = data.map(item => ({
+      ...item,
+      tagCount: item.tags?.length || 0,
+    }));
+
+    return paginate(groups, total, query.page ?? 1, query.limit ?? 10);
   }
 
   async findOne(id: string) {
@@ -58,11 +58,14 @@ export class AdminTagGroupsService {
     const relatedTags = await this.db.client
       .select({ id: tagsTable.id })
       .from(tagsTable)
-      .where(eq(tagsTable.groupId, id))
+      .where(and(
+        eq(tagsTable.groupId, id),
+        isNull(tagsTable.deletedAt)
+      ))
       .limit(1);
       
     if (relatedTags.length > 0) {
-      throw new Error("Cannot delete Tag Group. It currently contains tags.");
+      throw new BadRequestException("Cannot delete Tag Group. It currently contains active tags.");
     }
     
     await this.tagGroupRepository.softDelete(group.id);

@@ -10,11 +10,17 @@ import { AdminCategoriesModule } from './admin-taxonomy/categories/admin-categor
     AdminModule,
     AdminAuthModule,
     AdminSessionModule,
+    AdminTagGroupsModule,
+    AdminTagsModule,
+    AdminCategoriesModule,
   ],
   exports: [
     AdminModule,
     AdminAuthModule,
     AdminSessionModule,
+    AdminTagGroupsModule,
+    AdminTagsModule,
+    AdminCategoriesModule,
   ],
 })
 export class AdminApiModule {}

@@ -12,6 +12,6 @@ import { AdminAuthModule } from '@/api/admin/admin-auth/admin-auth.module';
     AdminAuthModule,
   ],
   providers: [AdminAuthGuard],
-  exports: [AdminAuthGuard, SessionRepositoryModule, AdminAuthModule],
+  exports: [AdminAuthGuard, SessionRepositoryModule, AdminAuthModule, AdminSessionModule],
 })
 export class AdminAuthGuardModule {}

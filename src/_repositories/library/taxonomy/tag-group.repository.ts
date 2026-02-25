@@ -44,7 +44,9 @@ export class TagGroupRepository {
       limit,
       offset,
       with: {
-        tags: true,
+        tags: {
+          where: (tags, { isNull }) => isNull(tags.deletedAt),
+        },
       },
     });
   }
@@ -58,14 +60,15 @@ export class TagGroupRepository {
     return total;
   }
 
-  async findOne(id: string): Promise<TTagGroup | undefined> {
-    const result = await this.db.client
-      .select()
-      .from(tagGroupsTable)
-      .where(and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)))
-      .limit(1);
-    
-    return result[0];
+  async findOne(id: string): Promise<(TTagGroup & { tags: any[] }) | undefined> {
+    return await this.db.client.query.tagGroupsTable.findFirst({
+      where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
+      with: {
+        tags: {
+          where: (tags, { isNull }) => isNull(tags.deletedAt),
+        },
+      },
+    });
   }
 
   async create(data: TNewTagGroup): Promise<TTagGroup> {

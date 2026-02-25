@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 const updateCategorySchema = z.object({
   name: z.string().min(1, 'Name cannot be empty').max(255).optional(),
+  slug: z.string().min(1).max(255).optional(),
   parentId: z.string().uuid('Invalid UUID for parent ID').optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),

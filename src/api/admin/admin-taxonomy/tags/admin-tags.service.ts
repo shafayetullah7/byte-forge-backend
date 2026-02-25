@@ -10,6 +10,8 @@ import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.r
 // In production, consider a robust library or moving to a utility.
 const generateSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+import { paginate } from '../../../../common/utils/pagination.util';
+
 @Injectable()
 export class AdminTagsService {
   constructor(
@@ -22,11 +24,9 @@ export class AdminTagsService {
     const group = await this.tagGroupRepository.findOne(createTagDto.groupId);
     if (!group) throw new BadRequestException(`Tag Group ${createTagDto.groupId} does not exist.`);
 
-    const slug = generateSlug(createTagDto.name);
-
     return this.tagRepository.create({
       name: createTagDto.name,
-      slug: slug,
+      slug: createTagDto.slug,
       groupId: createTagDto.groupId,
       description: createTagDto.description,
       isActive: createTagDto.isActive ?? true,
@@ -39,14 +39,7 @@ export class AdminTagsService {
       this.tagRepository.count(query)
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page: query.page ? Number(query.page) : 1,
-        limit: query.limit ? Number(query.limit) : 10,
-      }
-    };
+    return paginate(data, total, query.page ?? 1, query.limit ?? 10);
   }
 
   async findOne(id: string) {
@@ -65,11 +58,6 @@ export class AdminTagsService {
     if (updateTagDto.groupId && updateTagDto.groupId !== tag.groupId) {
         const group = await this.tagGroupRepository.findOne(updateTagDto.groupId);
         if (!group) throw new BadRequestException(`Tag Group ${updateTagDto.groupId} does not exist.`);
-    }
-
-    // Handle slug recalculation if name changes
-    if (updateTagDto.name && updateTagDto.name !== tag.name) {
-        payload.slug = generateSlug(updateTagDto.name);
     }
 
     return this.tagRepository.update(tag.id, payload);
