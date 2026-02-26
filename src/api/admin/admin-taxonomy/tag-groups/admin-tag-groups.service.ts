@@ -4,10 +4,11 @@ import { UpdateTagGroupDto } from './dto/update-tag-group.dto';
 import { TagGroupQueryDto } from './dto/tag-group-query.dto';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
 import { tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
-import { getTableColumns } from 'drizzle-orm';
+
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, sql, asc, desc, ilike } from 'drizzle-orm';
 import { tagsTable } from '@/_db/drizzle/schema/taxonomy';
+import { isUuid } from '@/common/utils/is-uuid.util';
 
 import { paginate } from '../../../../common/utils/pagination.util';
 
@@ -19,17 +20,62 @@ export class AdminTagGroupsService {
   ) {}
 
   async create(createTagGroupDto: CreateTagGroupDto) {
-    return this.tagGroupRepository.create({
+    const group = await this.tagGroupRepository.create({
       name: createTagGroupDto.name,
       description: createTagGroupDto.description,
       isActive: createTagGroupDto.isActive ?? true,
     });
+
+    if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
+      const tagsToInsert = createTagGroupDto.tags.map(tag => ({
+        groupId: group.id,
+        name: tag.name,
+        slug: tag.slug,
+        description: tag.description,
+        isActive: tag.isActive ?? true,
+      }));
+      await this.db.client.insert(tagsTable).values(tagsToInsert);
+    }
+
+    return group;
   }
 
   async findAll(query: TagGroupQueryDto) {
-    const [data, total] = await Promise.all([
-      this.tagGroupRepository.findMany(query),
-      this.tagGroupRepository.count(query)
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const offset = (page - 1) * limit;
+
+    const sortByField = query.sortBy === 'name' ? tagGroupsTable.name 
+      : query.sortBy === 'updatedAt' ? tagGroupsTable.updatedAt 
+      : tagGroupsTable.createdAt;
+    
+    const sortFn = query.sortOrder === 'asc' ? asc : desc;
+
+    // Apply conditional filters strictly aligned with QUERIES.md
+    const conditions = and(
+        isNull(tagGroupsTable.deletedAt),
+        query.id ? eq(tagGroupsTable.id, query.id) : undefined,
+        query.name ? eq(tagGroupsTable.name, query.name) : undefined,
+        query.search ? ilike(tagGroupsTable.name, `%${query.search}%`) : undefined,
+        query.isActive !== undefined ? eq(tagGroupsTable.isActive, query.isActive === 'true') : undefined
+    );
+
+    const [data, [{ total }]] = await Promise.all([
+      this.db.client.query.tagGroupsTable.findMany({
+        where: conditions,
+        orderBy: [sortFn(sortByField)],
+        limit,
+        offset,
+        with: {
+          tags: {
+            where: (tags, { isNull }) => isNull(tags.deletedAt),
+          },
+        },
+      }),
+      this.db.client
+        .select({ total: sql`count(*)`.mapWith(Number) })
+        .from(tagGroupsTable)
+        .where(conditions)
     ]);
 
     const groups = data.map(item => ({
@@ -37,18 +83,32 @@ export class AdminTagGroupsService {
       tagCount: item.tags?.length || 0,
     }));
 
-    return paginate(groups, total, query.page ?? 1, query.limit ?? 10);
+    return paginate(groups, total, page, limit);
   }
 
   async findOne(id: string) {
-    const group = await this.tagGroupRepository.findOne(id);
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid Tag Group ID format. Must be a UUID.');
+    }
+
+    const group = await this.db.client.query.tagGroupsTable.findFirst({
+      where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
+    });
+
     if (!group) throw new NotFoundException(`Tag Group with ID ${id} not found`);
     return group;
   }
 
   async update(id: string, updateTagGroupDto: UpdateTagGroupDto) {
     const group = await this.findOne(id);
-    return this.tagGroupRepository.update(group.id, updateTagGroupDto);
+
+    const [updated] = await this.db.client
+      .update(tagGroupsTable)
+      .set({ ...updateTagGroupDto, updatedAt: new Date() })
+      .where(and(eq(tagGroupsTable.id, group.id), isNull(tagGroupsTable.deletedAt)))
+      .returning();
+
+    return updated;
   }
 
   async remove(id: string) {
