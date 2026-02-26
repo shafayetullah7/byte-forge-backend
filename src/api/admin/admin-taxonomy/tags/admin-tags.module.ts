@@ -3,10 +3,10 @@ import { TagRepositoryModule } from '../../../../_repositories/library/taxonomy/
 import { TagGroupRepositoryModule } from '../../../../_repositories/library/taxonomy/tag-group.repository.module';
 import { AdminTagsController } from './admin-tags.controller';
 import { AdminTagsService } from './admin-tags.service';
-
+import { AdminTagTranslationsModule } from './tag-translations/admin-tag-translations.module';
 
 @Module({
-  imports: [TagRepositoryModule, TagGroupRepositoryModule],
+  imports: [TagRepositoryModule, TagGroupRepositoryModule, AdminTagTranslationsModule],
   controllers: [AdminTagsController],
   providers: [AdminTagsService],
   exports: [AdminTagsService],

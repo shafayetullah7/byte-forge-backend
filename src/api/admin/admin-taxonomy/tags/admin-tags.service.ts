@@ -2,11 +2,12 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagQueryDto } from './dto/tag-query.dto';
-import { eq, and, isNull, ilike, asc, desc, sql } from 'drizzle-orm';
+import { eq, and, isNull, ilike, asc, desc, sql, exists } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { tagsTable, tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
+import { tagsTable, tagGroupsTable, tagTranslationsTable } from '@/_db/drizzle/schema/taxonomy';
 import { paginate } from '../../../../common/utils/pagination.util';
 import { isUuid } from '@/common/utils/is-uuid.util';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class AdminTagsService {
@@ -15,34 +16,55 @@ export class AdminTagsService {
   ) {}
 
   async create(createTagDto: CreateTagDto) {
+    const hasEn = createTagDto.translations.some(t => t.locale === 'en');
+    if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
+
     // 1. Verify group exists and is not deleted
     const group = await this.db.client.query.tagGroupsTable.findFirst({
       where: and(eq(tagGroupsTable.id, createTagDto.groupId), isNull(tagGroupsTable.deletedAt)),
     });
     if (!group) throw new BadRequestException(`Tag Group ${createTagDto.groupId} does not exist.`);
 
-    const [tag] = await this.db.client
-      .insert(tagsTable)
-      .values({
-        name: createTagDto.name,
-        slug: createTagDto.slug,
-        groupId: createTagDto.groupId,
-        description: createTagDto.description,
-        isActive: createTagDto.isActive ?? true,
-      })
-      .returning();
+    return await this.db.client.transaction(async (tx) => {
+      const [tag] = await tx
+        .insert(tagsTable)
+        .values({
+          slug: createTagDto.slug,
+          groupId: createTagDto.groupId,
+          isActive: createTagDto.isActive ?? true,
+        })
+        .returning();
 
-    return tag;
+      await tx.insert(tagTranslationsTable).values(
+        createTagDto.translations.map(t => ({
+          tagId: tag.id,
+          locale: t.locale,
+          name: t.name,
+          description: t.description,
+        }))
+      );
+
+      return tag;
+    });
   }
 
   private buildWhere(query: TagQueryDto) {
+    const searchCondition = query.name || query.search ? exists(
+      this.db.client.select({ id: tagTranslationsTable.id })
+        .from(tagTranslationsTable)
+        .where(and(
+          eq(tagTranslationsTable.tagId, tagsTable.id),
+          query.name ? eq(tagTranslationsTable.name, query.name) : undefined,
+          query.search ? ilike(tagTranslationsTable.name, `%${query.search}%`) : undefined
+        ))
+    ) : undefined;
+
     return and(
       isNull(tagsTable.deletedAt),
       query.id ? eq(tagsTable.id, query.id) : undefined,
       query.groupId ? eq(tagsTable.groupId, query.groupId) : undefined,
-      query.name ? eq(tagsTable.name, query.name) : undefined,
-      query.search ? ilike(tagsTable.name, `%${query.search}%`) : undefined,
-      query.isActive !== undefined ? eq(tagsTable.isActive, query.isActive === 'true') : undefined
+      query.isActive !== undefined ? eq(tagsTable.isActive, query.isActive === 'true') : undefined,
+      searchCondition
     );
   }
 
@@ -51,9 +73,7 @@ export class AdminTagsService {
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
 
-    const sortByField = query.sortBy === 'name' ? tagsTable.name 
-      : query.sortBy === 'updatedAt' ? tagsTable.updatedAt 
-      : tagsTable.createdAt;
+    const sortByField = query.sortBy === 'updatedAt' ? tagsTable.updatedAt : tagsTable.createdAt;
       
     const sortFn = query.sortOrder === 'asc' ? asc : desc;
     const conditions = this.buildWhere(query);
@@ -64,6 +84,7 @@ export class AdminTagsService {
         orderBy: [sortFn(sortByField)],
         limit,
         offset,
+        with: { translations: true },
       }),
       this.db.client
         .select({ total: sql`count(*)`.mapWith(Number) })
@@ -71,6 +92,8 @@ export class AdminTagsService {
         .where(conditions)
     ]);
 
+    // Admin returns all raw translations, so we just map tag directly 
+    // unless a specific translation resolution is requested by caller context (for now, admin gets all)
     return paginate(data, total, page, limit);
   }
 
@@ -80,6 +103,7 @@ export class AdminTagsService {
 
     const tag = await this.db.client.query.tagsTable.findFirst({
         where: and(condition, isNull(tagsTable.deletedAt)),
+        with: { translations: true },
     });
 
     if (!tag) throw new NotFoundException(`Tag ${id} not found`);

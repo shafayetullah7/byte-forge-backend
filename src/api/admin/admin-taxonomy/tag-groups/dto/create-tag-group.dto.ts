@@ -2,15 +2,26 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const createTagGroupSchema = z.object({
-  name: z.string().min(1, 'Name cannot be empty').max(255),
-  description: z.string().optional(),
+  slug: z.string().trim().min(1, 'Group slug cannot be empty').max(255),
   isActive: z.boolean().optional(),
+  translations: z.array(
+    z.object({
+      locale: z.string().trim().min(2).max(10),
+      name: z.string().trim().min(1, 'Name cannot be empty').max(255),
+      description: z.string().optional(),
+    })
+  ).min(1, 'At least one translation is required'),
   tags: z.array(
     z.object({
-      name: z.string().trim().min(1, 'Tag name cannot be empty').max(255),
       slug: z.string().trim().min(1, 'Tag slug is required').max(255),
-      description: z.string().optional(),
       isActive: z.boolean().optional(),
+      translations: z.array(
+        z.object({
+          locale: z.string().trim().min(2).max(10),
+          name: z.string().trim().min(1, 'Tag name cannot be empty').max(255),
+          description: z.string().optional(),
+        })
+      ).min(1, 'At least one translation is required'),
     })
   )
   .superRefine((tags, ctx) => {
@@ -27,15 +38,8 @@ const createTagGroupSchema = z.object({
       }
       slugSet.add(tag.slug);
 
-      const lowerName = tag.name.toLowerCase();
-      if (nameSet.has(lowerName)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Duplicate tag name in the request',
-          path: [index, 'name'],
-        });
-      }
-      nameSet.add(lowerName);
+      // We no longer validate English name strictly here because duplicate names 
+      // are allowed across different locales. DB constraints handle duplicates per-locale.
     });
   })
   .optional(),

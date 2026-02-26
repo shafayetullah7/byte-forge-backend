@@ -6,9 +6,10 @@ import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.r
 import { tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
 
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { eq, and, isNull, sql, asc, desc, ilike } from 'drizzle-orm';
-import { tagsTable } from '@/_db/drizzle/schema/taxonomy';
+import { eq, and, isNull, sql, asc, desc, ilike, exists } from 'drizzle-orm';
+import { tagsTable, tagGroupTranslationsTable, tagTranslationsTable } from '@/_db/drizzle/schema/taxonomy';
 import { isUuid } from '@/common/utils/is-uuid.util';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 import { paginate } from '../../../../common/utils/pagination.util';
 
@@ -20,24 +21,54 @@ export class AdminTagGroupsService {
   ) {}
 
   async create(createTagGroupDto: CreateTagGroupDto) {
-    const group = await this.tagGroupRepository.create({
-      name: createTagGroupDto.name,
-      description: createTagGroupDto.description,
-      isActive: createTagGroupDto.isActive ?? true,
+    const hasEn = createTagGroupDto.translations.some(t => t.locale === 'en');
+    if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
+
+    return await this.db.client.transaction(async (tx) => {
+      const [group] = await tx
+        .insert(tagGroupsTable)
+        .values({
+          slug: createTagGroupDto.slug,
+          isActive: createTagGroupDto.isActive ?? true,
+        })
+        .returning();
+
+      await tx.insert(tagGroupTranslationsTable).values(
+        createTagGroupDto.translations.map(t => ({
+          groupId: group.id,
+          locale: t.locale,
+          name: t.name,
+          description: t.description,
+        }))
+      );
+
+      if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
+        for (const tagDto of createTagGroupDto.tags) {
+          const hasTagEn = tagDto.translations.some(t => t.locale === 'en');
+          if (!hasTagEn) throw new BadRequestException("An English ('en') translation is required for all tags.");
+
+          const [tag] = await tx
+            .insert(tagsTable)
+            .values({
+              groupId: group.id,
+              slug: tagDto.slug,
+              isActive: tagDto.isActive ?? true,
+            })
+            .returning();
+            
+          await tx.insert(tagTranslationsTable).values(
+            tagDto.translations.map(t => ({
+              tagId: tag.id,
+              locale: t.locale,
+              name: t.name,
+              description: t.description,
+            }))
+          );
+        }
+      }
+
+      return group;
     });
-
-    if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
-      const tagsToInsert = createTagGroupDto.tags.map(tag => ({
-        groupId: group.id,
-        name: tag.name,
-        slug: tag.slug,
-        description: tag.description,
-        isActive: tag.isActive ?? true,
-      }));
-      await this.db.client.insert(tagsTable).values(tagsToInsert);
-    }
-
-    return group;
   }
 
   async findAll(query: TagGroupQueryDto) {
@@ -45,19 +76,26 @@ export class AdminTagGroupsService {
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
 
-    const sortByField = query.sortBy === 'name' ? tagGroupsTable.name 
-      : query.sortBy === 'updatedAt' ? tagGroupsTable.updatedAt 
-      : tagGroupsTable.createdAt;
+    const sortByField = query.sortBy === 'updatedAt' ? tagGroupsTable.updatedAt : tagGroupsTable.createdAt;
     
     const sortFn = query.sortOrder === 'asc' ? asc : desc;
+
+    const searchCondition = query.name || query.search ? exists(
+      this.db.client.select({ id: tagGroupTranslationsTable.id })
+        .from(tagGroupTranslationsTable)
+        .where(and(
+          eq(tagGroupTranslationsTable.groupId, tagGroupsTable.id),
+          query.name ? eq(tagGroupTranslationsTable.name, query.name) : undefined,
+          query.search ? ilike(tagGroupTranslationsTable.name, `%${query.search}%`) : undefined
+        ))
+    ) : undefined;
 
     // Apply conditional filters strictly aligned with QUERIES.md
     const conditions = and(
         isNull(tagGroupsTable.deletedAt),
         query.id ? eq(tagGroupsTable.id, query.id) : undefined,
-        query.name ? eq(tagGroupsTable.name, query.name) : undefined,
-        query.search ? ilike(tagGroupsTable.name, `%${query.search}%`) : undefined,
-        query.isActive !== undefined ? eq(tagGroupsTable.isActive, query.isActive === 'true') : undefined
+        query.isActive !== undefined ? eq(tagGroupsTable.isActive, query.isActive === 'true') : undefined,
+        searchCondition
     );
 
     const [data, [{ total }]] = await Promise.all([
@@ -69,7 +107,9 @@ export class AdminTagGroupsService {
         with: {
           tags: {
             where: (tags, { isNull }) => isNull(tags.deletedAt),
+            with: { translations: true }
           },
+          translations: true,
         },
       }),
       this.db.client
@@ -93,6 +133,7 @@ export class AdminTagGroupsService {
 
     const group = await this.db.client.query.tagGroupsTable.findFirst({
       where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
+      with: { translations: true },
     });
 
     if (!group) throw new NotFoundException(`Tag Group with ID ${id} not found`);

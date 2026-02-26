@@ -7,3 +7,4 @@ export * from './shop';
 export * from './media';
 export * from './plant';
 export * from './taxonomy';
+export * from './i18n/language.schema';
