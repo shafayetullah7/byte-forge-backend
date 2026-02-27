@@ -1,9 +1,10 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { SlugSchema } from '@/common/schemas/slug.schema';
 
 const createTagSchema = z.object({
-  groupId: z.string().uuid('Invalid UUID for group ID'),
-  slug: z.string().trim().min(1, 'Slug is required').max(255),
+  groupId: z.uuid('Invalid UUID for group ID'),
+  slug: SlugSchema,
   isActive: z.boolean().optional(),
   translations: z.array(
     z.object({

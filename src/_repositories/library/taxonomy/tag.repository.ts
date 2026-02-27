@@ -160,7 +160,7 @@ export class TagRepository {
   }
 
 
-  async update(id: string, data: any, tx?: DrizzleTx): Promise<TTag> {
+  async update(id: string, data: Partial<TNewTag>, tx?: DrizzleTx): Promise<TTag> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
       .update(tagsTable)
@@ -174,6 +174,13 @@ export class TagRepository {
 
   async softDelete(id: string, tx?: DrizzleTx): Promise<void> {
     const executor = this.db.getExecutor(tx);
+
+    // 1. Hard-delete orphaned translations (no longer reachable after soft-delete)
+    await executor
+      .delete(tagTranslationsTable)
+      .where(eq(tagTranslationsTable.tagId, id));
+
+    // 2. Soft-delete the tag, mangling the slug to free the unique slot
     await executor
       .update(tagsTable)
       .set({ 

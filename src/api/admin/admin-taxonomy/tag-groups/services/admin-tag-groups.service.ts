@@ -45,56 +45,64 @@ export class AdminTagGroupsService {
       }
     }
 
-    return await this.db.client.transaction(async (tx) => {
-      // 1. Create Tag Group
-      const group = await this.tagGroupRepository.create({
-        slug: createTagGroupDto.slug,
-        isActive: createTagGroupDto.isActive,
-      }, tx);
+    try {
+      return await this.db.client.transaction(async (tx) => {
+        // 1. Create Tag Group
+        const group = await this.tagGroupRepository.create({
+          slug: createTagGroupDto.slug,
+          isActive: createTagGroupDto.isActive,
+        }, tx);
 
-      // 2. Create Tag Group Translations
-      await this.tagGroupRepository.createTranslations(group.id, createTagGroupDto.translations, tx);
-
-
-      // 3. Process Tags
-      if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
-        // a. Batch Create Tags
-        const tagsData = createTagGroupDto.tags.map(tagDto => ({
-          groupId: group.id,
-          slug: tagDto.slug,
-          isActive: tagDto.isActive,
-        }));
-        const insertedTags = await this.tagRepository.createMany(tagsData, tx);
+        // 2. Create Tag Group Translations
+        await this.tagGroupRepository.createTranslations(group.id, createTagGroupDto.translations, tx);
 
 
-        // b. Prepare and Batch Create Tag Translations
-        const tagTranslationsData:TNewTagTranslation[] = [];
-        for (let i = 0; i < insertedTags.length; i++) {
-          const insertedTag = insertedTags[i];
-          const tagDto = createTagGroupDto.tags[i];
-          
-          for (const t of tagDto.translations) {
-            tagTranslationsData.push({
-              tagId: insertedTag.id,
-              locale: t.locale,
-              name: t.name,
-              description: t.description,
-            });
+        // 3. Process Tags
+        if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
+          // a. Batch Create Tags
+          const tagsData = createTagGroupDto.tags.map(tagDto => ({
+            groupId: group.id,
+            slug: tagDto.slug,
+            isActive: tagDto.isActive,
+          }));
+          const insertedTags = await this.tagRepository.createMany(tagsData, tx);
+
+
+          // b. Prepare and Batch Create Tag Translations
+          const tagTranslationsData:TNewTagTranslation[] = [];
+          for (let i = 0; i < insertedTags.length; i++) {
+            const insertedTag = insertedTags[i];
+            const tagDto = createTagGroupDto.tags[i];
+            
+            for (const t of tagDto.translations) {
+              tagTranslationsData.push({
+                tagId: insertedTag.id,
+                locale: t.locale,
+                name: t.name,
+                description: t.description,
+              });
+            }
           }
+
+          if (tagTranslationsData.length > 0) {
+            await this.tagRepository.createManyTranslations(tagTranslationsData, tx);
+          }
+
+
+          // c. Update Tag Group count
+          await this.tagGroupRepository.incrementTagCount(group.id, insertedTags.length, tx);
+
         }
 
-        if (tagTranslationsData.length > 0) {
-          await this.tagRepository.createManyTranslations(tagTranslationsData, tx);
-        }
-
-
-        // c. Update Tag Group count
-        await this.tagGroupRepository.incrementTagCount(group.id, insertedTags.length, tx);
-
+        return group;
+      });
+    } catch (error: any) {
+      // Catch concurrent-insert race that slips past the pre-checks
+      if (error.code === '23505') {
+        throw new BadRequestException('A slug conflict occurred — the group or one of its tag slugs may already be in use.');
       }
-
-      return group;
-    });
+      throw error;
+    }
   }
 
   async findAll(query: TagGroupQueryDto) {

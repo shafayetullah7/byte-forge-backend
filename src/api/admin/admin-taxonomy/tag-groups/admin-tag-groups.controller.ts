@@ -103,8 +103,9 @@ export class AdminTagGroupsController {
     @Param() param: TagGroupParamDto, 
     @Body() createTagDto: CreateTagDto
   ) {
-    createTagDto.groupId = param.groupId;
-    const data = await this.tagsService.create(createTagDto);
+    // groupId is always sourced from the URL param; any body-level groupId is intentionally ignored
+    const tagData: CreateTagDto = { ...createTagDto, groupId: param.groupId };
+    const data = await this.tagsService.create(tagData);
     return this.responseService.success({ message: 'Tag created successfully', data });
   }
 

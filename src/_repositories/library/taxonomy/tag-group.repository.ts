@@ -1,7 +1,7 @@
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagGroupsTable, tagsTable, tagGroupTranslationsTable, tagTranslationsTable, TNewTagGroup, TTagGroup } from '@/_db/drizzle/schema/taxonomy';
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { eq, ilike, isNotNull, isNull, and, SQL, count, asc, desc, exists, sql } from 'drizzle-orm';
+import { eq, isNull, and, SQL, count, asc, desc, sql } from 'drizzle-orm';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '../../_types/lock.transaction';
 
@@ -122,7 +122,7 @@ export class TagGroupRepository {
   }
 
 
-  async update(id: string, data: any, tx?: DrizzleTx): Promise<TTagGroup> {
+  async update(id: string, data: Partial<TNewTagGroup>, tx?: DrizzleTx): Promise<TTagGroup> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
       .update(tagGroupsTable)
@@ -136,6 +136,13 @@ export class TagGroupRepository {
 
   async softDelete(id: string, tx?: DrizzleTx): Promise<void> {
     const executor = this.db.getExecutor(tx);
+
+    // 1. Hard-delete orphaned translations (no longer reachable after soft-delete)
+    await executor
+      .delete(tagGroupTranslationsTable)
+      .where(eq(tagGroupTranslationsTable.groupId, id));
+
+    // 2. Soft-delete the group, mangling the slug to free the unique slot
     await executor
       .update(tagGroupsTable)
       .set({ 
@@ -162,7 +169,8 @@ export class TagGroupRepository {
     await executor
       .update(tagGroupsTable)
       .set({
-        tagCount: sql`${tagGroupsTable.tagCount} - ${amount}`,
+        // GREATEST prevents the counter from going below zero on any double-fire
+        tagCount: sql`GREATEST(${tagGroupsTable.tagCount} - ${amount}, 0)`,
       })
       .where(eq(tagGroupsTable.id, id));
   }

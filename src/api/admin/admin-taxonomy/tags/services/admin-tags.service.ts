@@ -32,24 +32,31 @@ export class AdminTagsService {
       throw new BadRequestException(`Tag with slug '${createTagDto.slug}' already exists.`);
     }
 
-    return await this.db.client.transaction(async (tx) => {
-      // a. Create Tag
-      const tag = await this.tagRepository.create({
-        slug: createTagDto.slug,
-        groupId: createTagDto.groupId,
-        isActive: createTagDto.isActive,
-      }, tx);
+    try {
+      return await this.db.client.transaction(async (tx) => {
+        // a. Create Tag
+        const tag = await this.tagRepository.create({
+          slug: createTagDto.slug,
+          groupId: createTagDto.groupId,
+          isActive: createTagDto.isActive,
+        }, tx);
 
-      // b. Create Tag Translations
-      await this.tagRepository.createTranslations(tag.id, createTagDto.translations, tx);
+        // b. Create Tag Translations
+        await this.tagRepository.createTranslations(tag.id, createTagDto.translations, tx);
 
 
-      // c. Increment Parent Tag Group count
-      await this.tagGroupRepository.incrementTagCount(tag.groupId, 1, tx);
+        // c. Increment Parent Tag Group count
+        await this.tagGroupRepository.incrementTagCount(tag.groupId, 1, tx);
 
-      return tag;
-
-    });
+        return tag;
+      });
+    } catch (error: any) {
+      // Catch concurrent-insert race that slips past the pre-check
+      if (error.code === '23505') {
+        throw new BadRequestException(`Tag with slug '${createTagDto.slug}' already exists.`);
+      }
+      throw error;
+    }
   }
 
   private buildWhere(query: TagQueryDto) {
@@ -132,28 +139,34 @@ export class AdminTagsService {
     }
 
     // 3. Execute DB Operations (in transaction if group is changing)
-    if (isChangingGroup) {
-      return await this.db.client.transaction(async (tx) => {
-        // a. Decrement Old Group
-        await this.tagGroupRepository.decrementTagCount(tag.groupId!, 1, tx);
+    try {
+      if (isChangingGroup) {
+        return await this.db.client.transaction(async (tx) => {
+          // a. Decrement Old Group
+          await this.tagGroupRepository.decrementTagCount(tag.groupId!, 1, tx);
 
-        // b. Increment New Group
-        await this.tagGroupRepository.incrementTagCount(updateTagDto.groupId!, 1, tx);
+          // b. Increment New Group
+          await this.tagGroupRepository.incrementTagCount(updateTagDto.groupId!, 1, tx);
 
-        // c. Update the tag
+          // c. Update the tag
+          return await this.tagRepository.update(tag.id, {
+            ...updateTagDto,
+            updatedAt: new Date(),
+          }, tx);
+        });
+      } else {
+        // Direct update if group remains the same
         return await this.tagRepository.update(tag.id, {
           ...updateTagDto,
           updatedAt: new Date(),
-        }, tx);
-      });
-    } else {
-      // Direct update if group remains the same
-      return await this.tagRepository.update(tag.id, {
-        ...updateTagDto,
-        updatedAt: new Date(),
-      });
+        });
+      }
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new BadRequestException(`Tag with slug '${updateTagDto.slug}' already exists.`);
+      }
+      throw error;
     }
-
   }
 
   async remove(id: string) {
