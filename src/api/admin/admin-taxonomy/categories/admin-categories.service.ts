@@ -50,7 +50,8 @@ export class AdminCategoriesService {
       };
 
       // 1. Create the category
-      const newCat = await this.categoryRepository.create(tx, finalPayload);
+      const newCat = await this.categoryRepository.create(finalPayload, tx);
+
 
       // 2. Insert into hierarchy closure model
       await this.hierarchyRepository.insertNode(tx, parentId || null, newCat.id);
@@ -84,7 +85,8 @@ export class AdminCategoriesService {
           WHERE descendant_id = ${categoriesTable.id} AND depth = 1
         )`
       })
-      .from(categoriesTable);
+      .from(categoriesTable)
+      .where(isNull(categoriesTable.deletedAt));
 
     // Build Map & Root Elements
     const categoryMap = new Map();
@@ -247,8 +249,9 @@ export class AdminCategoriesService {
       }
 
       if (Object.keys(payload).length > 0) {
-        return await this.categoryRepository.update(tx, id, payload);
+        return await this.categoryRepository.update(id, payload, tx);
       }
+
       
       return category;
     });
@@ -277,10 +280,9 @@ export class AdminCategoriesService {
 
        // 2. Soft delete all descendants in the categories table
        if (descendantIds.length > 0) {
-         await tx
-           .update(categoriesTable)
-           .set({ deletedAt: new Date(), isActive: false })
-           .where(sql`${categoriesTable.id} IN (${sql.join(descendantIds.map(id => sql`${id}`), sql`, `)})`);
+         for (const dId of descendantIds) {
+           await this.categoryRepository.softDelete(dId, tx);
+         }
        }
 
        // 3. Wipe the hierarchy records for the entire subtree

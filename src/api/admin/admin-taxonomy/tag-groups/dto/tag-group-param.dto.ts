@@ -1,8 +1,4 @@
-import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
+import { GroupIdParamDto, groupIdParamSchema } from './group-id-param.dto';
 
-const tagGroupParamSchema = z.object({
-  id: z.uuid({ message: 'Invalid UUID format for ID parameter' }),
-});
-
-export class TagGroupParamDto extends createZodDto(tagGroupParamSchema) {}
+export const tagGroupParamSchema = groupIdParamSchema;
+export class TagGroupParamDto extends GroupIdParamDto {}

@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { UpsertTagTranslationDto } from './dto/upsert-tag-translation.dto';
+import { UpsertTagTranslationDto } from '../dto/upsert-tag-translation.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagTranslationsTable, tagsTable } from '@/_db/drizzle/schema/taxonomy';
 import { languagesTable } from '@/_db/drizzle/schema/i18n/language.schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 
 @Injectable()
 export class AdminTagTranslationsService {
@@ -11,7 +11,7 @@ export class AdminTagTranslationsService {
 
   async findAllByTag(tagId: string) {
     const tag = await this.db.client.query.tagsTable.findFirst({
-      where: eq(tagsTable.id, tagId),
+      where: and(eq(tagsTable.id, tagId), isNull(tagsTable.deletedAt)),
     });
     if (!tag) throw new NotFoundException(`Tag with ID ${tagId} not found`);
 
@@ -21,17 +21,21 @@ export class AdminTagTranslationsService {
   }
 
   async upsert(tagId: string, dto: UpsertTagTranslationDto) {
-    // Verify tag exists
+    // Verify tag exists and is active (not soft-deleted)
     const tag = await this.db.client.query.tagsTable.findFirst({
-      where: eq(tagsTable.id, tagId),
+      where: and(eq(tagsTable.id, tagId), isNull(tagsTable.deletedAt)),
     });
-    if (!tag) throw new NotFoundException(`Tag with ID ${tagId} not found`);
+    if (!tag) {
+      throw new NotFoundException(`Tag with ID ${tagId} not found`);
+    }
 
-    // Verify language exists
+    // Verify language locale is supported
     const language = await this.db.client.query.languagesTable.findFirst({
       where: eq(languagesTable.code, dto.locale),
     });
-    if (!language) throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+    if (!language) {
+      throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+    }
 
     const [translation] = await this.db.client
       .insert(tagTranslationsTable)

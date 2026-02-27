@@ -1,22 +1,22 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { CreateTagGroupDto } from './dto/create-tag-group.dto';
-import { UpdateTagGroupDto } from './dto/update-tag-group.dto';
-import { TagGroupQueryDto } from './dto/tag-group-query.dto';
+import { CreateTagGroupDto } from '../dto/create-tag-group.dto';
+import { UpdateTagGroupDto } from '../dto/update-tag-group.dto';
+import { TagGroupQueryDto } from '../dto/tag-group-query.dto';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
-import { tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
+import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
+import { tagGroupsTable, TNewTag, TNewTagTranslation } from '@/_db/drizzle/schema/taxonomy';
 
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { eq, and, isNull, sql, asc, desc, ilike, exists } from 'drizzle-orm';
 import { tagsTable, tagGroupTranslationsTable, tagTranslationsTable } from '@/_db/drizzle/schema/taxonomy';
-import { isUuid } from '@/common/utils/is-uuid.util';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
-
-import { paginate } from '../../../../common/utils/pagination.util';
+import { paginate } from '@/common/utils/pagination.util';
 
 @Injectable()
 export class AdminTagGroupsService {
   constructor(
     private readonly tagGroupRepository: TagGroupRepository,
+    private readonly tagRepository: TagRepository,
     private readonly db: DrizzleService,
   ) {}
 
@@ -24,47 +24,73 @@ export class AdminTagGroupsService {
     const hasEn = createTagGroupDto.translations.some(t => t.locale === 'en');
     if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
 
+    // Check if tag group slug already exists
+    const existingGroup = await this.tagGroupRepository.findBySlug(createTagGroupDto.slug);
+    if (existingGroup) {
+      throw new BadRequestException(`Tag Group with slug '${createTagGroupDto.slug}' already exists.`);
+    }
+
+    if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
+      const tagSlugs = createTagGroupDto.tags.map(t => t.slug);
+      
+      const existingTags = await this.tagRepository.findBySlugs(tagSlugs);
+      if (existingTags.length > 0) {
+        const duplicateSlugs = existingTags.map(t => t.slug).join(', ');
+        throw new BadRequestException(`The following tag slugs already exist: ${duplicateSlugs}`);
+      }
+
+      for (const tagDto of createTagGroupDto.tags) {
+        const hasTagEn = tagDto.translations.some(t => t.locale === 'en');
+        if (!hasTagEn) throw new BadRequestException(`An English ('en') translation is required for tag slug '${tagDto.slug}'.`);
+      }
+    }
+
     return await this.db.client.transaction(async (tx) => {
-      const [group] = await tx
-        .insert(tagGroupsTable)
-        .values({
-          slug: createTagGroupDto.slug,
-          isActive: createTagGroupDto.isActive ?? true,
-        })
-        .returning();
+      // 1. Create Tag Group
+      const group = await this.tagGroupRepository.create({
+        slug: createTagGroupDto.slug,
+        isActive: createTagGroupDto.isActive,
+      }, tx);
 
-      await tx.insert(tagGroupTranslationsTable).values(
-        createTagGroupDto.translations.map(t => ({
-          groupId: group.id,
-          locale: t.locale,
-          name: t.name,
-          description: t.description,
-        }))
-      );
+      // 2. Create Tag Group Translations
+      await this.tagGroupRepository.createTranslations(group.id, createTagGroupDto.translations, tx);
 
+
+      // 3. Process Tags
       if (createTagGroupDto.tags && createTagGroupDto.tags.length > 0) {
-        for (const tagDto of createTagGroupDto.tags) {
-          const hasTagEn = tagDto.translations.some(t => t.locale === 'en');
-          if (!hasTagEn) throw new BadRequestException("An English ('en') translation is required for all tags.");
+        // a. Batch Create Tags
+        const tagsData = createTagGroupDto.tags.map(tagDto => ({
+          groupId: group.id,
+          slug: tagDto.slug,
+          isActive: tagDto.isActive,
+        }));
+        const insertedTags = await this.tagRepository.createMany(tagsData, tx);
 
-          const [tag] = await tx
-            .insert(tagsTable)
-            .values({
-              groupId: group.id,
-              slug: tagDto.slug,
-              isActive: tagDto.isActive ?? true,
-            })
-            .returning();
-            
-          await tx.insert(tagTranslationsTable).values(
-            tagDto.translations.map(t => ({
-              tagId: tag.id,
+
+        // b. Prepare and Batch Create Tag Translations
+        const tagTranslationsData:TNewTagTranslation[] = [];
+        for (let i = 0; i < insertedTags.length; i++) {
+          const insertedTag = insertedTags[i];
+          const tagDto = createTagGroupDto.tags[i];
+          
+          for (const t of tagDto.translations) {
+            tagTranslationsData.push({
+              tagId: insertedTag.id,
               locale: t.locale,
               name: t.name,
               description: t.description,
-            }))
-          );
+            });
+          }
         }
+
+        if (tagTranslationsData.length > 0) {
+          await this.tagRepository.createManyTranslations(tagTranslationsData, tx);
+        }
+
+
+        // c. Update Tag Group count
+        await this.tagGroupRepository.incrementTagCount(group.id, insertedTags.length, tx);
+
       }
 
       return group;
@@ -98,19 +124,13 @@ export class AdminTagGroupsService {
         searchCondition
     );
 
-    const [data, [{ total }]] = await Promise.all([
+    const [groups, [{ total }]] = await Promise.all([
       this.db.client.query.tagGroupsTable.findMany({
         where: conditions,
         orderBy: [sortFn(sortByField)],
         limit,
         offset,
-        with: {
-          tags: {
-            where: (tags, { isNull }) => isNull(tags.deletedAt),
-            with: { translations: true }
-          },
-          translations: true,
-        },
+        with: { translations: true },
       }),
       this.db.client
         .select({ total: sql`count(*)`.mapWith(Number) })
@@ -118,19 +138,10 @@ export class AdminTagGroupsService {
         .where(conditions)
     ]);
 
-    const groups = data.map(item => ({
-      ...item,
-      tagCount: item.tags?.length || 0,
-    }));
-
     return paginate(groups, total, page, limit);
   }
 
   async findOne(id: string) {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid Tag Group ID format. Must be a UUID.');
-    }
-
     const group = await this.db.client.query.tagGroupsTable.findFirst({
       where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
       with: { translations: true },
@@ -143,13 +154,19 @@ export class AdminTagGroupsService {
   async update(id: string, updateTagGroupDto: UpdateTagGroupDto) {
     const group = await this.findOne(id);
 
-    const [updated] = await this.db.client
-      .update(tagGroupsTable)
-      .set({ ...updateTagGroupDto, updatedAt: new Date() })
-      .where(and(eq(tagGroupsTable.id, group.id), isNull(tagGroupsTable.deletedAt)))
-      .returning();
+    // 1. Validate Target Slug if provided
+    if (updateTagGroupDto.slug && updateTagGroupDto.slug !== group.slug) {
+      const existingGroup = await this.tagGroupRepository.findBySlug(updateTagGroupDto.slug);
+      if (existingGroup) {
+        throw new BadRequestException(`Tag Group with slug '${updateTagGroupDto.slug}' already exists.`);
+      }
+    }
 
-    return updated;
+    return await this.tagGroupRepository.update(group.id, {
+      ...updateTagGroupDto,
+      updatedAt: new Date(),
+    });
+
   }
 
   async remove(id: string) {
@@ -168,7 +185,7 @@ export class AdminTagGroupsService {
     if (relatedTags.length > 0) {
       throw new BadRequestException("Cannot delete Tag Group. It currently contains active tags.");
     }
-    
     await this.tagGroupRepository.softDelete(group.id);
+
   }
 }

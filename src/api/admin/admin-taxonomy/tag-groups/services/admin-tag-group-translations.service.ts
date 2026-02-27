@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { UpsertTagGroupTranslationDto } from './dto/upsert-tag-group-translation.dto';
+import { UpsertTagGroupTranslationDto } from '../dto/upsert-tag-group-translation.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagGroupTranslationsTable, tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
 import { languagesTable } from '@/_db/drizzle/schema/i18n/language.schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 
 @Injectable()
 export class AdminTagGroupTranslationsService {
@@ -11,7 +11,7 @@ export class AdminTagGroupTranslationsService {
 
   async findAllByGroup(groupId: string) {
     const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: eq(tagGroupsTable.id, groupId),
+      where: and(eq(tagGroupsTable.id, groupId), isNull(tagGroupsTable.deletedAt)),
     });
     if (!group) throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
 
@@ -21,17 +21,21 @@ export class AdminTagGroupTranslationsService {
   }
 
   async upsert(groupId: string, dto: UpsertTagGroupTranslationDto) {
-    // Verify group exists
+    // Verify tag group exists and is active (not soft-deleted)
     const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: eq(tagGroupsTable.id, groupId),
+      where: and(eq(tagGroupsTable.id, groupId), isNull(tagGroupsTable.deletedAt)),
     });
-    if (!group) throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
+    if (!group) {
+      throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
+    }
 
-    // Verify language exists
+    // Verify language locale is supported
     const language = await this.db.client.query.languagesTable.findFirst({
       where: eq(languagesTable.code, dto.locale),
     });
-    if (!language) throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+    if (!language) {
+      throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+    }
 
     const [translation] = await this.db.client
       .insert(tagGroupTranslationsTable)

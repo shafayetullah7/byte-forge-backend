@@ -1,17 +1,20 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { CreateTagDto } from './dto/create-tag.dto';
-import { UpdateTagDto } from './dto/update-tag.dto';
-import { TagQueryDto } from './dto/tag-query.dto';
+import { CreateTagDto } from '../dto/create-tag.dto';
+import { UpdateTagDto } from '../dto/update-tag.dto';
+import { TagQueryDto } from '../dto/tag-query.dto';
 import { eq, and, isNull, ilike, asc, desc, sql, exists } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagsTable, tagGroupsTable, tagTranslationsTable } from '@/_db/drizzle/schema/taxonomy';
-import { paginate } from '../../../../common/utils/pagination.util';
-import { isUuid } from '@/common/utils/is-uuid.util';
+import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
+import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
+import { paginate } from '@/common/utils/pagination.util';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class AdminTagsService {
   constructor(
+    private readonly tagRepository: TagRepository,
+    private readonly tagGroupRepository: TagGroupRepository,
     private readonly db: DrizzleService,
   ) {}
 
@@ -20,31 +23,32 @@ export class AdminTagsService {
     if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
 
     // 1. Verify group exists and is not deleted
-    const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: and(eq(tagGroupsTable.id, createTagDto.groupId), isNull(tagGroupsTable.deletedAt)),
-    });
+    const group = await this.tagGroupRepository.findOne(createTagDto.groupId);
     if (!group) throw new BadRequestException(`Tag Group ${createTagDto.groupId} does not exist.`);
 
-    return await this.db.client.transaction(async (tx) => {
-      const [tag] = await tx
-        .insert(tagsTable)
-        .values({
-          slug: createTagDto.slug,
-          groupId: createTagDto.groupId,
-          isActive: createTagDto.isActive ?? true,
-        })
-        .returning();
+    // 2. Verify tag slug uniqueness
+    const existingTags = await this.tagRepository.findBySlugs([createTagDto.slug]);
+    if (existingTags.length > 0) {
+      throw new BadRequestException(`Tag with slug '${createTagDto.slug}' already exists.`);
+    }
 
-      await tx.insert(tagTranslationsTable).values(
-        createTagDto.translations.map(t => ({
-          tagId: tag.id,
-          locale: t.locale,
-          name: t.name,
-          description: t.description,
-        }))
-      );
+    return await this.db.client.transaction(async (tx) => {
+      // a. Create Tag
+      const tag = await this.tagRepository.create({
+        slug: createTagDto.slug,
+        groupId: createTagDto.groupId,
+        isActive: createTagDto.isActive,
+      }, tx);
+
+      // b. Create Tag Translations
+      await this.tagRepository.createTranslations(tag.id, createTagDto.translations, tx);
+
+
+      // c. Increment Parent Tag Group count
+      await this.tagGroupRepository.incrementTagCount(tag.groupId, 1, tx);
 
       return tag;
+
     });
   }
 
@@ -98,11 +102,8 @@ export class AdminTagsService {
   }
 
   async findOne(id: string) {
-    const isIdUuid = isUuid(id);
-    const condition = isIdUuid ? eq(tagsTable.id, id) : eq(tagsTable.slug, id);
-
     const tag = await this.db.client.query.tagsTable.findFirst({
-        where: and(condition, isNull(tagsTable.deletedAt)),
+        where: and(eq(tagsTable.id, id), isNull(tagsTable.deletedAt)),
         with: { translations: true },
     });
 
@@ -113,21 +114,46 @@ export class AdminTagsService {
   async update(id: string, updateTagDto: UpdateTagDto) {
     const tag = await this.findOne(id);
 
-    // Validate groupId change if provided
-    if (updateTagDto.groupId && updateTagDto.groupId !== tag.groupId) {
-      const group = await this.db.client.query.tagGroupsTable.findFirst({
-        where: and(eq(tagGroupsTable.id, updateTagDto.groupId), isNull(tagGroupsTable.deletedAt)),
-      });
-      if (!group) throw new BadRequestException(`Tag Group ${updateTagDto.groupId} does not exist.`);
+    // 1. Validate Target Slug if provided
+    if (updateTagDto.slug && updateTagDto.slug !== tag.slug) {
+      const existingTag = await this.tagRepository.findBySlugs([updateTagDto.slug]);
+      if (existingTag.length > 0) {
+        throw new BadRequestException(`Tag with slug '${updateTagDto.slug}' already exists.`);
+      }
     }
 
-    const [updated] = await this.db.client
-      .update(tagsTable)
-      .set({ ...updateTagDto, updatedAt: new Date() })
-      .where(and(eq(tagsTable.id, tag.id), isNull(tagsTable.deletedAt)))
-      .returning();
+    // 2. Validate Target Group if provided
+    const isChangingGroup = updateTagDto.groupId && updateTagDto.groupId !== tag.groupId;
+    if (isChangingGroup) {
+      const group = await this.db.client.query.tagGroupsTable.findFirst({
+        where: and(eq(tagGroupsTable.id, updateTagDto.groupId!), isNull(tagGroupsTable.deletedAt)),
+      });
+      if (!group) throw new BadRequestException(`Target Tag Group ${updateTagDto.groupId} does not exist or has been deleted.`);
+    }
 
-    return updated;
+    // 3. Execute DB Operations (in transaction if group is changing)
+    if (isChangingGroup) {
+      return await this.db.client.transaction(async (tx) => {
+        // a. Decrement Old Group
+        await this.tagGroupRepository.decrementTagCount(tag.groupId!, 1, tx);
+
+        // b. Increment New Group
+        await this.tagGroupRepository.incrementTagCount(updateTagDto.groupId!, 1, tx);
+
+        // c. Update the tag
+        return await this.tagRepository.update(tag.id, {
+          ...updateTagDto,
+          updatedAt: new Date(),
+        }, tx);
+      });
+    } else {
+      // Direct update if group remains the same
+      return await this.tagRepository.update(tag.id, {
+        ...updateTagDto,
+        updatedAt: new Date(),
+      });
+    }
+
   }
 
   async remove(id: string) {
@@ -138,9 +164,13 @@ export class AdminTagsService {
       throw new BadRequestException('Cannot delete tag. It is currently being used by products.');
     }
 
-    await this.db.client
-      .update(tagsTable)
-      .set({ deletedAt: new Date(), isActive: false })
-      .where(eq(tagsTable.id, tag.id));
+    await this.db.client.transaction(async (tx) => {
+      // 1. Soft delete the tag
+      await this.tagRepository.softDelete(tag.id, tx);
+
+      // 2. Decrement Parent Tag Group count
+      await this.tagGroupRepository.decrementTagCount(tag.groupId, 1, tx);
+
+    });
   }
 }

@@ -6,6 +6,10 @@ description: ByteForge Backend Architecture, Pagination, and Validation Rules
 
 These rules map boundaries between Controllers, Services, and Repositories, enforcing exact data flow and input validation strategies throughout the backend API.
 
+## 0. AI Assistant Strict Rules (CRITICAL)
+- **No Unsolicited Refactoring:** Do NOT arbitrarily refactor working code (e.g., rewriting raw SQL to ORM syntax or replacing existing mapping logic) unless explicitly instructed by the user. Fix the exact bug requested and touch nothing else.
+- **Strict Schema Typing:** Never use inline or implicit types for database operations (e.g., `{ tagId: string, locale: string }[]`). You MUST open the relevant `schema.ts` file, import the exact generated type (e.g., `TNewTagTranslation`, `TCategory`), and strictly use it.
+
 ## 1. DTO & Validation Requirements
 - **NestJS-Zod Exclusively:** All incoming requests (Parameters, Queries, Request Bodies) MUST be validated strictly using `nestjs-zod` through proper, dedicated Zod-backed DTO classes. Do not use generic NestJS `class-validator` decorators or loosely typed structures.
 - **Module-Scoped DTOs:** Each distinct module must have its DTOs explicitly scoped within the module's localized `dto` folder (e.g., `src/api/admin/admin-taxonomy/categories/dto/...`). Avoid consolidating cross-cutting DTOs into a global `common/dto` folder.
@@ -22,3 +26,8 @@ These rules map boundaries between Controllers, Services, and Repositories, enfo
 - **Standard Query DTOs:** All query DTOs for list endpoints MUST extend `PaginationParamsSchema` from `src/common/schemas/pagination.schema.ts`. This ensures consistent `page`, `limit`, `sortBy`, `sortOrder`, and `search` parameters across the API.
 - **`paginate` Utility:** Services MUST use the `paginate()` utility from `src/common/utils/pagination.util.ts` to construct the response envelope. This ensures the `meta` object always contains `total`, `page`, `limit`, `totalPages`, `hasNext`, and `hasPrevious` fields.
 - **Consistent Envelope:** Every paginated response must return an object with `{ data: T[], meta: PaginationMeta }` structure, where `meta` follows the standard calculation logic.
+
+## 4. Deletion Patterns
+- **Soft-Deletion & Unique Constraints:** When softly deleting an entity that has unique constraints (like `slug`), you MUST append a timestamp to the unique field (e.g., `slug: \`deleted_${Date.now()}_${entity.slug}\``) to free up the slug for future use and prevent `Unique Constraint Violations` upon recreation.
+- **Orphan Cleanup:** Before soft-deletion, you must hard-delete any closely bound sidecar data (like translations or orphaned metadata) to prevent database bloat, because soft-deleting the parent will bypass relational `CASCADE` deletions.
+- **Usage Validation:** Hard validate relationships before deletion and aggressively throw a `BadRequestException` if the entity is currently being used by active products or unrelated domains.

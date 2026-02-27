@@ -7,7 +7,7 @@ const tagGroupQuerySchema = PaginationParamsSchema.extend({
   id: z.uuid().optional(),
   name: z.string().optional(),
   isActive: z.enum(['true', 'false']).optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'name']).optional().default('createdAt'),
+  sortBy: z.enum(['createdAt', 'updatedAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 

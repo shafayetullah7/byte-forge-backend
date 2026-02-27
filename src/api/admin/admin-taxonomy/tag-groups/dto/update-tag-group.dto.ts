@@ -2,8 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const updateTagGroupSchema = z.object({
-  name: z.string().min(1, 'Name cannot be empty').max(255).optional(),
-  description: z.string().optional(),
+  slug: z.string().trim().min(1, 'Group slug cannot be empty').max(255).optional(),
   isActive: z.boolean().optional(),
 });
 
