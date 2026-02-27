@@ -43,6 +43,15 @@ export class AdminCategoriesController {
     });
   }
 
+  @Get(':id/ancestors')
+  async getAncestors(@Param() param: CategoryParamDto) {
+    const data = await this.categoriesService.getAncestors(param.id);
+    return this.responseService.success({
+      message: 'Category ancestors retrieved successfully',
+      data,
+    });
+  }
+
   @Get(':id')
   async findOne(@Param() param: CategoryParamDto) {
     const data = await this.categoriesService.findOne(param.id);

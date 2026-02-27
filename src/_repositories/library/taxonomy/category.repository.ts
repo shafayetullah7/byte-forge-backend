@@ -76,6 +76,17 @@ export class CategoryRepository {
   }
 
 
+  async findBySlug(slug: string, tx?: DrizzleTx): Promise<TCategory | undefined> {
+    const executor = this.db.getExecutor(tx);
+    const result = await executor
+      .select()
+      .from(categoriesTable)
+      .where(and(eq(categoriesTable.slug, slug), isNull(categoriesTable.deletedAt)))
+      .limit(1);
+    return result[0];
+  }
+
+
   async create(data: TNewCategory, tx?: DrizzleTx): Promise<TCategory> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
@@ -86,7 +97,7 @@ export class CategoryRepository {
   }
 
 
-  async update(id: string, data: any, tx?: DrizzleTx): Promise<TCategory> {
+  async update(id: string, data: Partial<TNewCategory>, tx?: DrizzleTx): Promise<TCategory> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
       .update(categoriesTable)
@@ -104,7 +115,8 @@ export class CategoryRepository {
       .set({ 
         deletedAt: new Date(), 
         isActive: false,
-        slug: sql`${categoriesTable.slug} || '-deleted-' || ${Date.now()}`
+        // Use the row id (not Date.now()) so bulk-deletes in a loop never produce duplicate slugs
+        slug: sql`${categoriesTable.slug} || '-deleted-' || ${id}`
       })
       .where(eq(categoriesTable.id, id));
   }
@@ -125,7 +137,7 @@ export class CategoryRepository {
     await executor
       .update(categoriesTable)
       .set({
-        usageCount: sql`${categoriesTable.usageCount} - ${amount}`,
+        usageCount: sql`GREATEST(${categoriesTable.usageCount} - ${amount}, 0)`,
       })
       .where(eq(categoriesTable.id, id));
   }
