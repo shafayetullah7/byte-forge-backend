@@ -6,7 +6,7 @@ import { CategoryRepository } from '@/_repositories/library/taxonomy/category.re
 import { CategoryHierarchyRepository } from '@/_repositories/library/taxonomy/category-hierarchy.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { categoryHierarchyTable, categoriesTable, TNewCategory } from '@/_db/drizzle/schema/taxonomy';
-import { eq, and, ne, sql, desc, isNull } from 'drizzle-orm';
+import { eq, and, ne, sql, desc, isNull, gt, inArray, notInArray, count, asc, ilike, SQL } from 'drizzle-orm';
 
 import { paginate } from '@/common/utils/pagination.util';
 
@@ -28,7 +28,7 @@ export class AdminCategoriesService {
         .select({ depth: categoryHierarchyTable.depth })
         .from(categoryHierarchyTable)
         .where(eq(categoryHierarchyTable.descendantId, createCategoryDto.parentId))
-        .orderBy(sql`${categoryHierarchyTable.depth} DESC`)
+        .orderBy(desc(categoryHierarchyTable.depth))
         .limit(1);
 
       const maxExistingDepth = depthCheck.length > 0 ? depthCheck[0].depth : 0;
@@ -61,6 +61,11 @@ export class AdminCategoriesService {
         // 2. Insert into hierarchy closure model
         await this.hierarchyRepository.insertNode(tx, parentId || null, newCat.id);
 
+        // 3. Maintain parent's childrenCount
+        if (parentId) {
+          await this.categoryRepository.incrementChildrenCount(parentId, 1, tx);
+        }
+
         return newCat;
       });
     } catch (error: any) {
@@ -74,15 +79,41 @@ export class AdminCategoriesService {
   async findAll(query: CategoryQueryDto) {
     const limit = query.limit ? Number(query.limit) : 20;
     const page = query.page ? Number(query.page) : 1;
+    const offset = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
-      this.categoryRepository.findMany(query),
-      this.categoryRepository.count(query)
+    // Build filter conditions inline (Rule 2: no findMany/count via repository)
+    const where: SQL[] = [isNull(categoriesTable.deletedAt)];
+    if (query.isActive !== undefined) {
+      where.push(eq(categoriesTable.isActive, query.isActive === 'true'));
+    }
+    if (query.search) {
+      where.push(ilike(categoriesTable.name, `%${query.search}%`));
+    }
+    const whereClause = and(...where);
+
+    const sortByField =
+      query.sortBy === 'name' ? categoriesTable.name :
+      query.sortBy === 'updatedAt' ? categoriesTable.updatedAt :
+      categoriesTable.createdAt;
+    const sortFn = query.sortOrder === 'asc' ? asc : desc;
+
+    const [data, [{ total }]] = await Promise.all([
+      this.db.client
+        .select()
+        .from(categoriesTable)
+        .where(whereClause)
+        .orderBy(sortFn(sortByField))
+        .limit(limit)
+        .offset(offset),
+      this.db.client
+        .select({ total: count() })
+        .from(categoriesTable)
+        .where(whereClause),
     ]);
 
     // Enrich each flat row with parentId and depth from the hierarchy table
     const ids = data.map(c => c.id);
-    let hierarchyMap = new Map<string, { parentId: string | null; depth: number }>();
+    const hierarchyMap = new Map<string, { parentId: string | null; depth: number }>();
 
     if (ids.length > 0) {
       // A single query to get parentId (depth=1 ancestor) and current depth (max depth row) per category
@@ -93,9 +124,7 @@ export class AdminCategoriesService {
           depth: categoryHierarchyTable.depth,
         })
         .from(categoryHierarchyTable)
-        .where(
-          sql`${categoryHierarchyTable.descendantId} = ANY(${sql.raw(`ARRAY[${ids.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
-        );
+        .where(inArray(categoryHierarchyTable.descendantId, ids));
 
       ids.forEach(id => {
         const rows = hierarchyRows.filter(r => r.id === id);
@@ -124,11 +153,12 @@ export class AdminCategoriesService {
         name: categoriesTable.name,
         slug: categoriesTable.slug,
         isActive: categoriesTable.isActive,
+        childrenCount: categoriesTable.childrenCount,
         parentId: sql<string | null>`(
-          SELECT ancestor_id 
-          FROM ${categoryHierarchyTable} 
+          SELECT ancestor_id
+          FROM ${categoryHierarchyTable}
           WHERE descendant_id = ${categoriesTable.id} AND depth = 1
-        )`
+        )`,
       })
       .from(categoriesTable)
       .where(isNull(categoriesTable.deletedAt));
@@ -150,10 +180,6 @@ export class AdminCategoriesService {
       }
     });
 
-    categoryMap.forEach(node => {
-      node.subCategoryCount = node.children.length;
-    });
-
     return tree;
   }
 
@@ -172,14 +198,14 @@ export class AdminCategoriesService {
       ))
       .limit(1);
 
-    // 2. Get Children
+    // 2. Get Children (childrenCount already on the row — no subquery needed)
     const childrenCountQuery = await this.db.client
       .select({
         id: categoriesTable.id,
         name: categoriesTable.name,
         slug: categoriesTable.slug,
         isActive: categoriesTable.isActive,
-        subCategoryCount: sql<number>`(SELECT count(*) FROM ${categoryHierarchyTable} WHERE ancestor_id = ${categoriesTable.id} AND depth = 1)`
+        childrenCount: categoriesTable.childrenCount,
       })
       .from(categoryHierarchyTable)
       .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.descendantId))
@@ -214,7 +240,7 @@ export class AdminCategoriesService {
         // Exclude self and all descendants (prevents circular hierarchy)
         ne(categoriesTable.id, id),
         descendantIds.length > 0
-          ? sql`${categoriesTable.id} NOT IN (${sql.join(descendantIds.map(did => sql`${did}`), sql`, `)})`
+          ? notInArray(categoriesTable.id, descendantIds)
           : sql`TRUE`,
         isNull(categoriesTable.deletedAt)
       ))
@@ -247,7 +273,7 @@ export class AdminCategoriesService {
       .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.ancestorId))
       .where(and(
         eq(categoryHierarchyTable.descendantId, id),
-        sql`${categoryHierarchyTable.depth} > 0`  // exclude self (depth=0)
+        gt(categoryHierarchyTable.depth, 0)  // exclude self (depth=0)
       ))
       .orderBy(desc(categoryHierarchyTable.depth));  // highest depth = root, so desc gives root first
 
@@ -280,12 +306,24 @@ export class AdminCategoriesService {
           // Prevent Circular Reference
           if (parentId === id) throw new BadRequestException("A category cannot be its own parent.");
 
+          // Resolve the current parent inside the tx (lock to avoid races)
+          const oldParentRow = await tx
+            .select({ ancestorId: categoryHierarchyTable.ancestorId })
+            .from(categoryHierarchyTable)
+            .where(and(
+              eq(categoryHierarchyTable.descendantId, id),
+              eq(categoryHierarchyTable.depth, 1)
+            ))
+            .for('update')
+            .limit(1);
+          const oldParentId = oldParentRow[0]?.ancestorId ?? null;
+
           if (parentId) {
             const parentExists = await this.categoryRepository.findOne(parentId);
             if (!parentExists) throw new BadRequestException(`Parent Category ${parentId} not found.`);
 
             // Check if new parent is actually a descendant of the current category
-            const isDescendant = await this.db.client
+            const isDescendant = await tx
               .select({ id: categoryHierarchyTable.descendantId })
               .from(categoryHierarchyTable)
               .where(and(
@@ -298,7 +336,7 @@ export class AdminCategoriesService {
             }
 
             // Depth Limit Check: (New Parent Depth) + 1 + (Current Subtree Height) <= 2
-            const parentDepthQuery = await this.db.client
+            const parentDepthQuery = await tx
               .select({ depth: categoryHierarchyTable.depth })
               .from(categoryHierarchyTable)
               .where(eq(categoryHierarchyTable.descendantId, parentId))
@@ -307,7 +345,7 @@ export class AdminCategoriesService {
 
             const newParentDepth = parentDepthQuery.length > 0 ? parentDepthQuery[0].depth : 0;
 
-            const subtreeHeightQuery = await this.db.client
+            const subtreeHeightQuery = await tx
               .select({ height: sql<number>`MAX(${categoryHierarchyTable.depth})` })
               .from(categoryHierarchyTable)
               .where(eq(categoryHierarchyTable.ancestorId, id));
@@ -320,6 +358,16 @@ export class AdminCategoriesService {
           }
 
           await this.hierarchyRepository.moveSubtree(tx, id, parentId || null);
+
+          // Maintain childrenCount: swap between old and new parent
+          if (oldParentId !== parentId) {
+            if (oldParentId) {
+              await this.categoryRepository.decrementChildrenCount(oldParentId, 1, tx);
+            }
+            if (parentId) {
+              await this.categoryRepository.incrementChildrenCount(parentId, 1, tx);
+            }
+          }
         }
 
         if (Object.keys(payload).length > 0) {
@@ -340,11 +388,23 @@ export class AdminCategoriesService {
     await this.findOne(id);
 
     return await this.db.transaction(async (tx) => {
-      // 1. Get all descendants from the hierarchy (includes self due to depth 0 closure)
+      // 1. Resolve the immediate parent of the node being deleted (lock to prevent races)
+      const parentRow = await tx
+        .select({ ancestorId: categoryHierarchyTable.ancestorId })
+        .from(categoryHierarchyTable)
+        .where(and(
+          eq(categoryHierarchyTable.descendantId, id),
+          eq(categoryHierarchyTable.depth, 1)
+        ))
+        .for('update')
+        .limit(1);
+      const immediateParentId = parentRow[0]?.ancestorId ?? null;
+
+      // 2. Get all descendants from the hierarchy (includes self due to depth 0 closure)
       const descendants = await tx
         .select({
           id: categoriesTable.id,
-          usageCount: categoriesTable.usageCount
+          usageCount: categoriesTable.usageCount,
         })
         .from(categoryHierarchyTable)
         .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.descendantId))
@@ -357,15 +417,20 @@ export class AdminCategoriesService {
 
       const descendantIds = descendants.map(d => d.id);
 
-      // 2. Soft delete all descendants — slug uses row id so no duplicate-slug collision in bulk
+      // 3. Soft delete all descendants — slug uses row id so no duplicate-slug collision in bulk
       if (descendantIds.length > 0) {
         for (const dId of descendantIds) {
           await this.categoryRepository.softDelete(dId, tx);
         }
       }
 
-      // 3. Wipe the hierarchy records for the entire subtree
+      // 4. Wipe the hierarchy records for the entire subtree
       await this.hierarchyRepository.deleteSubtree(tx, id);
+
+      // 5. Decrement the immediate parent's childrenCount
+      if (immediateParentId) {
+        await this.categoryRepository.decrementChildrenCount(immediateParentId, 1, tx);
+      }
     });
   }
 }

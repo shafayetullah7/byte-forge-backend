@@ -138,7 +138,35 @@ export class AdminTagGroupsService {
         orderBy: [sortFn(sortByField)],
         limit,
         offset,
-        with: { translations: true },
+        with: {
+          translations: {
+            columns: {
+              name: true,
+            },
+            where: eq(tagGroupTranslationsTable.locale, 'en'),
+          },
+          tags: {
+            limit: 3,
+            columns: {
+              id: true,
+              slug: true,
+              isActive: true,
+            },
+            where: and(
+              isNull(tagsTable.deletedAt),
+              eq(tagsTable.isActive, true)
+            ),
+            with: {
+              translations: {
+                columns: {
+                  name: true,
+                },
+                where: eq(tagTranslationsTable.locale, 'en'),
+              },
+            },
+            orderBy: [asc(tagsTable.createdAt)],
+          },
+        },
       }),
       this.db.client
         .select({ total: sql`count(*)`.mapWith(Number) })
@@ -146,7 +174,26 @@ export class AdminTagGroupsService {
         .where(conditions)
     ]);
 
-    return paginate(groups, total, page, limit);
+    const formattedGroups = groups.map(group => {
+      const { translations, tags, ...rest } = group;
+      const englishTranslation = translations?.[0] || null;
+      
+      const formattedTags = (tags || []).map(tag => {
+        const { translations: tagTranslations, ...tagRest } = tag;
+        return {
+          ...tagRest,
+          name: tagTranslations?.[0]?.name || null,
+        };
+      });
+
+      return {
+        ...rest,
+        name: englishTranslation?.name || null,
+        tags: formattedTags,
+      };
+    });
+
+    return paginate(formattedGroups, total, page, limit);
   }
 
   async findOne(id: string) {
