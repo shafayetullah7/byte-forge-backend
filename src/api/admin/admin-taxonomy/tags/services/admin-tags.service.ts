@@ -105,7 +105,17 @@ export class AdminTagsService {
 
     // Admin returns all raw translations, so we just map tag directly 
     // unless a specific translation resolution is requested by caller context (for now, admin gets all)
-    return paginate(data, total, page, limit);
+    const formattedData = data.map(tag => {
+      const { translations, ...rest } = tag;
+      const englishTranslation = translations.find(t => t.locale === 'en');
+      return {
+        ...rest,
+        translations,
+        name: englishTranslation?.name || null,
+      };
+    });
+
+    return paginate(formattedData, total, page, limit);
   }
 
   async findOne(id: string) {

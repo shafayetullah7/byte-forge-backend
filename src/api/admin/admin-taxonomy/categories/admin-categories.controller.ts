@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { AdminCategoriesService } from './admin-categories.service';
+import { AdminCategoryTranslationsService } from './services/admin-category-translations.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryQueryDto } from './dto/category-query.dto';
 import { CategoryParamDto } from './dto/category-param.dto';
+import { UpsertCategoryTranslationDto } from './dto/upsert-category-translation.dto';
+import { CategoryTranslationParamDto } from './dto/category-translation-param.dto';
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
 
@@ -12,6 +15,7 @@ import { ResponseService } from '@/common/modules/response/response.service';
 export class AdminCategoriesController {
   constructor(
     private readonly categoriesService: AdminCategoriesService,
+    private readonly categoryTranslationsService: AdminCategoryTranslationsService,
     private readonly responseService: ResponseService,
   ) {}
 
@@ -75,6 +79,38 @@ export class AdminCategoriesController {
     await this.categoriesService.remove(param.id);
     return this.responseService.success({
       message: 'Category removed successfully',
+      data: null,
+    });
+  }
+
+  // --- CATEGORY TRANSLATION SUB-RESOURCES ---
+
+  @Get(':category_id/translations')
+  async findAllTranslations(@Param('category_id') categoryId: string) {
+    const data = await this.categoryTranslationsService.findAllByCategory(categoryId);
+    return this.responseService.success({
+      message: 'Category translations retrieved successfully',
+      data,
+    });
+  }
+
+  @Post(':category_id/translations')
+  async upsertTranslation(
+    @Param('category_id') categoryId: string,
+    @Body() upsertDto: UpsertCategoryTranslationDto,
+  ) {
+    const data = await this.categoryTranslationsService.upsert(categoryId, upsertDto);
+    return this.responseService.success({
+      message: 'Category translation saved successfully',
+      data,
+    });
+  }
+
+  @Delete(':category_id/translations/:locale')
+  async removeTranslation(@Param() param: CategoryTranslationParamDto) {
+    await this.categoryTranslationsService.remove(param.category_id, param.locale);
+    return this.responseService.success({
+      message: 'Category translation deleted successfully',
       data: null,
     });
   }

@@ -4,3 +4,4 @@ export * from './tag-group.schema';
 export * from './tag.schema';
 export * from './tag-group-translation.schema';
 export * from './tag-translation.schema';
+export * from './category-translation.schema';

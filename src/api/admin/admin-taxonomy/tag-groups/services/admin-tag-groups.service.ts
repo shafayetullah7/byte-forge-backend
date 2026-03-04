@@ -139,12 +139,7 @@ export class AdminTagGroupsService {
         limit,
         offset,
         with: {
-          translations: {
-            columns: {
-              name: true,
-            },
-            where: eq(tagGroupTranslationsTable.locale, 'en'),
-          },
+          translations: true,
           tags: {
             limit: 3,
             columns: {
@@ -157,12 +152,7 @@ export class AdminTagGroupsService {
               eq(tagsTable.isActive, true)
             ),
             with: {
-              translations: {
-                columns: {
-                  name: true,
-                },
-                where: eq(tagTranslationsTable.locale, 'en'),
-              },
+              translations: true,
             },
             orderBy: [asc(tagsTable.createdAt)],
           },
@@ -176,18 +166,20 @@ export class AdminTagGroupsService {
 
     const formattedGroups = groups.map(group => {
       const { translations, tags, ...rest } = group;
-      const englishTranslation = translations?.[0] || null;
+      const englishTranslation = translations.find(t => t.locale === 'en');
       
       const formattedTags = (tags || []).map(tag => {
         const { translations: tagTranslations, ...tagRest } = tag;
         return {
           ...tagRest,
-          name: tagTranslations?.[0]?.name || null,
+          translations: tagTranslations,
+          name: tagTranslations.find(t => t.locale === 'en')?.name || null,
         };
       });
 
       return {
         ...rest,
+        translations,
         name: englishTranslation?.name || null,
         tags: formattedTags,
       };

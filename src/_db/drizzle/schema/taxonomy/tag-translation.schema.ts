@@ -9,9 +9,9 @@ export const tagTranslationsTable = pgTable('tag_translations', {
   locale: varchar('locale', { length: 10 }).notNull().references(() => languagesTable.code),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-}, (t) => ({
-  uniqLocalePerTag: unique().on(t.tagId, t.locale),
-}));
+}, (t) => [
+  unique().on(t.tagId, t.locale),
+]);
 
 export type TTagTranslation = typeof tagTranslationsTable.$inferSelect;
 export type TNewTagTranslation = typeof tagTranslationsTable.$inferInsert;
