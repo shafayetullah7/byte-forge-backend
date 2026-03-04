@@ -7,7 +7,18 @@ import * as bcrypt from 'bcrypt';
 import * as schema from '../drizzle/schema';
 
 // Load environment variables
-dotenv.config({ path: '.env.development' });
+const env = process.env.NODE_ENV || 'development';
+dotenv.config({ path: `.env.${env}` });
+console.log(`Loading environment: ${env}`);
+
+console.log({
+  env:process.env.NODE_ENV ,
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_NAME: process.env.DB_NAME,
+});
 
 const config = {
   host: process.env.DB_HOST,
