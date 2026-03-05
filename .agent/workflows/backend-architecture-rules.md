@@ -31,3 +31,30 @@ These rules map boundaries between Controllers, Services, and Repositories, enfo
 - **Soft-Deletion & Unique Constraints:** When softly deleting an entity that has unique constraints (like `slug`), you MUST append a timestamp to the unique field (e.g., `slug: \`deleted_${Date.now()}_${entity.slug}\``) to free up the slug for future use and prevent `Unique Constraint Violations` upon recreation.
 - **Orphan Cleanup:** Before soft-deletion, you must hard-delete any closely bound sidecar data (like translations or orphaned metadata) to prevent database bloat, because soft-deleting the parent will bypass relational `CASCADE` deletions.
 - **Usage Validation:** Hard validate relationships before deletion and aggressively throw a `BadRequestException` if the entity is currently being used by active products or unrelated domains.
+
+## 5. Internationalization (i18n) & Content Validation
+- **Mandatory Bilingual Content**: Every translatable entity MUST have translations for both English (`en`) and Bengali (`bn`). 
+- **DTO Enforcement**: Zod-backed DTOs for create/update operations MUST strictly validate that the `translations` array contains exactly these two locales. Missing or extra locales should trigger a validation error.
+- **API Specific Errors**:
+    - **Admin APIs**: Error messages should be in **plain English** only.
+    - **Public/User APIs**: Error messages should support bilingualism (`en`/`bn`).
+- **Bilingual Validation Feedback**: For Admin content-related validation (e.g., "Bengali name is required"), error messages MUST clearly specify which locale is failing, but the message itself is in English.
+- **Dynamic Retrieval**: All public-facing and admin APIs must return all available translations to ensure data completeness across all supported languages.
+
+### Multilingual DTO Validation Example
+```typescript
+const TranslationSchema = z.object({
+  locale: z.enum(['en', 'bn']),
+  name: z.string().trim().min(1, 'Name is required'),
+});
+
+const CreateDtoSchema = z.object({
+  translations: z.array(TranslationSchema)
+    .min(2, 'Translations for both English and Bengali are required')
+    .superRefine((val, ctx) => {
+      const locales = val.map(t => t.locale);
+      if (!locales.includes('en')) ctx.addIssue({ code: 'custom', message: 'English translation missing' });
+      if (!locales.includes('bn')) ctx.addIssue({ code: 'custom', message: 'Bengali translation missing' });
+    }),
+});
+```

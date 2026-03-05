@@ -8,11 +8,30 @@ const createTagSchema = z.object({
   isActive: z.boolean().optional(),
   translations: z.array(
     z.object({
-      locale: z.string().trim().min(2).max(10),
-      name: z.string().trim().min(1, 'Name cannot be empty').max(255),
+      locale: z.enum(['en', 'bn']),
+      name: z.string().trim().min(1, 'Name is required').max(255),
       description: z.string().optional(),
     })
-  ).min(1, 'At least one translation is required'),
+  )
+  .min(2, 'Translations for both English and Bengali are required')
+  .max(2, 'Only English and Bengali translations are allowed')
+  .superRefine((translations, ctx) => {
+    const locales = translations.map(t => t.locale);
+    if (!locales.includes('en')) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'English (en) translation is missing',
+        path: [],
+      });
+    }
+    if (!locales.includes('bn')) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Bengali (bn) translation is missing',
+        path: [],
+      });
+    }
+  }),
 });
 
 export class CreateTagDto extends createZodDto(createTagSchema) {}

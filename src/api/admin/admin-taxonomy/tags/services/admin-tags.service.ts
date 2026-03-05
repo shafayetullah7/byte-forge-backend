@@ -9,6 +9,7 @@ import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
 import { paginate } from '@/common/utils/pagination.util';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { isUuid } from '@/common/utils/is-uuid.util';
 
 @Injectable()
 export class AdminTagsService {
@@ -19,9 +20,6 @@ export class AdminTagsService {
   ) {}
 
   async create(createTagDto: CreateTagDto) {
-    const hasEn = createTagDto.translations.some(t => t.locale === 'en');
-    if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
-
     // 1. Verify group exists and is not deleted
     const group = await this.tagGroupRepository.findOne(createTagDto.groupId);
     if (!group) throw new BadRequestException(`Tag Group ${createTagDto.groupId} does not exist.`);
@@ -119,12 +117,15 @@ export class AdminTagsService {
   }
 
   async findOne(id: string) {
+    const isIdUuid = isUuid(id);
+    const lookupCondition = isIdUuid ? eq(tagsTable.id, id) : eq(tagsTable.slug, id);
+
     const tag = await this.db.client.query.tagsTable.findFirst({
-        where: and(eq(tagsTable.id, id), isNull(tagsTable.deletedAt)),
+        where: and(lookupCondition, isNull(tagsTable.deletedAt)),
         with: { translations: true },
     });
 
-    if (!tag) throw new NotFoundException(`Tag ${id} not found`);
+    if (!tag) throw new NotFoundException(`Tag with ${isIdUuid ? 'ID' : 'slug'} '${id}' not found`);
     return tag;
   }
 

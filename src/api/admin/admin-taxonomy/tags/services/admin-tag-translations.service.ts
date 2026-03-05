@@ -55,8 +55,8 @@ export class AdminTagTranslationsService {
   }
 
   async remove(tagId: string, locale: string) {
-    if (locale === 'en') {
-      throw new BadRequestException("Deleting the default 'en' English locale is not permitted.");
+    if (locale === 'en' || locale === 'bn') {
+      throw new BadRequestException(`Deleting the mandatory '${locale}' locale is not permitted.`);
     }
 
     const result = await this.db.client

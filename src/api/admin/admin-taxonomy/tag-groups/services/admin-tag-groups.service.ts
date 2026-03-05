@@ -11,6 +11,7 @@ import { eq, and, isNull, sql, asc, desc, ilike, exists } from 'drizzle-orm';
 import { tagsTable, tagGroupTranslationsTable, tagTranslationsTable } from '@/_db/drizzle/schema/taxonomy';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { paginate } from '@/common/utils/pagination.util';
+import { isUuid } from '@/common/utils/is-uuid.util';
 
 @Injectable()
 export class AdminTagGroupsService {
@@ -21,9 +22,6 @@ export class AdminTagGroupsService {
   ) {}
 
   async create(createTagGroupDto: CreateTagGroupDto) {
-    const hasEn = createTagGroupDto.translations.some(t => t.locale === 'en');
-    if (!hasEn) throw new BadRequestException("An English ('en') translation is required.");
-
     // Check if tag group slug already exists
     const existingGroup = await this.tagGroupRepository.findBySlug(createTagGroupDto.slug);
     if (existingGroup) {
@@ -37,11 +35,6 @@ export class AdminTagGroupsService {
       if (existingTags.length > 0) {
         const duplicateSlugs = existingTags.map(t => t.slug).join(', ');
         throw new BadRequestException(`The following tag slugs already exist: ${duplicateSlugs}`);
-      }
-
-      for (const tagDto of createTagGroupDto.tags) {
-        const hasTagEn = tagDto.translations.some(t => t.locale === 'en');
-        if (!hasTagEn) throw new BadRequestException(`An English ('en') translation is required for tag slug '${tagDto.slug}'.`);
       }
     }
 
@@ -189,12 +182,15 @@ export class AdminTagGroupsService {
   }
 
   async findOne(id: string) {
+    const isIdUuid = isUuid(id);
+    const lookupCondition = isIdUuid ? eq(tagGroupsTable.id, id) : eq(tagGroupsTable.slug, id);
+
     const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
+      where: and(lookupCondition, isNull(tagGroupsTable.deletedAt)),
       with: { translations: true },
     });
 
-    if (!group) throw new NotFoundException(`Tag Group with ID ${id} not found`);
+    if (!group) throw new NotFoundException(`Tag Group with ${isIdUuid ? 'ID' : 'slug'} '${id}' not found`);
     return group;
   }
 
