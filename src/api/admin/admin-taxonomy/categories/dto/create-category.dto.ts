@@ -5,7 +5,7 @@ import { SlugSchema } from '@/common/schemas/slug.schema';
 const translationSchema = z.object({
   locale: z.string().min(2).max(10),
   name: z.string().min(1).max(255),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
 });
 
 const createCategorySchema = z.object({
