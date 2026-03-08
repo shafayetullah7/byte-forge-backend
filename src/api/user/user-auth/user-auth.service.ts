@@ -159,15 +159,16 @@ export class UserAuthService {
         });
       }
 
-      // Verify OTP
+      // Verify OTP (Pass transaction context tx to prevent deadlocks)
       await this.otpService.verifyOtp(
         userId,
         otp,
         OtpPurpose.ACCOUNT_VERIFICATION,
+        tx,
       );
 
-      // Update user's emailVerifiedAt
-      await this.drizzle.client
+      // Update user's emailVerifiedAt (Use transaction context tx!)
+      await tx
         .update(userTable)
         .set({ emailVerifiedAt: new Date() })
         .where(eq(userTable.id, userId));
