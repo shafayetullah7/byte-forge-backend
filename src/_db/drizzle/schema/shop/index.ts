@@ -1,5 +1,3 @@
-export * from './business.account.schema';
-export * from './business.account.verification.schema';
 export * from './manager.schema';
 export * from './shop.address.schema';
 export * from './shop.business.schema';
@@ -8,3 +6,4 @@ export * from './shop.manager.schema';
 export * from './shop.schema';
 export * from './shop.social.media.schema';
 export * from './shop.verification.schema';
+export * from './shop.translation.schema';

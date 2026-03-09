@@ -3,16 +3,16 @@ import { z } from 'zod';
 
 const localLoginSchema = z.object({
   email: z
-    .email({ message: 'Please provide a valid email address' })
-    .max(255, { message: 'Email must not exceed 255 characters' }),
+    .email({ message: 'message.validation.invalidEmail' })
+    .max(255, { message: 'message.validation.maxLength' }),
 
   password: z
     .string({
       // Unified generic error for both missing/invalid type issues
-      error: 'Invalid password input provided',
+      error: 'message.validation.required',
     })
-    .min(8, { message: 'Password must be at least 8 characters long' })
-    .max(255, { message: 'Password must not exceed 255 characters' }),
+    .min(8, { message: 'message.validation.minLength' })
+    .max(255, { message: 'message.validation.maxLength' }),
 });
 
 export class LocalLoginDto extends createZodDto(localLoginSchema) {}

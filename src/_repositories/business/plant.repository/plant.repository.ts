@@ -21,6 +21,7 @@ import {
   TNewPlantMedia,
   TPlantVariant,
   TNewPlantVariant,
+  shopTable,
 } from '@/_db/drizzle/schema';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { SQL, eq, and, ilike, or, sql } from 'drizzle-orm';
@@ -74,30 +75,38 @@ export class PlantRepository {
   async getAllPlants(options?: PlantQuery, tx?: DrizzleTx): Promise<TPlant[]> {
     const executor = this.db.getExecutor(tx);
     const where = this.buildWhere(options);
+
     const query = executor
-      .select()
+      .select({
+        plant: plantTable,
+      })
       .from(plantTable)
-      .where(and(...where));
+      .innerJoin(shopTable, eq(shopTable.id, plantTable.shopId))
+      .where(and(eq(shopTable.status, 'ACTIVE'), ...where));
 
-    return await query.execute();
-  }
-
-  async createPlant(data: TNewPlant, tx?: DrizzleTx): Promise<TPlant> {
-    const executor = this.db.getExecutor(tx);
-    const [plant] = await executor.insert(plantTable).values(data).returning();
-    return plant;
+    const results = await query.execute();
+    return results.map((r) => r.plant);
   }
 
   async findOne(options?: PlantQuery, tx?: DrizzleTx): Promise<TPlant | null> {
     const executor = this.db.getExecutor(tx);
     const where = this.buildWhere(options);
     const [row] = await executor
-      .select()
+      .select({
+        plant: plantTable,
+      })
       .from(plantTable)
-      .where(and(...where))
+      .innerJoin(shopTable, eq(shopTable.id, plantTable.shopId))
+      .where(and(eq(shopTable.status, 'ACTIVE'), ...where))
       .limit(1)
       .execute();
-    return row ?? null;
+    return row?.plant ?? null;
+  }
+
+  async createPlant(data: TNewPlant, tx?: DrizzleTx): Promise<TPlant> {
+    const executor = this.db.getExecutor(tx);
+    const [row] = await executor.insert(plantTable).values(data).returning();
+    return row;
   }
 
   async update(

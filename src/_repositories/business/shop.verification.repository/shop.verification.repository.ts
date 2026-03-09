@@ -2,7 +2,7 @@ import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import {
-  ShopVerificationStatusEnum,
+  shopVerificationStatusEnum,
   shopVerificationTable,
   TShopVerification,
   TNewShopVerification,
@@ -12,7 +12,7 @@ import { Injectable } from '@nestjs/common';
 export interface ShopVerificationQuery {
   id?: string;
   shopId?: string;
-  status?: (typeof ShopVerificationStatusEnum.enumValues)[number];
+  status?: (typeof shopVerificationStatusEnum.enumValues)[number];
 }
 
 @Injectable()

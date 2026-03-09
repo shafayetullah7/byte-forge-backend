@@ -1,7 +1,14 @@
 {
   "validation": {
     "error": "যাচাইকরণ ব্যর্থ হয়েছে",
-    "details": "বিস্তারিত জানতে validationErrors দেখুন"
+    "details": "বিস্তারিত জানতে validationErrors দেখুন",
+    "required": "এই ক্ষেত্রটি আবশ্যক",
+    "invalidEmail": "অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা প্রদান করুন",
+    "invalidUuid": "এটি একটি সঠিক UUID হতে হবে",
+    "minLength": "খুব ছোট (সর্বনিম্ন {count} অক্ষর)",
+    "maxLength": "খুব বড় (সর্বোচ্চ {count} অক্ষর)",
+    "notEmpty": "খালি রাখা যাবে না",
+    "atLeastOne": "অন্তত একটি আইটেম প্রয়োজন"
   },
   "error": {
     "conflict": "এন্ট্রি ইতিমধ্যে বিদ্যমান",
@@ -28,11 +35,12 @@
     "fileInUse": "ফাইল ইতিমধ্যে ব্যবহার করা হচ্ছে",
     "mediaNotFound": "মিডিয়া পাওয়া যায়নি",
     "mediaNotOwned": "মিডিয়া ব্যবহারকারীর মালিকানাধীন নয়",
-    "businessAccountExists": "আপনার ইতিমধ্যে একটি ব্যবসায়িক অ্যাকাউন্ট আছে",
-    "businessAccountNotFound": "ব্যবসায়িক অ্যাকাউন্ট পাওয়া যায়নি",
     "plantNotFound": "গাছ পাওয়া যায়নি",
     "categoryNotFound": "বিভাগ পাওয়া যায়নি",
     "shopNotFound": "দোকান পাওয়া যায়নি",
+    "shopAlreadyExists": "আপনার ইতিমধ্যে একটি দোকান আছে",
+    "shopNameTaken": "দোকানের নামটি ইতিমধ্যে নেওয়া হয়েছে",
+    "englishTranslationRequired": "ইংরেজি অনুবাদ আবশ্যক",
     "invalidCredentials": "অবৈধ শংসাপত্র"
   },
   "success": {
@@ -49,8 +57,6 @@
     "passwordReset": "পাসওয়ার্ড সফলভাবে রিসেট করা হয়েছে",
     "mediaUploaded": "মিডিয়া সফলভাবে আপলোড করা হয়েছে",
     "mediaDeleted": "মিডিয়া সফলভাবে মুছে ফেলা হয়েছে",
-    "businessAccountCreated": "ব্যবসায়িক অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে",
-    "businessAccountUpdated": "ব্যবসায়িক অ্যাকাউন্ট সফলভাবে আপডেট করা হয়েছে",
     "shopCreated": "দোকান সফলভাবে তৈরি হয়েছে",
     "shopUpdated": "দোকান সফলভাবে আপডেট করা হয়েছে",
     "plantCreated": "গাছ সফলভাবে তৈরি হয়েছে",

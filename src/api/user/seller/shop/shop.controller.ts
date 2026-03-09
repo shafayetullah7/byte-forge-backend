@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ShopService } from './shop.service';
-import { SetupShopDto } from './dto/setup.shop.dto';
+import { ApplySellerDto } from './dto/apply.seller.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('Shops')
 @Controller({ path: 'user/seller/shops', version: '1' })
@@ -20,39 +21,49 @@ export class ShopController {
   constructor(
     private readonly shopService: ShopService,
     private readonly responseService: ResponseService,
+    private readonly i18n: I18nService,
   ) {}
 
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create a new shop' })
-  @ApiResponse({ status: 201, description: 'Shop created successfully' })
+  @ApiOperation({ summary: 'Apply for a new shop' })
+  @ApiResponse({
+    status: 201,
+    description: 'Application submitted successfully',
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @Post()
+  @Post('apply')
   @UseGuards(VerifiedUserAuthGuard)
-  async createShop(
-    @Body() dto: SetupShopDto,
+  async applyAsSeller(
+    @Body() dto: ApplySellerDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
   ): Promise<SuccessResponse<TShop>> {
-    const shop = await this.shopService.createShop(authenticUser.user.id, dto);
+    const shop = await this.shopService.applyAsSeller(
+      authenticUser.user.id,
+      dto,
+      lang,
+    );
     return this.responseService.success({
-      message: 'Shop created successfully',
+      message: this.i18n.t('message.success.shopCreated', { lang }),
       data: shop,
     });
   }
 
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get all shops for current user' })
-  @ApiResponse({ status: 200, description: 'Shops retrieved successfully' })
+  @ApiOperation({ summary: 'Get current user shop' })
+  @ApiResponse({ status: 200, description: 'Shop retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @Get()
+  @Get('my-shop')
   @UseGuards(VerifiedUserAuthGuard)
-  async getMyShops(
+  async getMyShop(
     @AuthenticUser() authenticUser: TAuthenticUser,
-  ): Promise<SuccessResponse<TShop[]>> {
-    const shops = await this.shopService.getShopsByUser(authenticUser.user.id);
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<TShop | null>> {
+    const shop = await this.shopService.getShopByUser(authenticUser.user.id);
     return this.responseService.success({
-      message: 'Shops retrieved successfully',
-      data: shops,
+      message: this.i18n.t('message.success.userRetrieved', { lang }),
+      data: shop,
     });
   }
 }

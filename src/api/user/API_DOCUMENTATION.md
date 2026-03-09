@@ -80,24 +80,7 @@ Retrieves the logged-in user's profile information.
 
 ---
 
-## 4. Seller Business Account
-**Controller**: `BusinessAccountController`  
-**Path**: `/v1/user/seller/business-account`
-
-### `POST /v1/user/seller/business-account`
-Creates a new business account for the authenticated user.
-- **Authentication**: Required (`VerifiedUserAuthGuard`)
-- **Request Body**: `CreateBusinessAccountDto`
-- **Response**: `{ success: true, message: string, data: BusinessAccount }`
-
-### `GET /v1/user/seller/business-account`
-Retrieves the business account belonging to the authenticated user.
-- **Authentication**: Required (`VerifiedUserAuthGuard`)
-- **Response**: `{ success: true, message: string, data: BusinessAccount }`
-
----
-
-## 5. Seller Shops
+## 4. Seller Shops
 **Controller**: `ShopController`  
 **Path**: `/v1/user/seller/shops`
 

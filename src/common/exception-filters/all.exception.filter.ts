@@ -78,7 +78,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // 1. Zod Validation Errors
     if (exception instanceof ZodValidationException) {
-      const validationErrors = this.formatZodErrors(exception);
+      const validationErrors = this.formatZodErrors(exception, lang);
       return this.responseService.error({
         statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
@@ -167,7 +167,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     console.log(res);
 
     if (res instanceof ZodValidationException) {
-      validationErrors = this.formatZodErrors(res);
+      validationErrors = this.formatZodErrors(res, lang);
       return this.responseService.error({
         statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
@@ -288,13 +288,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private formatZodErrors(
     zodError: ZodValidationException,
+    lang: string,
   ): ResponseValidationError[] {
     const error = zodError.getZodError() as ZodError;
     // console.log('zodError', zodError);
     return error.issues.map((issue) => {
+      let args: any = {};
+      if (issue.code === 'too_small') {
+        args = { count: (issue as any).minimum };
+      } else if (issue.code === 'too_big') {
+        args = { count: (issue as any).maximum };
+      }
+
       return {
         field: issue.path.join('.') || 'unknown_field',
-        message: issue.message,
+        message: this.i18n.t(issue.message, { lang, args }),
         code: issue.code,
       };
     });

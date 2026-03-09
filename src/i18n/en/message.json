@@ -1,7 +1,14 @@
 {
   "validation": {
     "error": "Validation failed",
-    "details": "Check validationErrors array for details"
+    "details": "Check validationErrors array for details",
+    "required": "This field is required",
+    "invalidEmail": "Please provide a valid email address",
+    "invalidUuid": "This must be a valid UUID",
+    "minLength": "Too short (minimum {count} characters)",
+    "maxLength": "Too long (maximum {count} characters)",
+    "notEmpty": "Cannot be empty",
+    "atLeastOne": "At least one item is required"
   },
   "error": {
     "conflict": "Entry already exists",
@@ -28,11 +35,12 @@
     "fileInUse": "File is already in use",
     "mediaNotFound": "Media not found",
     "mediaNotOwned": "Media not owned by user",
-    "businessAccountExists": "You already have a business account",
-    "businessAccountNotFound": "Business account not found",
     "plantNotFound": "Plant not found",
     "categoryNotFound": "Category not found",
     "shopNotFound": "Shop not found",
+    "shopAlreadyExists": "You already have a shop",
+    "shopNameTaken": "Shop name is already taken",
+    "englishTranslationRequired": "English translation is required",
     "invalidCredentials": "Invalid credentials"
   },
   "success": {
@@ -49,8 +57,6 @@
     "passwordReset": "Password reset successfully",
     "mediaUploaded": "Media uploaded successfully",
     "mediaDeleted": "Media deleted successfully",
-    "businessAccountCreated": "Business account created successfully",
-    "businessAccountUpdated": "Business account updated successfully",
     "shopCreated": "Shop created successfully",
     "shopUpdated": "Shop updated successfully",
     "plantCreated": "Plant created successfully",

@@ -6,6 +6,7 @@ import {
   shopManagerTable,
   shopSocialMediaTable,
   shopTable,
+  shopTranslationsTable,
   shopVerificationTable,
   TNewShop,
   TNewShopAddress,
@@ -13,6 +14,7 @@ import {
   TNewShopContact,
   TNewShopManager,
   TNewShopSocialMedia,
+  TNewShopTranslation,
   TNewShopVerification,
   TShop,
   TShopAddress,
@@ -20,11 +22,12 @@ import {
   TShopContact,
   TShopManager,
   TShopSocialMedia,
-} from '@/_db/drizzle/schema';
+  TShopTranslation,
+} from '@/_db/drizzle/schema/shop';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '../../_types/lock.transaction';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class ShopRepository {
@@ -109,6 +112,31 @@ export class ShopRepository {
     return shopSocialMedia;
   }
 
+  async createShopTranslation(
+    payload: TNewShopTranslation,
+    tx?: DrizzleTx,
+  ): Promise<TShopTranslation> {
+    const executor = this.db.getExecutor(tx);
+    const [createdTranslation] = await executor
+      .insert(shopTranslationsTable)
+      .values(payload)
+      .returning()
+      .execute();
+    return createdTranslation;
+  }
+
+  async createShopTranslations(
+    payload: TNewShopTranslation[],
+    tx?: DrizzleTx,
+  ): Promise<TShopTranslation[]> {
+    const executor = this.db.getExecutor(tx);
+    return await executor
+      .insert(shopTranslationsTable)
+      .values(payload)
+      .returning()
+      .execute();
+  }
+
   async createShopVerification(payload: TNewShopVerification, tx?: DrizzleTx) {
     const executor = this.db.getExecutor(tx);
     const [createdShopVerification] = await executor
@@ -131,10 +159,10 @@ export class ShopRepository {
     return shop;
   }
 
-  async getShopsByOwnerId(
+  async getShopByOwnerId(
     ownerId: string,
     transaction?: TLockTransaction,
-  ): Promise<TShop[]> {
+  ): Promise<TShop | undefined> {
     const executor = this.db.getExecutor(transaction?.tx);
     const baseQuery = executor
       .select()
@@ -142,41 +170,23 @@ export class ShopRepository {
       .where(eq(shopTable.ownerId, ownerId));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
-    const shops = await lockQuery.execute();
-    return shops;
-  }
-
-  async findShopByName(
-    ownerId: string,
-    shopName: string,
-    transaction?: TLockTransaction,
-  ): Promise<TShop | undefined> {
-    const executor = this.db.getExecutor(transaction?.tx);
-    const baseQuery = executor
-      .select()
-      .from(shopTable)
-      .where(
-        and(eq(shopTable.ownerId, ownerId), eq(shopTable.shopName, shopName)),
-      );
-
-    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
     const [shop] = await lockQuery.execute();
     return shop;
   }
 
-  async getShopsByBusinessAccountId(
-    businessAccountId: string,
+  async findShopByNameInTranslations(
+    shopName: string,
     transaction?: TLockTransaction,
-  ) {
+  ): Promise<TShopTranslation | undefined> {
     const executor = this.db.getExecutor(transaction?.tx);
     const baseQuery = executor
       .select()
-      .from(shopTable)
-      .where(eq(shopTable.businessAccountId, businessAccountId));
+      .from(shopTranslationsTable)
+      .where(eq(shopTranslationsTable.shopName, shopName));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
-    const shops = await lockQuery.execute();
-    return shops;
+    const [translation] = await lockQuery.execute();
+    return translation;
   }
 
   async getShopDetailsById(shopId: string, transaction?: TLockTransaction) {
@@ -188,6 +198,8 @@ export class ShopRepository {
         with: {
           shopAddressTable: true,
           shopBusinessTable: true,
+          shopVerificationTable: true,
+          translations: true,
         },
       })
       .execute();

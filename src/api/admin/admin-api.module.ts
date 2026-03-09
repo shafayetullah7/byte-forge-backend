@@ -6,6 +6,7 @@ import { AdminTagGroupsModule } from './admin-taxonomy/tag-groups/admin-tag-grou
 import { AdminTagsModule } from './admin-taxonomy/tags/admin-tags.module';
 import { AdminCategoriesModule } from './admin-taxonomy/categories/admin-categories.module';
 import { AdminLanguagesModule } from './admin-i18n/languages/admin-languages.module';
+import { AdminShopModule } from './admin-shop/admin-shop.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AdminLanguagesModule } from './admin-i18n/languages/admin-languages.mod
     AdminTagsModule,
     AdminCategoriesModule,
     AdminLanguagesModule,
+    AdminShopModule,
   ],
   exports: [
     AdminModule,
@@ -25,6 +27,7 @@ import { AdminLanguagesModule } from './admin-i18n/languages/admin-languages.mod
     AdminTagsModule,
     AdminCategoriesModule,
     AdminLanguagesModule,
+    AdminShopModule,
   ],
 })
 export class AdminApiModule {}
