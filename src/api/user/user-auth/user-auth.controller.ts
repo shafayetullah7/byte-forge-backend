@@ -16,14 +16,20 @@ import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
-import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
 import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
+@ApiTags('User Auth')
 @Controller({ path: 'user/auth', version: '1' })
 export class UserAuthController {
   constructor(
@@ -32,14 +38,24 @@ export class UserAuthController {
     private readonly i18n: I18nService,
   ) {}
 
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User successfully registered' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
   @Post('register')
-  async register(@Body() payload: CreateLocalUserDto, @Req() req: Request) {
+  async register(@Body() payload: CreateLocalUserDto) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
     const result = await this.userAuthService.register(payload, lang);
-    return { success: true, message: this.i18n.t('message.success.userCreated', { lang }), data: { ...result } };
+    return {
+      success: true,
+      message: this.i18n.t('message.success.userCreated', { lang }),
+      data: { ...result },
+    };
   }
 
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiResponse({ status: 200, description: 'User successfully logged in' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @UseGuards(UserLocalAuthGuard)
   @Post('login')
   async login(
@@ -73,6 +89,10 @@ export class UserAuthController {
     };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Check if user is authenticated' })
+  @ApiResponse({ status: 200, description: 'User is authenticated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Get('/check')
   checkAuth(@Req() req: Request) {
@@ -80,14 +100,24 @@ export class UserAuthController {
     const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
+      throw new UnauthorizedException(
+        this.i18n.t('message.error.unauthorized', { lang }),
+      );
     }
 
     const { user } = auth;
 
-    return { success: true, message: this.i18n.t('message.success.userAuthenticated', { lang }), data: user };
+    return {
+      success: true,
+      message: this.i18n.t('message.success.userAuthenticated', { lang }),
+      data: user,
+    };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Verify user email with OTP' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
   @UseGuards(UserAuthGuard)
   @Post('verify-email')
   async verifyEmail(@Req() req: Request, @Body() payload: VerifyEmailDto) {
@@ -95,7 +125,9 @@ export class UserAuthController {
     const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
+      throw new UnauthorizedException(
+        this.i18n.t('message.error.unauthorized', { lang }),
+      );
     }
 
     await this.userAuthService.verifyEmail(auth.user.id, payload.otp);
@@ -106,6 +138,10 @@ export class UserAuthController {
     };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Post('send-verification-email')
   async sendVerificationEmail(@Req() req: Request) {
@@ -113,10 +149,15 @@ export class UserAuthController {
     const lang = i18nContext ? i18nContext.lang : 'en';
     const auth = req.user as AuthAccess;
     if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(this.i18n.t('message.error.unauthorized', { lang }));
+      throw new UnauthorizedException(
+        this.i18n.t('message.error.unauthorized', { lang }),
+      );
     }
 
-    const { expiresAt } = await this.userAuthService.resendVerification(auth.user.id, lang);
+    const { expiresAt } = await this.userAuthService.resendVerification(
+      auth.user.id,
+      lang,
+    );
 
     return {
       success: true,
@@ -125,12 +166,16 @@ export class UserAuthController {
     };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'User successfully logged out' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    const sessionId = req.cookies?.sessionId;
+    const sessionId = req.cookies?.['sessionId'] as string | undefined;
     if (sessionId) {
       await this.userAuthService.logout(sessionId);
     }
@@ -143,6 +188,4 @@ export class UserAuthController {
   }
 
   // === Password Reset Flow ===
-
-
 }

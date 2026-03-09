@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { AdminAuthService } from './admin-auth.service';
 import { CreateLocalAdminDto } from './dto/create.local.admin.dto';
@@ -12,7 +21,14 @@ import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guar
 import { AuthenticAdminUser } from '@/common/decorators/authentic-admin.decorator';
 import { AuthenticAdmin } from '@/common/types';
 import { AdminSessionService } from '../admin-session/admin-session.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('Admin Auth')
 @Controller({ path: 'admin/auth', version: '1' })
 export class AdminAuthController {
   constructor(
@@ -22,13 +38,16 @@ export class AdminAuthController {
     private readonly i18n: I18nService,
   ) {}
 
+  @ApiOperation({ summary: 'Register a new admin' })
+  @ApiResponse({ status: 201, description: 'Admin successfully registered' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
   @Post('register')
   async register(@Body() payload: CreateLocalAdminDto, @Req() req: Request) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    
+
     const result = await this.adminAuthService.register(payload);
-    
+
     return {
       success: true,
       message: this.i18n.t('message.success.userCreated', { lang }),
@@ -36,6 +55,9 @@ export class AdminAuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Admin login' })
+  @ApiResponse({ status: 200, description: 'Admin successfully logged in' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Post('login')
   async login(
     @Body() payload: LoginLocalAdminDto,
@@ -44,21 +66,21 @@ export class AdminAuthController {
   ) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    
+
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
-    
+
     const { tokens, admin, session } = await this.adminAuthService.login(
       payload.email,
       payload.password,
       deviceInfo,
-      ip
+      ip,
     );
 
     this.cookieService.setAdminAccessToken(res, tokens.accessToken);
     this.cookieService.setAdminRefreshToken(res, tokens.refreshToken);
-    
+
     // Set XSRF Token for Double Submit Cookie protection
     const xsrfToken = crypto.randomUUID();
     this.cookieService.setXsrfToken(res, xsrfToken);
@@ -73,6 +95,10 @@ export class AdminAuthController {
     };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Check if admin is authenticated' })
+  @ApiResponse({ status: 200, description: 'Admin is authenticated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(AdminAuthGuard)
   @Get('check')
   async checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
@@ -88,6 +114,9 @@ export class AdminAuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   @Post('refresh')
   async refresh(
     @Req() req: Request,
@@ -105,7 +134,7 @@ export class AdminAuthController {
       await this.adminAuthService.refreshTokens(refreshToken);
 
     this.cookieService.setAdminAccessToken(res, tokens.accessToken);
-    
+
     // Also rotate XSRF Token
     const xsrfToken = crypto.randomUUID();
     this.cookieService.setXsrfToken(res, xsrfToken);
@@ -120,6 +149,10 @@ export class AdminAuthController {
     };
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Admin logout' })
+  @ApiResponse({ status: 200, description: 'Admin successfully logged out' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(AdminAuthGuard)
   @Post('logout')
   async logout(

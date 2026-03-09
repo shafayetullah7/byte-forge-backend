@@ -2,11 +2,17 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Request } from 'express';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
-import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('User Profile')
 @Controller({ path: 'user/profile', version: '1' })
 export class UserController {
   constructor(
@@ -14,6 +20,10 @@ export class UserController {
     private readonly i18n: I18nService,
   ) {}
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Get()
   async getUser(@AuthenticUser() userAuth: TAuthenticUser) {
@@ -23,6 +33,10 @@ export class UserController {
 
     const result = await this.userService.getUser(user.id);
 
-    return { success: true, message: this.i18n.t('message.success.userRetrieved', { lang }), data: result.user };
+    return {
+      success: true,
+      message: this.i18n.t('message.success.userRetrieved', { lang }),
+      data: result.user,
+    };
   }
 }

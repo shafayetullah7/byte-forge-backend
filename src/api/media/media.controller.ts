@@ -22,14 +22,25 @@ import {
   AllowedMimeType,
   TAllowedMimeType,
 } from '@/_db/drizzle/enum/mime.type.enum';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 
+@ApiTags('Media')
 @Controller({ path: 'media', version: '1' })
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
-  /**
-   * Upload a single file with file type and size restrictions
-   */
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Upload a file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'File uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('upload')
   @UseGuards(UserAuthGuard)
   @UseInterceptors(
@@ -72,9 +83,11 @@ export class MediaController {
     };
   }
 
-  /**
-   * Delete a media file by ID
-   */
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete a media file' })
+  @ApiResponse({ status: 204, description: 'File deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'File not found' })
   @Delete(':id')
   @UseGuards(UserAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -86,6 +99,10 @@ export class MediaController {
     await this.mediaService.deleteMedia(params.id, authenticUser);
   }
 
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get all media for current user' })
+  @ApiResponse({ status: 200, description: 'Media list retrieved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get()
   @UseGuards(UserAuthGuard)
   @HttpCode(HttpStatus.OK)

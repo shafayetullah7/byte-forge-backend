@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminTagGroupsService } from './services/admin-tag-groups.service';
 import { AdminTagGroupTranslationsService } from './services/admin-tag-group-translations.service';
 import { AdminTagsService } from '../tags/services/admin-tags.service';
@@ -16,8 +26,16 @@ import { TagQueryDto } from '../tags/dto/tag-query.dto';
 
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('Tag Groups')
 @UseGuards(AdminAuthGuard)
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/tag-groups')
 export class AdminTagGroupsController {
   constructor(
@@ -27,6 +45,8 @@ export class AdminTagGroupsController {
     private readonly responseService: ResponseService,
   ) {}
 
+  @ApiOperation({ summary: 'Create a new tag group' })
+  @ApiResponse({ status: 201, description: 'Tag Group created' })
   @Post()
   async create(@Body() createTagGroupDto: CreateTagGroupDto) {
     const data = await this.tagGroupsService.create(createTagGroupDto);
@@ -36,6 +56,8 @@ export class AdminTagGroupsController {
     });
   }
 
+  @ApiOperation({ summary: 'Get all tag groups' })
+  @ApiResponse({ status: 200, description: 'Tag Groups retrieved' })
   @Get()
   async findAll(@Query() query: TagGroupQueryDto) {
     const list = await this.tagGroupsService.findAll(query);
@@ -46,6 +68,8 @@ export class AdminTagGroupsController {
     });
   }
 
+  @ApiOperation({ summary: 'Get a tag group by ID' })
+  @ApiResponse({ status: 200, description: 'Tag Group retrieved' })
   @Get(':groupId')
   async findOne(@Param() param: TagGroupParamDto) {
     const data = await this.tagGroupsService.findOne(param.groupId);
@@ -55,15 +79,25 @@ export class AdminTagGroupsController {
     });
   }
 
+  @ApiOperation({ summary: 'Update a tag group' })
+  @ApiResponse({ status: 200, description: 'Tag Group updated' })
   @Patch(':groupId')
-  async update(@Param() param: TagGroupParamDto, @Body() updateTagGroupDto: UpdateTagGroupDto) {
-    const data = await this.tagGroupsService.update(param.groupId, updateTagGroupDto);
+  async update(
+    @Param() param: TagGroupParamDto,
+    @Body() updateTagGroupDto: UpdateTagGroupDto,
+  ) {
+    const data = await this.tagGroupsService.update(
+      param.groupId,
+      updateTagGroupDto,
+    );
     return this.responseService.success({
       message: 'Tag Group updated successfully',
       data,
     });
   }
 
+  @ApiOperation({ summary: 'Delete a tag group' })
+  @ApiResponse({ status: 200, description: 'Tag Group deleted' })
   @Delete(':groupId')
   async remove(@Param() param: TagGroupParamDto) {
     await this.tagGroupsService.remove(param.groupId);
@@ -75,48 +109,79 @@ export class AdminTagGroupsController {
 
   // --- TAG GROUP TRANSLATION SUB-RESOURCES ---
 
+  @ApiOperation({ summary: 'Get tag group translations' })
+  @ApiResponse({ status: 200, description: 'Translations retrieved' })
   @Get(':groupId/translations')
   async findAllGroupTranslations(@Param() param: TagGroupParamDto) {
-    const data = await this.tagGroupTranslationsService.findAllByGroup(param.groupId);
-    return this.responseService.success({ data, message: 'Tag Group translations retrieved successfully' });
+    const data = await this.tagGroupTranslationsService.findAllByGroup(
+      param.groupId,
+    );
+    return this.responseService.success({
+      data,
+      message: 'Tag Group translations retrieved successfully',
+    });
   }
 
+  @ApiOperation({ summary: 'Upsert tag group translation' })
+  @ApiResponse({ status: 201, description: 'Translation created' })
+  @ApiResponse({ status: 200, description: 'Translation updated' })
   @Post(':groupId/translations')
   async upsertGroupTranslation(
-    @Param() param: TagGroupParamDto, 
-    @Body() upsertDto: UpsertTagGroupTranslationDto
+    @Param() param: TagGroupParamDto,
+    @Body() upsertDto: UpsertTagGroupTranslationDto,
   ) {
-    const data = await this.tagGroupTranslationsService.upsert(param.groupId, upsertDto);
-    return this.responseService.success({ data, message: 'Tag Group translation saved successfully' });
+    const data = await this.tagGroupTranslationsService.upsert(
+      param.groupId,
+      upsertDto,
+    );
+    return this.responseService.success({
+      data,
+      message: 'Tag Group translation saved successfully',
+    });
   }
 
+  @ApiOperation({ summary: 'Delete tag group translation' })
+  @ApiResponse({ status: 200, description: 'Translation deleted' })
   @Delete(':groupId/translations/:locale')
   async removeGroupTranslation(@Param() param: TagGroupTranslationParamDto) {
     await this.tagGroupTranslationsService.remove(param.groupId, param.locale);
-    return this.responseService.success({ data: null, message: 'Tag Group translation deleted successfully' });
+    return this.responseService.success({
+      data: null,
+      message: 'Tag Group translation deleted successfully',
+    });
   }
 
   // --- TAGS SUB-RESOURCES ---
 
+  @ApiOperation({ summary: 'Create a tag in the group' })
+  @ApiResponse({ status: 201, description: 'Tag created' })
   @Post(':groupId/tags')
   async createTag(
-    @Param() param: TagGroupParamDto, 
-    @Body() createTagDto: CreateTagDto
+    @Param() param: TagGroupParamDto,
+    @Body() createTagDto: CreateTagDto,
   ) {
     // groupId is always sourced from the URL param; any body-level groupId is intentionally ignored
     const tagData: CreateTagDto = { ...createTagDto, groupId: param.groupId };
     const data = await this.tagsService.create(tagData);
-    return this.responseService.success({ message: 'Tag created successfully', data });
+    return this.responseService.success({
+      message: 'Tag created successfully',
+      data,
+    });
   }
 
+  @ApiOperation({ summary: 'Get all tags in the group' })
+  @ApiResponse({ status: 200, description: 'Tags retrieved' })
   @Get(':groupId/tags')
   async findAllTags(
-    @Param() param: TagGroupParamDto, 
-    @Query() query: TagQueryDto
+    @Param() param: TagGroupParamDto,
+    @Query() query: TagQueryDto,
   ) {
     query.groupId = param.groupId;
     const list = await this.tagsService.findAll(query);
-    return this.responseService.paginated({ message: 'Tags retrieved successfully', data: list.data, meta: list.meta });
+    return this.responseService.paginated({
+      message: 'Tags retrieved successfully',
+      data: list.data,
+      meta: list.meta,
+    });
   }
-
 }
