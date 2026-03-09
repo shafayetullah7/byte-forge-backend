@@ -8,22 +8,18 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn'], // only show errors and warnings during initialization
+    logger: ['error', 'warn'],
   });
   app.useLogger(app.get(AppLoggerService));
 
-  // Enable URI versioning (e.g., /api/v1/users, /api/v2/users)
   app.enableVersioning({
     type: VersioningType.URI,
-    defaultVersion: '1', // Default version if not specified
+    defaultVersion: '1',
   });
 
-  // Set global API prefix (without version)
   app.setGlobalPrefix('api');
 
   app.use(cookieParser());
-
-  // Handle global unhandled rejections/exceptions
   process.on('unhandledRejection', (reason, promise) => {
     const logger = app.get(AppLoggerService);
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -35,7 +31,6 @@ async function bootstrap() {
     process.exit(1);
   });
 
-  // CORS for development
   app.enableCors({
     origin: [
       'http://localhost:3000',
