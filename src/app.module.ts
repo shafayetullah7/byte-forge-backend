@@ -13,6 +13,7 @@ import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
 import { TreeCategoriesModule } from './api/library/tree-categories/tree-categories.module';
 import { AdminApiModule } from './api/admin/admin-api.module';
+import { ShopApiModule } from './api/shop/shop-api.module';
 
 import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
@@ -55,6 +56,7 @@ import { JwtModule } from '@nestjs/jwt';
     }),
     UserApiModule,
     AdminApiModule,
+    ShopApiModule,
     TreeCategoriesModule,
     MediaModule,
     HashingModule,

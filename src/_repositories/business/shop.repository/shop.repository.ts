@@ -34,6 +34,23 @@ export class ShopRepository {
   constructor(private readonly db: DrizzleService) {
     this.db = db;
   }
+
+  async getShopBySlug(slug: string) {
+    const data = await this.db.client.query.shopTable
+      .findFirst({
+        where: eq(shopTable.slug, slug),
+        with: {
+          translations: true,
+          logo: true,
+          banner: true,
+          shopAddressTable: true,
+          shopContactTable: true,
+          shopSocialMediaTable: true,
+        },
+      })
+      .execute();
+    return data;
+  }
   async createShop(payload: TNewShop, tx?: DrizzleTx): Promise<TShop> {
     const executor = this.db.getExecutor(tx);
     const [createdShop] = await executor

@@ -8,6 +8,8 @@ import { shopVerificationTable } from './shop.verification.schema';
 import { shopAddressTable } from './shop.address.schema';
 import { shopBusinessTable } from './shop.business.schema';
 import { shopTranslationsTable } from './shop.translation.schema';
+import { shopContactTable } from './shop.contact.schema';
+import { shopSocialMediaTable } from './shop.social.media.schema';
 
 export const shopStatusEnum = pgEnum('shop_status_enum', [
   ShopStatusEnum.PENDING,
@@ -67,6 +69,14 @@ export const shopRelations = relations(shopTable, ({ one, many }) => ({
   banner: one(mediaTable, {
     fields: [shopTable.bannerId],
     references: [mediaTable.id],
+  }),
+  shopContactTable: one(shopContactTable, {
+    fields: [shopTable.id],
+    references: [shopContactTable.shopId],
+  }),
+  shopSocialMediaTable: one(shopSocialMediaTable, {
+    fields: [shopTable.id],
+    references: [shopSocialMediaTable.shopId],
   }),
 }));
 

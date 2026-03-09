@@ -3,6 +3,8 @@
 ## Project Goal
 The primary objective of this project is to build a **fully functional, end-to-end multi-vendor ecommerce platform dedicated exclusively to plants**. The platform aims to empower local nursery owners by providing them with "First-Class" branding opportunities and a robust system to manage their unique inventory while facilitating nationwide sales.
 
+> **⚠️ Important: GraphQL is NOT used in this project. All APIs are REST-based.**
+
 ---
 
 ## Detailed Phase Plans
@@ -76,7 +78,7 @@ The project is considered "Live" when:
 
 ## Implementation Summary
 
-**Phase 1: Shop & Seller Foundation** includes database schema enhancements, GraphQL types and inputs, shop service with business logic, taxonomy service, public shop pages, guards and permissions, seed data, and testing.
+**Phase 1: Shop & Seller Foundation** includes database schema enhancements, REST API types and inputs, shop service with business logic, taxonomy service, public shop pages, guards and permissions, seed data, and testing.
 
 **Phase 2: Core Catalog (The Plant Model)** includes botanical attributes, plant variants for growth stages, care instructions, plant media gallery, search and recommendations, and care library integration.
 

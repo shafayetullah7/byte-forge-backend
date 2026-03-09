@@ -176,9 +176,11 @@ Admin category endpoints: POST /admin/categories, PUT /admin/categories/:id, DEL
 ### Public Shop Pages
 
 #### 6.1 Public Shop Profile
-Create Public Shop Query at src/api/shop/public-shop.resolver.ts with queries: publicShop (slug: String!) to get public shop data and publicShopProducts (shopId: UUID!, pagination) to get shop catalog.
+Create Public Shop REST endpoints at src/api/shop/public-shop.controller.ts with endpoints: GET /public/shops/:slug to get public shop data.
 
-Define Public Shop Type at src/graphql/types/public-shop.types.ts including id, slug, shopName, logo, banner (URLs), about, brandStory, primaryColor, secondaryColor, accentColor, contact (public contact info), socialMedia (public social links), featuredHighlight, categories (linked categories), products (featured/recent), and createdAt.
+Define Public Shop Response DTO at src/api/shop/dto/public-shop.response.dto.ts including id, slug, shopName, logo, banner (URLs), about, brandStory, primaryColor, secondaryColor, accentColor, contact (public contact info), socialMedia (public social links), featuredHighlight, categories (linked categories), and createdAt.
+
+**Note: GraphQL is NOT used - all endpoints are REST.**
 
 ---
 
@@ -225,7 +227,9 @@ Week 1 focuses on Schema Enhancements plus REST API DTOs. Week 2 covers Shop Ser
 
 ## Dependencies
 
-The implementation depends on REST API (to be configured), Drizzle ORM (already configured), Cloudinary integration (for media), and Authentication module (already exists).
+The implementation uses REST API (not GraphQL). Drizzle ORM is already configured. Cloudinary integration exists for media. Authentication module is already implemented.
+
+**Note: GraphQL is NOT used in this project. All APIs are REST-based.**
 
 ---
 
