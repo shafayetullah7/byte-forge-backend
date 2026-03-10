@@ -3,26 +3,6 @@ import { z } from 'zod';
 import { PaginationParamsSchema } from '@/common/schemas/pagination.schema';
 
 // --- Shared Schemas ---
-const PricingSchema = z.object({
-  price: z.number().int().min(0).default(0),
-  salePrice: z.number().int().min(0).optional(),
-  costPrice: z.number().int().min(0).optional(),
-  trackQuantity: z.boolean().default(true),
-  allowBackorders: z.boolean().default(false),
-});
-
-const InventorySchema = z.object({
-  stockCount: z.number().int().min(0).default(0),
-  lowStockAlert: z.number().int().min(0).default(5),
-  supplier: z.string().max(255).optional(),
-  storageLocation: z.string().max(255).optional(),
-  weight: z.string().optional(), // numeric as string for precision
-  length: z.string().optional(),
-  width: z.string().optional(),
-  height: z.string().optional(),
-  shippingClass: z.string().max(100).optional(),
-  specialHandling: z.boolean().default(false),
-});
 
 const CareSchema = z.object({
   lightLevel: z.string().max(100).optional(),

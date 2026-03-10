@@ -8,6 +8,6 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
 @Module({
   imports: [UserAuthGuardModule, EmailVerifiedGuardModule, ShopRepositoryModule],
   providers: [VerifiedUserAuthGuard],
-  exports: [VerifiedUserAuthGuard, EmailVerifiedGuardModule],
+  exports: [VerifiedUserAuthGuard, EmailVerifiedGuardModule, ShopRepositoryModule],
 })
 export class VerifiedUserAuthGuardModule {}

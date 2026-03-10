@@ -26,7 +26,7 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest() as any;
     const response = context.switchToHttp().getResponse<Response>();
 
     // 1. CSRF Protection (Double Submit Cookie)

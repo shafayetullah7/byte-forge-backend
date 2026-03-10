@@ -15,10 +15,13 @@ ALTER TABLE "business_account_verification" DISABLE ROW LEVEL SECURITY;--> state
 DROP TABLE "business_account" CASCADE;--> statement-breakpoint
 DROP TABLE "business_account_verification" CASCADE;--> statement-breakpoint
 ALTER TABLE "shops" DROP CONSTRAINT "business_account_id_shop_name_unique";--> statement-breakpoint
-ALTER TABLE "shops" DROP CONSTRAINT "shops_business_account_id_business_account_id_fk";
+ALTER TABLE "shops" DROP CONSTRAINT IF EXISTS "shops_business_account_id_business_account_id_fk";
 --> statement-breakpoint
-ALTER TABLE "shop_verification" ALTER COLUMN "trade_license_document" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "shop_verification" ALTER COLUMN "utility_bill_document" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "shop_verification"
+ALTER COLUMN "trade_license_document"
+SET DATA TYPE uuid
+USING trade_license_document::uuid;--> statement-breakpoint
+ALTER TABLE "shop_verification" ALTER COLUMN "utility_bill_document" SET DATA TYPE uuid USING utility_bill_document::uuid;--> statement-breakpoint
 ALTER TABLE "shops" ADD COLUMN "slug" varchar(255) NOT NULL;--> statement-breakpoint
 ALTER TABLE "shops" ADD COLUMN "address" varchar(500);--> statement-breakpoint
 ALTER TABLE "shops" ADD COLUMN "status" "shop_status_enum" DEFAULT 'PENDING' NOT NULL;--> statement-breakpoint

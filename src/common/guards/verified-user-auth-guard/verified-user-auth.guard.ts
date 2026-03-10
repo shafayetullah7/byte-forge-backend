@@ -27,7 +27,7 @@ export class VerifiedUserAuthGuard implements CanActivate {
     }
 
     // 3. Optionally attach shop (best-effort — shop may be undefined)
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest() as any;
     const auth = request.user as AccessUserAuth;
     const shop = await this.shopRepository.getShopByOwnerId(
       auth.user.id,

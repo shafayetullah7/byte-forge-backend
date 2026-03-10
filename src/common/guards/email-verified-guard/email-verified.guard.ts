@@ -12,7 +12,7 @@ import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 @Injectable()
 export class EmailVerifiedGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest() as any;
     const auth = request.user as AccessUserAuth;
 
     if (!auth) {
