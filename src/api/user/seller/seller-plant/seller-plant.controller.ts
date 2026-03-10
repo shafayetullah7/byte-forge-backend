@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { SellerPlantService } from './seller-plant.service';
+import { ResponseService } from '@/common/modules/response/response.service';
 import {
   CreatePlantDto,
   UpdatePlantDto,
@@ -25,12 +26,17 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('Plants')
 @Controller({ path: 'user/seller/plants', version: '1' })
 @UseGuards(VerifiedUserAuthGuard)
 export class SellerPlantController {
-  constructor(private readonly service: SellerPlantService) {}
+  constructor(
+    private readonly service: SellerPlantService,
+    private readonly responseService: ResponseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new plant' })
@@ -41,12 +47,17 @@ export class SellerPlantController {
   async create(
     @AuthenticUser() auth: AccessUserAuth,
     @Body() payload: CreatePlantDto,
+    @I18nLang() lang: string,
   ) {
     // Assuming shopId is available from auth context or needs to be fetched
     // For now, let's assume the user has a shop and we fetch/verify it.
     // Replace with actual shop retrieval logic.
     const mockShopId = 'mock-shop-uuid';
-    return this.service.createPlant(mockShopId, payload);
+    const plant = await this.service.createPlant(mockShopId, payload);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantCreated', { lang }),
+      data: plant,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -57,9 +68,15 @@ export class SellerPlantController {
   async findAll(
     @AuthenticUser() auth: AccessUserAuth,
     @Query(new ZodValidationPipe(PlantFilterDto)) filter: PlantFilterDto,
+    @I18nLang() lang: string,
   ) {
     const mockShopId = 'mock-shop-uuid';
-    return this.service.getAllPlants(mockShopId, filter);
+    const list = await this.service.getAllPlants(mockShopId, filter);
+    return this.responseService.paginated({
+      message: this.i18n.t('message.success.plantRetrieved', { lang }),
+      data: list.data,
+      meta: list.meta,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -70,9 +87,14 @@ export class SellerPlantController {
   async findOne(
     @AuthenticUser() auth: AccessUserAuth,
     @Param('id') id: string,
+    @I18nLang() lang: string,
   ) {
     const mockShopId = 'mock-shop-uuid';
-    return this.service.getPlantById(id, mockShopId);
+    const plant = await this.service.getPlantById(id, mockShopId);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantRetrieved', { lang }),
+      data: plant,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -84,9 +106,14 @@ export class SellerPlantController {
     @AuthenticUser() auth: AccessUserAuth,
     @Param('id') id: string,
     @Body() payload: UpdatePlantDto,
+    @I18nLang() lang: string,
   ) {
     const mockShopId = 'mock-shop-uuid';
-    return this.service.updatePlant(id, mockShopId, payload);
+    const result = await this.service.updatePlant(id, mockShopId, payload);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantUpdated', { lang }),
+      data: result,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -94,8 +121,16 @@ export class SellerPlantController {
   @ApiResponse({ status: 204, description: 'Plant deleted' })
   @ApiResponse({ status: 404, description: 'Plant not found' })
   @Delete(':id')
-  async remove(@AuthenticUser() auth: AccessUserAuth, @Param('id') id: string) {
+  async remove(
+    @AuthenticUser() auth: AccessUserAuth,
+    @Param('id') id: string,
+    @I18nLang() lang: string,
+  ) {
     const mockShopId = 'mock-shop-uuid';
-    return this.service.deletePlant(id, mockShopId);
+    await this.service.deletePlant(id, mockShopId);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantDeleted', { lang }),
+      data: null,
+    });
   }
 }

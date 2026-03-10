@@ -5,8 +5,6 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
-  HttpCode,
-  HttpStatus,
   BadRequestException,
   UseGuards,
   Get,
@@ -29,11 +27,17 @@ import {
   ApiBearerAuth,
   ApiConsumes,
 } from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('Media')
 @Controller({ path: 'media', version: '1' })
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly responseService: ResponseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Upload a file' })
@@ -66,6 +70,7 @@ export class MediaController {
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -76,11 +81,10 @@ export class MediaController {
       authenticUser,
     });
 
-    return {
-      status: HttpStatus.CREATED,
-      message: 'File uploaded successfully',
+    return this.responseService.success({
+      message: this.i18n.t('message.success.mediaUploaded', { lang }),
       data: media,
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -90,13 +94,16 @@ export class MediaController {
   @ApiResponse({ status: 404, description: 'File not found' })
   @Delete(':id')
   @UseGuards(UserAuthGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMedia(
     @Param() params: DeleteMediaDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
-  ): Promise<void> {
-    console.log('inside delete media controller');
+    @I18nLang() lang: string,
+  ) {
     await this.mediaService.deleteMedia(params.id, authenticUser);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.mediaDeleted', { lang }),
+      data: null,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -105,10 +112,14 @@ export class MediaController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get()
   @UseGuards(UserAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async getMedia(@AuthenticUser() authenticUser: TAuthenticUser) {
-    console.log('inside delete media controller');
+  async getMedia(
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
     const result = await this.mediaService.getAllMedia(authenticUser);
-    return result;
+    return this.responseService.success({
+      message: this.i18n.t('message.success.mediaRetrieved', { lang }),
+      data: result,
+    });
   }
 }

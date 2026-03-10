@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PlantRepository } from '@/_repositories/business/plant.repository/plant.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { and, eq } from 'drizzle-orm';
-import { plantTable, TNewPlant } from '@/_db/drizzle/schema';
+import { plantTable, TNewPlant, shopTable } from '@/_db/drizzle/schema';
+import { and, eq, sql, asc, desc, or, ilike, SQL } from 'drizzle-orm';
 import {
   CreatePlantDto,
   UpdatePlantDto,
   PlantFilterDto,
 } from './dto/plant.dto';
+import { paginate } from '@/common/utils/pagination.util';
 
 @Injectable()
 export class SellerPlantService {
@@ -68,7 +69,52 @@ export class SellerPlantService {
   }
 
   async getAllPlants(shopId: string, filter?: PlantFilterDto) {
-    return this.repository.getAllPlants({ ...filter, shopId });
+    const limit = filter?.limit || 10;
+    const page = filter?.page || 1;
+    const offset = (page - 1) * limit;
+
+    const sortBy = filter?.sortBy || 'createdAt';
+    const sortOrder = filter?.sortOrder || 'desc';
+    const sortFn = sortOrder === 'asc' ? asc : desc;
+
+    const where: SQL[] = [eq(plantTable.shopId, shopId)];
+
+    if (filter?.categoryId) where.push(eq(plantTable.categoryId, filter.categoryId));
+    if (filter?.status) where.push(eq(plantTable.status, filter.status));
+    if (typeof filter?.isFeatured === 'boolean')
+      where.push(eq(plantTable.isFeatured, filter.isFeatured));
+
+    if (filter?.searchKey) {
+      where.push(
+        or(
+          ilike(plantTable.name, `%${filter.searchKey}%`),
+          ilike(plantTable.scientificName, `%${filter.searchKey}%`),
+        )!,
+      );
+    }
+
+    const [data, [{ count }]] = await Promise.all([
+      this.drizzle.client.query.plantTable.findMany({
+        where: and(
+          eq(shopTable.status, 'ACTIVE'),
+          ...where,
+        ),
+        with: {
+             shop: true
+        },
+        orderBy: [sortFn(plantTable[sortBy as keyof typeof plantTable] as any)],
+        limit,
+        offset,
+      }),
+      this.drizzle.client
+        .select({ count: sql`count(*)`.mapWith(Number) })
+        .from(plantTable)
+        .innerJoin(shopTable, eq(shopTable.id, plantTable.shopId))
+        .where(and(eq(shopTable.status, 'ACTIVE'), ...where))
+        .execute(),
+    ]);
+
+    return paginate(data, count, page, limit);
   }
 
   async getPlantById(id: string, shopId: string) {

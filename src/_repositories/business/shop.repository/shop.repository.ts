@@ -1,3 +1,6 @@
+import { eq } from 'drizzle-orm';
+import { ShopStatusEnum } from '@/_db/drizzle/enum';
+
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   shopAddressTable,
@@ -27,13 +30,10 @@ import {
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '../../_types/lock.transaction';
-import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class ShopRepository {
-  constructor(private readonly db: DrizzleService) {
-    this.db = db;
-  }
+  constructor(private readonly db: DrizzleService) {}
 
   async getShopBySlug(slug: string) {
     const data = await this.db.client.query.shopTable
@@ -206,20 +206,14 @@ export class ShopRepository {
     return translation;
   }
 
-  async getShopDetailsById(shopId: string, transaction?: TLockTransaction) {
-    const executor = this.db.getExecutor(transaction?.tx);
-
-    const data = await executor.query.shopTable
-      .findFirst({
-        where: eq(shopTable.id, shopId),
-        with: {
-          shopAddressTable: true,
-          shopBusinessTable: true,
-          shopVerificationTable: true,
-          translations: true,
-        },
-      })
+  async update(id: string, data: Partial<TNewShop>, tx?: DrizzleTx) {
+    const executor = this.db.getExecutor(tx);
+    const [updatedShop] = await executor
+      .update(shopTable)
+      .set(data)
+      .where(eq(shopTable.id, id))
+      .returning()
       .execute();
-    return data;
+    return updatedShop;
   }
 }

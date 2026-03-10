@@ -26,6 +26,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
@@ -36,6 +37,7 @@ export class UserAuthController {
     private readonly userAuthService: UserAuthService,
     private readonly cookieService: CookieService,
     private readonly i18n: I18nService,
+    private readonly responseService: ResponseService,
   ) {}
 
   @ApiOperation({ summary: 'Register a new user' })
@@ -46,11 +48,10 @@ export class UserAuthController {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
     const result = await this.userAuthService.register(payload, lang);
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.userCreated', { lang }),
-      data: { ...result },
-    };
+      data: result,
+    });
   }
 
   @ApiOperation({ summary: 'Login with email and password' })
@@ -79,14 +80,13 @@ export class UserAuthController {
 
     this.cookieService.setSessionCookie(res, result.id);
 
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.userLoggedIn', { lang }),
       data: {
         session: result,
         user: userAuth.user,
       },
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -107,11 +107,10 @@ export class UserAuthController {
 
     const { user } = auth;
 
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.userAuthenticated', { lang }),
       data: user,
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -132,10 +131,10 @@ export class UserAuthController {
 
     await this.userAuthService.verifyEmail(auth.user.id, payload.otp);
 
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.emailVerified', { lang }),
-    };
+      data: null,
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -159,11 +158,10 @@ export class UserAuthController {
       lang,
     );
 
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.verificationSent', { lang }),
       data: { expiresAt },
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -181,10 +179,10 @@ export class UserAuthController {
     }
     this.cookieService.clearSessionCookie(res);
 
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.loggedOut', { lang }),
-    };
+      data: null,
+    });
   }
 
   // === Password Reset Flow ===

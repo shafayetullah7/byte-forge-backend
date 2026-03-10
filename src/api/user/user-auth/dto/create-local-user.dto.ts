@@ -3,54 +3,42 @@ import { z } from 'zod';
 
 const createLocalUserSchema = z.object({
   firstName: z
-    .string({
-      error: 'Invalid input for first name',
-    })
-    .min(1, { message: 'First name cannot be empty' })
-    .max(50, { message: 'First name cannot exceed 50 characters' })
-    .regex(/^[a-zA-Z]+$/, { message: 'First name can only contain letters' }),
+    .string()
+    .min(1, { message: 'message.validation.notEmpty' })
+    .max(50, { message: 'message.validation.maxLength' })
+    .regex(/^[a-zA-Z]+$/, { message: 'message.validation.invalidName' }),
 
   lastName: z
-    .string({
-      // Unified generic error
-      error: 'Invalid input for last name',
-    })
-    .min(1, { message: 'Last name cannot be empty' })
-    .max(50, { message: 'Last name cannot exceed 50 characters' })
-    .regex(/^[a-zA-Z]+$/, { message: 'Last name can only contain letters' }),
+    .string()
+    .min(1, { message: 'message.validation.notEmpty' })
+    .max(50, { message: 'message.validation.maxLength' })
+    .regex(/^[a-zA-Z]+$/, { message: 'message.validation.invalidName' }),
 
   userName: z
-    .string({
-      // Unified generic error
-      error: 'Invalid input for username',
-    })
-    .min(3, { message: 'Username must be at least 3 characters' })
-    .max(50, { message: 'Username cannot exceed 50 characters' })
+    .string()
+    .min(3, { message: 'message.validation.minLength' })
+    .max(50, { message: 'message.validation.maxLength' })
     .regex(/^[a-z0-9_]+$/, {
-      message:
-        'Username can only contain lowercase letters, numbers, and underscores',
+      message: 'message.validation.invalidUsername',
     }),
 
   email: z
-    .email({ message: 'Invalid email format' })
-    .max(255, { message: 'Email cannot exceed 255 characters' }),
+    .email({ message: 'message.validation.invalidEmail' })
+    .max(255, { message: 'message.validation.maxLength' }),
 
   password: z
-    .string({
-      // Unified generic error
-      error: 'Invalid input for password',
-    })
-    .min(8, { message: 'Password must be at least 8 characters' })
-    .max(255, { message: 'Password cannot exceed 255 characters' })
+    .string()
+    .min(8, { message: 'message.validation.minLength' })
+    .max(255, { message: 'message.validation.maxLength' })
     .regex(/[A-Z]/, {
-      message: 'Password must contain at least one uppercase letter',
+      message: 'message.validation.passwordUppercase',
     })
     .regex(/[a-z]/, {
-      message: 'Password must contain at least one lowercase letter',
+      message: 'message.validation.passwordLowercase',
     })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+    .regex(/[0-9]/, { message: 'message.validation.passwordNumber' })
     .regex(/[^A-Za-z0-9]/, {
-      message: 'Password must contain at least one special character',
+      message: 'message.validation.passwordSpecial',
     }),
 });
 

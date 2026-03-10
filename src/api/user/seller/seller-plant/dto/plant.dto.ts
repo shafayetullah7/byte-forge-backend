@@ -1,5 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { PaginationParamsSchema } from '@/common/schemas/pagination.schema';
 
 // --- Shared Schemas ---
 const PricingSchema = z.object({
@@ -60,8 +61,8 @@ const VariantSchema = z.object({
 // --- Primary DTOs ---
 
 export const CreatePlantSchema = z.object({
-  categoryId: z.string().uuid().optional().nullable(),
-  name: z.string().min(1).max(255),
+  categoryId: z.uuid({ message: 'message.validation.invalidUuid' }).optional().nullable(),
+  name: z.string().min(1, { message: 'message.validation.notEmpty' }).max(255, { message: 'message.validation.maxLength' }),
   scientificName: z.string().max(255).optional(),
   sku: z.string().max(100).optional(),
   description: z.string().optional(),
@@ -85,9 +86,9 @@ export const UpdatePlantSchema = CreatePlantSchema.partial();
 
 export class UpdatePlantDto extends createZodDto(UpdatePlantSchema) {}
 
-export const PlantFilterSchema = z.object({
-  shopId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+export const PlantFilterSchema = PaginationParamsSchema.extend({
+  shopId: z.uuid().optional(),
+  categoryId: z.uuid().optional(),
   name: z.string().optional(),
   status: z.enum(['active', 'draft', 'archived']).optional(),
   isFeatured: z.coerce.boolean().optional(),

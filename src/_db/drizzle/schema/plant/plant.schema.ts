@@ -6,9 +6,16 @@ import {
   timestamp,
   boolean,
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { shopTable } from '../shop';
 import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media';
+import { plantPricingTable } from './plant-pricing.schema';
+import { plantInventoryTable } from './plant-inventory.schema';
+import { plantCareTable } from './plant-care.schema';
+import { plantSeoTable } from './plant-seo.schema';
+import { plantMediaTable } from './plant-media.schema';
+import { plantVariantTable } from './plant-variant.schema';
 
 export const plantTable = pgTable('plants', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -43,3 +50,32 @@ export const plantTable = pgTable('plants', {
 
 export type TPlant = typeof plantTable.$inferSelect;
 export type TNewPlant = typeof plantTable.$inferInsert;
+
+export const plantRelations = relations(plantTable, ({ one, many }) => ({
+  shop: one(shopTable, {
+    fields: [plantTable.shopId],
+    references: [shopTable.id],
+  }),
+  category: one(categoriesTable, {
+    fields: [plantTable.categoryId],
+    references: [categoriesTable.id],
+  }),
+  pricing: one(plantPricingTable, {
+    fields: [plantTable.id],
+    references: [plantPricingTable.plantId],
+  }),
+  inventory: one(plantInventoryTable, {
+    fields: [plantTable.id],
+    references: [plantInventoryTable.plantId],
+  }),
+  care: one(plantCareTable, {
+    fields: [plantTable.id],
+    references: [plantCareTable.plantId],
+  }),
+  seo: one(plantSeoTable, {
+    fields: [plantTable.id],
+    references: [plantSeoTable.plantId],
+  }),
+  media: many(plantMediaTable),
+  variants: many(plantVariantTable),
+}));

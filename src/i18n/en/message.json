@@ -8,7 +8,13 @@
     "minLength": "Too short (minimum {count} characters)",
     "maxLength": "Too long (maximum {count} characters)",
     "notEmpty": "Cannot be empty",
-    "atLeastOne": "At least one item is required"
+    "atLeastOne": "At least one item is required",
+    "invalidName": "Can only contain letters",
+    "invalidUsername": "Can only contain lowercase letters, numbers, and underscores",
+    "passwordUppercase": "Must contain at least one uppercase letter",
+    "passwordLowercase": "Must contain at least one lowercase letter",
+    "passwordNumber": "Must contain at least one number",
+    "passwordSpecial": "Must contain at least one special character"
   },
   "error": {
     "conflict": "Entry already exists",
@@ -63,7 +69,19 @@
     "plantUpdated": "Plant updated successfully",
     "categoryCreated": "Category created successfully",
     "categoryUpdated": "Category updated successfully",
-    "categoryDeleted": "Category deleted successfully"
+    "categoryDeleted": "Category deleted successfully",
+    "shopRetrieved": "Shop retrieved successfully",
+    "shopSuspended": "Shop suspended successfully",
+    "shopDeactivated": "Shop deactivated successfully",
+    "shopReactivated": "Shop reactivated successfully",
+    "plantRetrieved": "Plant retrieved successfully",
+    "plantDeleted": "Plant deleted successfully",
+    "mediaRetrieved": "Media list retrieved successfully",
+    "tagRetrieved": "Tags retrieved successfully",
+    "statRetrieved": "Statistics retrieved successfully",
+    "languageRetrieved": "Languages retrieved successfully",
+    "languageCreated": "Language created successfully",
+    "languageUpdated": "Language updated successfully"
   },
   "email": {
     "verification": {
@@ -93,6 +111,8 @@
     "invalid": "Invalid verification code",
     "expired": "Verification code has expired",
     "alreadyUsed": "This code has already been used",
-    "tooManyAttempts": "Too many attempts. Please request a new code"
+    "tooManyAttempts": "Too many attempts. Please request a new code",
+    "invalidLength": "Must be exactly 6 digits",
+    "invalidFormat": "Must contain only digits"
   }
 }

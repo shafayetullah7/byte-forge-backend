@@ -27,6 +27,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
 
 @ApiTags('Admin Auth')
 @Controller({ path: 'admin/auth', version: '1' })
@@ -36,6 +37,7 @@ export class AdminAuthController {
     private readonly adminSessionService: AdminSessionService,
     private readonly cookieService: CookieService,
     private readonly i18n: I18nService,
+    private readonly responseService: ResponseService,
   ) {}
 
   @ApiOperation({ summary: 'Register a new admin' })
@@ -43,16 +45,12 @@ export class AdminAuthController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @Post('register')
   async register(@Body() payload: CreateLocalAdminDto, @Req() req: Request) {
-    const i18nContext = I18nContext.current();
-    const lang = i18nContext ? i18nContext.lang : 'en';
-
     const result = await this.adminAuthService.register(payload);
 
-    return {
-      success: true,
-      message: this.i18n.t('message.success.userCreated', { lang }),
+    return this.responseService.success({
+      message: 'Admin registered successfully',
       data: result,
-    };
+    });
   }
 
   @ApiOperation({ summary: 'Admin login' })
@@ -64,9 +62,6 @@ export class AdminAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const i18nContext = I18nContext.current();
-    const lang = i18nContext ? i18nContext.lang : 'en';
-
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
@@ -85,14 +80,13 @@ export class AdminAuthController {
     const xsrfToken = crypto.randomUUID();
     this.cookieService.setXsrfToken(res, xsrfToken);
 
-    return {
-      success: true,
-      message: this.i18n.t('message.success.userLoggedIn', { lang }),
+    return this.responseService.success({
+      message: 'Admin logged in successfully',
       data: {
         tokens,
         admin,
       },
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -102,16 +96,12 @@ export class AdminAuthController {
   @UseGuards(AdminAuthGuard)
   @Get('check')
   async checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
-    const i18nContext = I18nContext.current();
-    const lang = i18nContext ? i18nContext.lang : 'en';
-
     const { createdAt, updatedAt, ...adminProfile } = adminAuth.admin;
 
-    return {
-      success: true,
-      message: this.i18n.t('message.success.userAuthenticated', { lang }),
+    return this.responseService.success({
+      message: 'Admin authenticated',
       data: adminProfile,
-    };
+    });
   }
 
   @ApiOperation({ summary: 'Refresh access token' })
@@ -122,9 +112,6 @@ export class AdminAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const i18nContext = I18nContext.current();
-    const lang = i18nContext ? i18nContext.lang : 'en';
-
     const refreshToken = req.cookies?.adminRefreshToken;
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
@@ -139,14 +126,13 @@ export class AdminAuthController {
     const xsrfToken = crypto.randomUUID();
     this.cookieService.setXsrfToken(res, xsrfToken);
 
-    return {
-      success: true,
-      message: this.i18n.t('message.success.userAuthenticated', { lang }),
+    return this.responseService.success({
+      message: 'Tokens refreshed successfully',
       data: {
         tokens,
         admin,
       },
-    };
+    });
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -159,15 +145,12 @@ export class AdminAuthController {
     @AuthenticAdminUser() adminAuth: AuthenticAdmin,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const i18nContext = I18nContext.current();
-    const lang = i18nContext ? i18nContext.lang : 'en';
-
     await this.adminSessionService.revokeSession(adminAuth.session.id);
     this.cookieService.clearAdminTokens(res);
 
-    return {
-      success: true,
-      message: this.i18n.t('message.success.loggedOut', { lang }),
-    };
+    return this.responseService.success({
+      message: 'Admin logged out successfully',
+      data: null,
+    });
   }
 }

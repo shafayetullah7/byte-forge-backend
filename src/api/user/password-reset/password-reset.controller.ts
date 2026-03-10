@@ -8,6 +8,7 @@ import {
 import { PasswordResetService } from './password-reset.service';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
 
 @ApiTags('Password Reset')
 @Controller({ path: 'user/password-reset', version: '1' })
@@ -15,6 +16,7 @@ export class PasswordResetController {
   constructor(
     private readonly passwordResetService: PasswordResetService,
     private readonly i18n: I18nService,
+    private readonly responseService: ResponseService,
   ) {}
 
   @ApiOperation({ summary: 'Request password reset' })
@@ -28,11 +30,10 @@ export class PasswordResetController {
       payload.email,
       lang,
     );
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.passwordResetRequested', { lang }),
       data: result,
-    };
+    });
   }
 
   @ApiOperation({ summary: 'Verify password reset OTP' })
@@ -46,11 +47,10 @@ export class PasswordResetController {
       payload.token,
       payload.otp,
     );
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.otpVerified', { lang }),
       data: result,
-    };
+    });
   }
 
   @ApiOperation({ summary: 'Resend password reset OTP' })
@@ -64,11 +64,10 @@ export class PasswordResetController {
       payload.token,
       lang,
     );
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.otpResent', { lang }),
       data: result,
-    };
+    });
   }
 
   @ApiOperation({ summary: 'Reset password with new password' })
@@ -82,9 +81,9 @@ export class PasswordResetController {
       payload.token,
       payload.password,
     );
-    return {
-      success: true,
+    return this.responseService.success({
       message: this.i18n.t('message.success.passwordReset', { lang }),
-    };
+      data: null,
+    });
   }
 }

@@ -7,11 +7,13 @@ import {
   Delete,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AdminTagsService } from './services/admin-tags.service';
 import { AdminTagTranslationsService } from './services/admin-tag-translations.service';
 
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { TagQueryDto } from './dto/tag-query.dto';
 import { TagParamDto } from './dto/tag-param.dto';
 
 import { UpsertTagTranslationDto } from './dto/upsert-tag-translation.dto';
@@ -36,6 +38,18 @@ export class AdminTagsController {
     private readonly tagTranslationsService: AdminTagTranslationsService,
     private readonly responseService: ResponseService,
   ) {}
+
+  @ApiOperation({ summary: 'Get all tags' })
+  @ApiResponse({ status: 200, description: 'Tags retrieved' })
+  @Get()
+  async findAll(@Query() query: TagQueryDto) {
+    const list = await this.tagsService.findAll(query);
+    return this.responseService.paginated({
+      message: 'Tags retrieved successfully',
+      data: list.data,
+      meta: list.meta,
+    });
+  }
 
   @ApiOperation({ summary: 'Get a tag by ID' })
   @ApiResponse({ status: 200, description: 'Tag retrieved' })
