@@ -28,41 +28,6 @@ export class TagGroupRepository {
     return and(...where);
   }
 
-  async findMany(query: TagGroupQueryDto, transaction?: TLockTransaction): Promise<Array<TTagGroup & { tags: any[] }>> {
-    const executor = this.db.getExecutor(transaction?.tx);
-    const where = this.buildWhere(query);
-    const limit = query.limit ? Number(query.limit) : 10;
-    const page = query.page ? Number(query.page) : 1;
-    const offset = (page - 1) * limit;
-
-    const sortByField = query.sortBy === 'updatedAt' ? tagGroupsTable.updatedAt : tagGroupsTable.createdAt;
-    const sortFn = query.sortOrder === 'asc' ? asc : desc;
-
-    const baseQuery = executor.query.tagGroupsTable.findMany({
-      where,
-      orderBy: [sortFn(sortByField)],
-      limit,
-      offset,
-      with: {
-        tags: {
-          where: (tags, { isNull }) => isNull(tags.deletedAt),
-        },
-      },
-    });
-
-    return await baseQuery;
-  }
-
-
-  async count(query: TagGroupQueryDto, transaction?: TLockTransaction): Promise<number> {
-    const executor = this.db.getExecutor(transaction?.tx);
-    const where = this.buildWhere(query);
-    const [{ total }] = await executor
-      .select({ total: count() })
-      .from(tagGroupsTable)
-      .where(where);
-    return total;
-  }
 
 
   async findOne(id: string, transaction?: TLockTransaction): Promise<(TTagGroup & { tags: any[] }) | undefined> {

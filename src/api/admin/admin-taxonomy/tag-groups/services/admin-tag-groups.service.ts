@@ -98,7 +98,7 @@ export class AdminTagGroupsService {
     }
   }
 
-  async findAll(query: TagGroupQueryDto) {
+  async findAll(query: TagGroupQueryDto, lang: string) {
     const limit = query.limit ? Number(query.limit) : 10;
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
@@ -160,20 +160,22 @@ export class AdminTagGroupsService {
     const formattedGroups = groups.map(group => {
       const { translations, tags, ...rest } = group;
       const englishTranslation = translations.find(t => t.locale === 'en');
+      const translation = resolveTranslation(translations, lang);
       
       const formattedTags = (tags || []).map(tag => {
         const { translations: tagTranslations, ...tagRest } = tag;
+        const tagTranslation = resolveTranslation(tagTranslations, lang);
         return {
           ...tagRest,
           translations: tagTranslations,
-          name: tagTranslations.find(t => t.locale === 'en')?.name || null,
+          name: tagTranslation?.name || tagTranslations.find(t => t.locale === 'en')?.name || null,
         };
       });
 
       return {
         ...rest,
         translations,
-        name: englishTranslation?.name || null,
+        name: translation?.name || englishTranslation?.name || null,
         tags: formattedTags,
       };
     });
@@ -181,7 +183,7 @@ export class AdminTagGroupsService {
     return paginate(formattedGroups, total, page, limit);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, lang: string) {
     const isIdUuid = isUuid(id);
     const lookupCondition = isIdUuid ? eq(tagGroupsTable.id, id) : eq(tagGroupsTable.slug, id);
 
@@ -191,11 +193,16 @@ export class AdminTagGroupsService {
     });
 
     if (!group) throw new NotFoundException(`Tag Group with ${isIdUuid ? 'ID' : 'slug'} '${id}' not found`);
-    return group;
+    
+    const translation = resolveTranslation(group.translations, lang);
+    return {
+      ...group,
+      name: translation?.name ?? 'Unnamed Group',
+    };
   }
 
-  async update(id: string, updateTagGroupDto: UpdateTagGroupDto) {
-    const group = await this.findOne(id);
+  async update(id: string, updateTagGroupDto: UpdateTagGroupDto, lang: string) {
+    const group = await this.findOne(id, lang);
 
     // 1. Validate Target Slug if provided
     if (updateTagGroupDto.slug && updateTagGroupDto.slug !== group.slug) {
@@ -212,8 +219,8 @@ export class AdminTagGroupsService {
 
   }
 
-  async remove(id: string) {
-    const group = await this.findOne(id);
+  async remove(id: string, lang: string) {
+    const group = await this.findOne(id, lang);
     
     // Check if tags exist in this group before deleting
     const relatedTags = await this.db.client

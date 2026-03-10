@@ -2,20 +2,17 @@ import {
   pgTable,
   uuid,
   varchar,
-  text,
   timestamp,
   boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopTable } from '../shop';
 import { categoriesTable } from '../taxonomy/category.schema';
-import { mediaTable } from '../media';
-import { plantPricingTable } from './plant-pricing.schema';
-import { plantInventoryTable } from './plant-inventory.schema';
 import { plantCareTable } from './plant-care.schema';
 import { plantSeoTable } from './plant-seo.schema';
 import { plantMediaTable } from './plant-media.schema';
 import { plantVariantTable } from './plant-variant.schema';
+import { plantTranslationsTable } from './plant-translation.schema';
 
 export const plantTable = pgTable('plants', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -26,18 +23,10 @@ export const plantTable = pgTable('plants', {
     onDelete: 'set null',
   }),
 
-  // Basic Info
-  name: varchar('name', { length: 255 }).notNull(),
+  // Basic Info (Non-localized)
   scientificName: varchar('scientific_name', { length: 255 }),
-  sku: varchar('sku', { length: 100 }),
-  description: text('description'),
-  shortDescription: text('short_description'),
   isFeatured: boolean('is_featured').default(false).notNull(),
   status: varchar('status', { length: 20 }).default('draft').notNull(), // active, draft, archived
-
-  mainImageId: uuid('main_image_id').references(() => mediaTable.id, {
-    onDelete: 'set null',
-  }),
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
@@ -60,14 +49,6 @@ export const plantRelations = relations(plantTable, ({ one, many }) => ({
     fields: [plantTable.categoryId],
     references: [categoriesTable.id],
   }),
-  pricing: one(plantPricingTable, {
-    fields: [plantTable.id],
-    references: [plantPricingTable.plantId],
-  }),
-  inventory: one(plantInventoryTable, {
-    fields: [plantTable.id],
-    references: [plantInventoryTable.plantId],
-  }),
   care: one(plantCareTable, {
     fields: [plantTable.id],
     references: [plantCareTable.plantId],
@@ -78,4 +59,5 @@ export const plantRelations = relations(plantTable, ({ one, many }) => ({
   }),
   media: many(plantMediaTable),
   variants: many(plantVariantTable),
+  translations: many(plantTranslationsTable),
 }));

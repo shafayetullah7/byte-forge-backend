@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { I18nLang } from 'nestjs-i18n';
 import { AdminTagGroupsService } from './services/admin-tag-groups.service';
 import { AdminTagGroupTranslationsService } from './services/admin-tag-group-translations.service';
 import { AdminTagsService } from '../tags/services/admin-tags.service';
@@ -59,8 +60,11 @@ export class AdminTagGroupsController {
   @ApiOperation({ summary: 'Get all tag groups' })
   @ApiResponse({ status: 200, description: 'Tag Groups retrieved' })
   @Get()
-  async findAll(@Query() query: TagGroupQueryDto) {
-    const list = await this.tagGroupsService.findAll(query);
+  async findAll(
+    @Query() query: TagGroupQueryDto,
+    @I18nLang() lang: string,
+  ) {
+    const list = await this.tagGroupsService.findAll(query, lang);
     return this.responseService.paginated({
       message: 'Tag Groups retrieved successfully',
       data: list.data,
@@ -71,8 +75,11 @@ export class AdminTagGroupsController {
   @ApiOperation({ summary: 'Get a tag group by ID' })
   @ApiResponse({ status: 200, description: 'Tag Group retrieved' })
   @Get(':groupId')
-  async findOne(@Param() param: TagGroupParamDto) {
-    const data = await this.tagGroupsService.findOne(param.groupId);
+  async findOne(
+    @Param() param: TagGroupParamDto,
+    @I18nLang() lang: string,
+  ) {
+    const data = await this.tagGroupsService.findOne(param.groupId, lang);
     return this.responseService.success({
       message: 'Tag Group retrieved successfully',
       data,
@@ -85,10 +92,12 @@ export class AdminTagGroupsController {
   async update(
     @Param() param: TagGroupParamDto,
     @Body() updateTagGroupDto: UpdateTagGroupDto,
+    @I18nLang() lang: string,
   ) {
     const data = await this.tagGroupsService.update(
       param.groupId,
       updateTagGroupDto,
+      lang,
     );
     return this.responseService.success({
       message: 'Tag Group updated successfully',
@@ -99,8 +108,11 @@ export class AdminTagGroupsController {
   @ApiOperation({ summary: 'Delete a tag group' })
   @ApiResponse({ status: 200, description: 'Tag Group deleted' })
   @Delete(':groupId')
-  async remove(@Param() param: TagGroupParamDto) {
-    await this.tagGroupsService.remove(param.groupId);
+  async remove(
+    @Param() param: TagGroupParamDto,
+    @I18nLang() lang: string,
+  ) {
+    await this.tagGroupsService.remove(param.groupId, lang);
     return this.responseService.success({
       message: 'Tag Group removed successfully',
       data: null,

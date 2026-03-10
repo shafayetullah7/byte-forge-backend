@@ -47,6 +47,7 @@ const SeoSchema = z.object({
 
 const MediaItemSchema = z.object({
   mediaId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
   displayOrder: z.number().int().min(0).default(0),
   type: z.enum(['image', 'video']).default('image'),
 });
@@ -54,8 +55,33 @@ const MediaItemSchema = z.object({
 const VariantSchema = z.object({
   name: z.string().min(1).max(255),
   sku: z.string().max(100).optional(),
+  
+  // Attributes (Open fields)
+  potSize: z.string().max(50).optional(),
+  plantHeight: z.coerce.number().int().min(0).optional(), // cm
+  growthStage: z.string().max(50).optional(),
+  propagationType: z.string().max(50).optional(),
+  plantForm: z.string().max(50).optional(),
+  variegation: z.string().max(50).optional(),
+  containerType: z.string().max(50).optional(),
+  bundleType: z.string().max(50).optional(),
+
+  // Pricing (Moved here)
   price: z.number().int().min(0).default(0),
+  salePrice: z.number().int().min(0).optional(),
+  costPrice: z.number().int().min(0).optional(),
+  
+  // Inventory (Moved here)
   stockCount: z.number().int().min(0).default(0),
+  trackQuantity: z.boolean().default(true),
+  lowStockAlert: z.number().int().min(0).default(5),
+});
+
+const PlantTranslationSchema = z.object({
+  locale: z.string().min(2).max(10),
+  name: z.string().min(1).max(255),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
 });
 
 // --- Primary DTOs ---
@@ -64,20 +90,17 @@ export const CreatePlantSchema = z.object({
   categoryId: z.uuid({ message: 'message.validation.invalidUuid' }).optional().nullable(),
   name: z.string().min(1, { message: 'message.validation.notEmpty' }).max(255, { message: 'message.validation.maxLength' }),
   scientificName: z.string().max(255).optional(),
-  sku: z.string().max(100).optional(),
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   isFeatured: z.boolean().default(false),
   status: z.enum(['active', 'draft', 'archived']).default('draft'),
-  mainImageId: z.string().uuid().optional(),
+  translations: z.array(PlantTranslationSchema).min(1, { message: 'Base translation required' }),
 
   // Nested Modular Data
-  pricing: PricingSchema.optional(),
-  inventory: InventorySchema.optional(),
   care: CareSchema.optional(),
   seo: SeoSchema.optional(),
   media: z.array(MediaItemSchema).optional(),
-  variants: z.array(VariantSchema).optional(),
+  variants: z.array(VariantSchema).min(1, { message: 'At least one variant is required' }),
 });
 
 export class CreatePlantDto extends createZodDto(CreatePlantSchema) {}

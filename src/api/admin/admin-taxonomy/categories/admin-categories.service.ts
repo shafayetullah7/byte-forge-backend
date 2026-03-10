@@ -9,6 +9,7 @@ import { categoryHierarchyTable, categoriesTable, TNewCategory, categoryTranslat
 import { eq, and, ne, sql, desc, isNull, gt, inArray, notInArray, count, asc, ilike, SQL, getTableColumns } from 'drizzle-orm';
 
 import { paginate } from '@/common/utils/pagination.util';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class AdminCategoriesService {
@@ -83,7 +84,7 @@ export class AdminCategoriesService {
     }
   }
 
-  async findAll(query: CategoryQueryDto) {
+  async findAll(query: CategoryQueryDto, lang: string) {
     const limit = query.limit ? Number(query.limit) : 20;
     const page = query.page ? Number(query.page) : 1;
     const offset = (page - 1) * limit;
@@ -93,86 +94,49 @@ export class AdminCategoriesService {
       where.push(eq(categoriesTable.isActive, query.isActive === 'true'));
     }
     
-    // Search within English translations if searching by name
     const whereClause = and(...where);
 
-    const sortByField =
-      query.sortBy === 'updatedAt' ? categoriesTable.updatedAt :
-      categoriesTable.createdAt;
+    const sortByField = query.sortBy === 'updatedAt' ? categoriesTable.updatedAt : categoriesTable.createdAt;
     const sortFn = query.sortOrder === 'asc' ? asc : desc;
 
     const [data, [{ total }]] = await Promise.all([
-      this.db.client
-        .select({
-          ...getTableColumns(categoriesTable),
-          name: sql<string>`COALESCE(${categoryTranslationsTable.name}, 'Unnamed Category')`,
-          description: categoryTranslationsTable.description,
-        })
-        .from(categoriesTable)
-        .leftJoin(
-          categoryTranslationsTable,
-          and(
-            eq(categoryTranslationsTable.categoryId, categoriesTable.id),
-            eq(categoryTranslationsTable.locale, 'en')
-          )
-        )
-        .where(whereClause)
-        .orderBy(sortFn(sortByField))
-        .limit(limit)
-        .offset(offset),
+      this.db.client.query.categoriesTable.findMany({
+        where: whereClause,
+        orderBy: [sortFn(sortByField)],
+        limit,
+        offset,
+        with: {
+          translations: true,
+          parentHierarchies: {
+            where: eq(categoryHierarchyTable.depth, 1),
+            columns: { ancestorId: true }
+          }
+        }
+      }),
       this.db.client
         .select({ total: count() })
         .from(categoriesTable)
-        .leftJoin(
-          categoryTranslationsTable,
-          and(
-            eq(categoryTranslationsTable.categoryId, categoriesTable.id),
-            eq(categoryTranslationsTable.locale, 'en')
-          )
-        )
         .where(whereClause),
     ]);
 
-    const ids = data.map(c => c.id);
-    const hierarchyMap = new Map<string, { parentId: string | null; depth: number }>();
+    const enriched = data.map(cat => {
+      const { translations, parentHierarchies, ...rest } = cat;
+      const translation = resolveTranslation(translations, lang);
+      const parentId = parentHierarchies[0]?.ancestorId ?? null;
 
-    if (ids.length > 0) {
-      const hierarchyRows = await this.db.client
-        .select({
-          id: categoryHierarchyTable.descendantId,
-          ancestorId: categoryHierarchyTable.ancestorId,
-          depth: categoryHierarchyTable.depth,
-        })
-        .from(categoryHierarchyTable)
-        .where(inArray(categoryHierarchyTable.descendantId, ids));
-
-      ids.forEach(id => {
-        const rows = hierarchyRows.filter(r => r.id === id);
-        const maxDepth = Math.max(...rows.map(r => r.depth));
-        const parentRow = rows.find(r => r.depth === 1);
-        hierarchyMap.set(id, {
-          parentId: parentRow?.ancestorId ?? null,
-          depth: maxDepth,
-        });
-      });
-    }
-
-    const allTranslations = ids.length > 0 ? await this.db.client
-      .select()
-      .from(categoryTranslationsTable)
-      .where(inArray(categoryTranslationsTable.categoryId, ids)) : [];
-
-    const enriched = data.map(cat => ({
-      ...cat,
-      parentId: hierarchyMap.get(cat.id)?.parentId ?? null,
-      depth: hierarchyMap.get(cat.id)?.depth ?? 0,
-      translations: allTranslations.filter(t => t.categoryId === cat.id),
-    }));
+      return {
+        ...rest,
+        name: translation?.name ?? 'Unnamed Category',
+        description: translation?.description,
+        parentId,
+        translations,
+      };
+    });
 
     return paginate(enriched, total, page, limit);
   }
 
-  async getTree() {
+  async getTree(lang: string) {
     const allCategories = await this.db.client
       .select({
         id: categoriesTable.id,
@@ -196,18 +160,37 @@ export class AdminCategoriesService {
       )
       .where(isNull(categoriesTable.deletedAt));
 
+    const ids = allCategories.map(c => c.id);
+    const allTranslations = await this.db.client
+      .select()
+      .from(categoryTranslationsTable)
+      .where(inArray(categoryTranslationsTable.categoryId, ids));
+
+    const localizedCategories = allCategories.map(cat => {
+      const translations = allTranslations.filter(t => t.categoryId === cat.id);
+      const translation = resolveTranslation(translations, lang);
+      return {
+        ...cat,
+        name: translation?.name ?? cat.name,
+      };
+    });
+
     const categoryMap = new Map();
     const tree: any[] = [];
 
-    allCategories.forEach(cat => {
+    localizedCategories.forEach(cat => {
       categoryMap.set(cat.id, { ...cat, children: [] });
     });
 
-    allCategories.forEach(cat => {
+    localizedCategories.forEach(cat => {
       const node = categoryMap.get(cat.id);
       if (cat.parentId) {
         const parent = categoryMap.get(cat.parentId);
-        if (parent) parent.children.push(node);
+        if (parent) {
+          parent.children.push(node);
+        } else {
+          tree.push(node);
+        }
       } else {
         tree.push(node);
       }
@@ -216,105 +199,77 @@ export class AdminCategoriesService {
     return tree;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, lang: string) {
     const category = await this.categoryRepository.findOne(id);
     if (!category) throw new NotFoundException(`Category ${id} not found.`);
 
     const parent = await this.db.client
       .select({
         id: categoriesTable.id,
-        name: sql<string>`COALESCE(${categoryTranslationsTable.name}, 'Unnamed Category')`,
       })
       .from(categoryHierarchyTable)
       .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.ancestorId))
-      .leftJoin(
-        categoryTranslationsTable,
-        and(
-          eq(categoryTranslationsTable.categoryId, categoriesTable.id),
-          eq(categoryTranslationsTable.locale, 'en')
-        )
-      )
       .where(and(
         eq(categoryHierarchyTable.descendantId, category.id),
         eq(categoryHierarchyTable.depth, 1)
       ))
       .limit(1);
 
-    const childrenCountQuery = await this.db.client
-      .select({
-        id: categoriesTable.id,
-        name: sql<string>`COALESCE(${categoryTranslationsTable.name}, 'Unnamed Category')`,
-        slug: categoriesTable.slug,
-        isActive: categoriesTable.isActive,
-        childrenCount: categoriesTable.childrenCount,
-      })
-      .from(categoryHierarchyTable)
-      .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.descendantId))
-      .leftJoin(
-        categoryTranslationsTable,
-        and(
-          eq(categoryTranslationsTable.categoryId, categoriesTable.id),
-          eq(categoryTranslationsTable.locale, 'en')
-        )
-      )
-      .where(and(
-        eq(categoryHierarchyTable.ancestorId, category.id),
-        eq(categoryHierarchyTable.depth, 1)
-      ));
-
-    const depthQuery = await this.db.client
-      .select({ depth: categoryHierarchyTable.depth })
-      .from(categoryHierarchyTable)
-      .where(eq(categoryHierarchyTable.descendantId, category.id))
-      .orderBy(desc(categoryHierarchyTable.depth))
-      .limit(1);
-
-    const currentDepth = depthQuery.length > 0 ? depthQuery[0].depth : 0;
-
-    const descendants = await this.db.client
-      .select({ id: categoryHierarchyTable.descendantId })
-      .from(categoryHierarchyTable)
-      .where(eq(categoryHierarchyTable.ancestorId, category.id));
-
-    const descendantIds = descendants.map(d => d.id);
-
-    const parentOptions = await this.db.client
-      .select({
-        id: categoriesTable.id,
-        name: sql<string>`COALESCE(${categoryTranslationsTable.name}, 'Unnamed Category')`
-      })
-      .from(categoriesTable)
-      .innerJoin(categoryHierarchyTable, eq(categoryHierarchyTable.descendantId, categoriesTable.id))
-      .leftJoin(
-        categoryTranslationsTable,
-        and(
-          eq(categoryTranslationsTable.categoryId, categoriesTable.id),
-          eq(categoryTranslationsTable.locale, 'en')
-        )
-      )
-      .where(and(
-        ne(categoriesTable.id, id),
-        descendantIds.length > 0
-          ? notInArray(categoriesTable.id, descendantIds)
-          : sql`TRUE`,
-        isNull(categoriesTable.deletedAt)
-      ))
-      .groupBy(categoriesTable.id, categoryTranslationsTable.name)
-      .having(sql`MAX(${categoryHierarchyTable.depth}) < 2`);
+    let parentName: string | null = null;
+    let parentId: string | null = null;
+    if (parent.length > 0) {
+      parentId = parent[0].id;
+      const parentTranslations = await this.db.client
+        .select()
+        .from(categoryTranslationsTable)
+        .where(eq(categoryTranslationsTable.categoryId, parentId));
+      const parentTranslation = resolveTranslation(parentTranslations, lang);
+      parentName = parentTranslation?.name ?? 'Unnamed Category';
+    }
 
     const translations = await this.db.client
       .select()
       .from(categoryTranslationsTable)
       .where(eq(categoryTranslationsTable.categoryId, category.id));
 
+    const translation = resolveTranslation(translations, lang);
+
+    const childrenQuery = await this.db.client
+      .select({
+        id: categoriesTable.id,
+        slug: categoriesTable.slug,
+        isActive: categoriesTable.isActive,
+        childrenCount: categoriesTable.childrenCount,
+      })
+      .from(categoryHierarchyTable)
+      .innerJoin(categoriesTable, eq(categoriesTable.id, categoryHierarchyTable.descendantId))
+      .where(and(
+        eq(categoryHierarchyTable.ancestorId, category.id),
+        eq(categoryHierarchyTable.depth, 1)
+      ));
+
+    const childIds = childrenQuery.map(c => c.id);
+    const childTranslations = childIds.length > 0 ? await this.db.client
+      .select()
+      .from(categoryTranslationsTable)
+      .where(inArray(categoryTranslationsTable.categoryId, childIds)) : [];
+
+    const localizedChildren = childrenQuery.map(c => {
+      const trans = childTranslations.filter(t => t.categoryId === c.id);
+      const t = resolveTranslation(trans, lang);
+      return {
+        ...c,
+        name: t?.name ?? 'Unnamed Category',
+      };
+    });
+
     return {
       ...category,
-      name: translations.find(t => t.locale === 'en')?.name || 'Unnamed Category',
-      parentName: parent[0]?.name || null,
-      parentId: parent[0]?.id || null,
-      depth: currentDepth,
-      children: childrenCountQuery,
-      parentOptions,
+      name: translation?.name ?? 'Unnamed Category',
+      description: translation?.description,
+      parentName,
+      parentId,
+      children: localizedChildren,
       translations,
     };
   }
@@ -348,8 +303,8 @@ export class AdminCategoriesService {
     return ancestors;
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto) {
-    await this.findOne(id);
+  async update(id: string, updateCategoryDto: UpdateCategoryDto, lang: string) {
+    await this.findOne(id, lang);
 
     const { parentId, translations, ...catData } = updateCategoryDto;
 
@@ -447,7 +402,7 @@ export class AdminCategoriesService {
           await this.categoryRepository.update(id, payload, tx);
         }
 
-        return this.findOne(id);
+        return this.findOne(id, lang);
       });
     } catch (error: any) {
       if (error.code === '23505') {
@@ -457,8 +412,8 @@ export class AdminCategoriesService {
     }
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, lang: string) {
+    await this.findOne(id, lang);
 
     return await this.db.transaction(async (tx) => {
       const parentRow = await tx

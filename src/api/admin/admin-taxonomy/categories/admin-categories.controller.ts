@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { I18nLang } from 'nestjs-i18n';
 import { AdminCategoriesService } from './admin-categories.service';
 import { AdminCategoryTranslationsService } from './services/admin-category-translations.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -52,8 +53,11 @@ export class AdminCategoriesController {
   @ApiOperation({ summary: 'Get all categories' })
   @ApiResponse({ status: 200, description: 'Categories retrieved' })
   @Get()
-  async findAll(@Query() query: CategoryQueryDto) {
-    const list = await this.categoriesService.findAll(query);
+  async findAll(
+    @Query() query: CategoryQueryDto,
+    @I18nLang() lang: string,
+  ) {
+    const list = await this.categoriesService.findAll(query, lang);
     return this.responseService.paginated({
       message: 'Categories retrieved successfully',
       data: list.data,
@@ -64,8 +68,8 @@ export class AdminCategoriesController {
   @ApiOperation({ summary: 'Get category tree' })
   @ApiResponse({ status: 200, description: 'Category tree retrieved' })
   @Get('tree')
-  async getTree() {
-    const data = await this.categoriesService.getTree();
+  async getTree(@I18nLang() lang: string) {
+    const data = await this.categoriesService.getTree(lang);
     return this.responseService.success({
       message: 'Category tree retrieved successfully',
       data,
@@ -86,8 +90,11 @@ export class AdminCategoriesController {
   @ApiOperation({ summary: 'Get a category by ID' })
   @ApiResponse({ status: 200, description: 'Category retrieved' })
   @Get(':id')
-  async findOne(@Param() param: CategoryParamDto) {
-    const data = await this.categoriesService.findOne(param.id);
+  async findOne(
+    @Param() param: CategoryParamDto,
+    @I18nLang() lang: string,
+  ) {
+    const data = await this.categoriesService.findOne(param.id, lang);
     return this.responseService.success({
       message: 'Category retrieved successfully',
       data,
@@ -100,10 +107,12 @@ export class AdminCategoriesController {
   async update(
     @Param() param: CategoryParamDto,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @I18nLang() lang: string,
   ) {
     const data = await this.categoriesService.update(
       param.id,
       updateCategoryDto,
+      lang,
     );
     return this.responseService.success({
       message: 'Category updated successfully',
@@ -114,8 +123,11 @@ export class AdminCategoriesController {
   @ApiOperation({ summary: 'Delete a category' })
   @ApiResponse({ status: 200, description: 'Category deleted' })
   @Delete(':id')
-  async remove(@Param() param: CategoryParamDto) {
-    await this.categoriesService.remove(param.id);
+  async remove(
+    @Param() param: CategoryParamDto,
+    @I18nLang() lang: string,
+  ) {
+    await this.categoriesService.remove(param.id, lang);
     return this.responseService.success({
       message: 'Category removed successfully',
       data: null,

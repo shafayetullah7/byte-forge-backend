@@ -51,7 +51,7 @@ export class SellerPlantController {
     @Body() payload: CreatePlantDto,
     @I18nLang() lang: string,
   ) {
-    const plant = await this.service.createPlant(shop.id, payload);
+    const plant = await this.service.createPlant(shop.id, payload, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantCreated', { lang }),
       data: plant,
@@ -68,7 +68,7 @@ export class SellerPlantController {
     @Query(new ZodValidationPipe(PlantFilterDto)) filter: PlantFilterDto,
     @I18nLang() lang: string,
   ) {
-    const list = await this.service.getAllPlants(shop.id, filter);
+    const list = await this.service.getAllPlants(shop.id, lang, filter);
     return this.responseService.paginated({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: list.data,
@@ -86,7 +86,7 @@ export class SellerPlantController {
     @Param('id') id: string,
     @I18nLang() lang: string,
   ) {
-    const plant = await this.service.getPlantById(id, shop.id);
+    const plant = await this.service.getPlantById(id, shop.id, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: plant,
@@ -104,7 +104,7 @@ export class SellerPlantController {
     @Body() payload: UpdatePlantDto,
     @I18nLang() lang: string,
   ) {
-    const result = await this.service.updatePlant(id, shop.id, payload);
+    const result = await this.service.updatePlant(id, shop.id, payload, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantUpdated', { lang }),
       data: result,

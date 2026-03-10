@@ -29,45 +29,6 @@ export class TagRepository {
     return and(...where);
   }
 
-  async findMany(query: TagQueryDto, transaction?: TLockTransaction) {
-    const executor = this.db.getExecutor(transaction?.tx);
-    const where = this.buildWhere(query);
-    const limit = query.limit ? Number(query.limit) : 20;
-    const page = query.page ? Number(query.page) : 1;
-    const offset = (page - 1) * limit;
-
-    const sortByField = query.sortBy === 'updatedAt' ? tagsTable.updatedAt : tagsTable.createdAt;
-    const sortFn = query.sortOrder === 'asc' ? asc : desc;
-
-    const baseQuery = executor
-      .select({
-        tag: tagsTable,
-        group: {
-          id: tagGroupsTable.id,
-          slug: tagGroupsTable.slug,
-        },
-      })
-      .from(tagsTable)
-      .leftJoin(tagGroupsTable, eq(tagsTable.groupId, tagGroupsTable.id))
-      .where(where)
-      .orderBy(sortFn(sortByField))
-      .limit(limit)
-      .offset(offset);
-
-    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
-    return await lockQuery.execute();
-  }
-
-
-  async count(query: TagQueryDto, transaction?: TLockTransaction): Promise<number> {
-    const executor = this.db.getExecutor(transaction?.tx);
-    const where = this.buildWhere(query);
-    const [{ total }] = await executor
-      .select({ total: count() })
-      .from(tagsTable)
-      .where(where);
-    return total;
-  }
 
 
   async findOne(id: string, transaction?: TLockTransaction): Promise<TTag | undefined> {
