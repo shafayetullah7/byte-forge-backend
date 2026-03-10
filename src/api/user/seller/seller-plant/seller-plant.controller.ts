@@ -18,7 +18,9 @@ import {
   PlantFilterDto,
 } from './dto/plant.dto';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
-import { AccessUserAuth } from '@/common/types';
+import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
+import { AccessUserAuth, TAuthorizedShop } from '@/common/types';
+import { SellerShopGuard } from '@/common/guards/seller-shop-guard/seller-shop.guard';
 import { ZodValidationPipe } from 'nestjs-zod';
 import {
   ApiTags,
@@ -30,7 +32,7 @@ import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('Plants')
 @Controller({ path: 'user/seller/plants', version: '1' })
-@UseGuards(VerifiedUserAuthGuard)
+@UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
 export class SellerPlantController {
   constructor(
     private readonly service: SellerPlantService,
@@ -45,15 +47,11 @@ export class SellerPlantController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post()
   async create(
-    @AuthenticUser() auth: AccessUserAuth,
+    @AuthenticShop() shop: TAuthorizedShop,
     @Body() payload: CreatePlantDto,
     @I18nLang() lang: string,
   ) {
-    // Assuming shopId is available from auth context or needs to be fetched
-    // For now, let's assume the user has a shop and we fetch/verify it.
-    // Replace with actual shop retrieval logic.
-    const mockShopId = 'mock-shop-uuid';
-    const plant = await this.service.createPlant(mockShopId, payload);
+    const plant = await this.service.createPlant(shop.id, payload);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantCreated', { lang }),
       data: plant,
@@ -66,12 +64,11 @@ export class SellerPlantController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get()
   async findAll(
-    @AuthenticUser() auth: AccessUserAuth,
+    @AuthenticShop() shop: TAuthorizedShop,
     @Query(new ZodValidationPipe(PlantFilterDto)) filter: PlantFilterDto,
     @I18nLang() lang: string,
   ) {
-    const mockShopId = 'mock-shop-uuid';
-    const list = await this.service.getAllPlants(mockShopId, filter);
+    const list = await this.service.getAllPlants(shop.id, filter);
     return this.responseService.paginated({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: list.data,
@@ -85,12 +82,11 @@ export class SellerPlantController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   @Get(':id')
   async findOne(
-    @AuthenticUser() auth: AccessUserAuth,
+    @AuthenticShop() shop: TAuthorizedShop,
     @Param('id') id: string,
     @I18nLang() lang: string,
   ) {
-    const mockShopId = 'mock-shop-uuid';
-    const plant = await this.service.getPlantById(id, mockShopId);
+    const plant = await this.service.getPlantById(id, shop.id);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: plant,
@@ -103,13 +99,12 @@ export class SellerPlantController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   @Patch(':id')
   async update(
-    @AuthenticUser() auth: AccessUserAuth,
+    @AuthenticShop() shop: TAuthorizedShop,
     @Param('id') id: string,
     @Body() payload: UpdatePlantDto,
     @I18nLang() lang: string,
   ) {
-    const mockShopId = 'mock-shop-uuid';
-    const result = await this.service.updatePlant(id, mockShopId, payload);
+    const result = await this.service.updatePlant(id, shop.id, payload);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantUpdated', { lang }),
       data: result,
@@ -122,12 +117,11 @@ export class SellerPlantController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   @Delete(':id')
   async remove(
-    @AuthenticUser() auth: AccessUserAuth,
+    @AuthenticShop() shop: TAuthorizedShop,
     @Param('id') id: string,
     @I18nLang() lang: string,
   ) {
-    const mockShopId = 'mock-shop-uuid';
-    await this.service.deletePlant(id, mockShopId);
+    await this.service.deletePlant(id, shop.id);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantDeleted', { lang }),
       data: null,

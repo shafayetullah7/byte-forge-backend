@@ -11,7 +11,7 @@ export const AuthenticUser = createParamDecorator(
     const req = ctx.switchToHttp().getRequest<Request>();
 
     const auth = req.user as AccessUserAuth | undefined;
-    if (!auth || auth.role !== 'user') {
+    if (!auth) {
       throw new UnauthorizedException('Unauthorized access');
     }
 

@@ -7,7 +7,6 @@ import { UserService } from '../user/user.service';
 import { DeviceInfo, TSession, userTable } from '@/_db/drizzle/schema';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
-import { UserLocalAuthSessionRepositoryService } from '@/_repositories/auth/user-local-auth-session-repository/user-local-auth-session-repository.service';
 import { OtpService } from '@/common/modules/otp/otp.service';
 import { EmailService } from '@/common/modules/email/email.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
@@ -20,6 +19,7 @@ import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.re
 
 import { HashingService } from '@/common/modules/hashing/hashing.service';
 import { I18nService } from 'nestjs-i18n';
+import { AccessUserAuth } from '@/common/types';
 
 @Injectable()
 export class UserAuthService {
@@ -29,7 +29,6 @@ export class UserAuthService {
     private readonly userService: UserService,
     private readonly userSessionRepository: UserSessionRepository,
     private readonly sessionRepository: SessionRepository,
-    private readonly userLocalAuthSessionRepository: UserLocalAuthSessionRepositoryService,
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
     private readonly userRepository: UserRepository,
@@ -103,14 +102,43 @@ export class UserAuthService {
     }
   }
 
+  async validateCredentials(payload: {
+    email: string;
+    password: string;
+  }, lang: string = 'en') {
+    const user = await this.userLocalAuthService.getLocalUser({ email: payload.email });
+
+    if (!user) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.userNotFound', { lang }),
+        statusCode: HttpStatus.NOT_FOUND,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
+    const passMatch = await this.hashingService.compare(
+      payload.password,
+      user.userLocalAuth.password,
+    );
+
+    if (!passMatch) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.invalidPassword', { lang }),
+        statusCode: HttpStatus.UNAUTHORIZED,
+        errorCode: ErrorCode.INVALID_CREDENTIALS,
+      });
+    }
+
+    return user;
+  }
+
   async login(payload: {
-    userAuth: UserAuth;
+    user: any;
     deviceInfo: DeviceInfo;
     ip: string;
   }): Promise<TSession> {
     const result = await this.drizzle.transaction(async (tx) => {
-      const { userAuth, deviceInfo, ip } = payload;
-      const { user } = userAuth;
+      const { user, deviceInfo, ip } = payload;
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // now + 7 days
 
       const sessionData = {
@@ -125,17 +153,6 @@ export class UserAuthService {
         userId: user.id,
       };
       await this.userSessionRepository.createUserSession(userSessionData, tx);
-
-      if (userAuth.userLocalAuth) {
-        const userSessionLocalAuthData = {
-          sessionId: newSession.id,
-          localAuthId: userAuth.userLocalAuth.userId,
-        };
-        await this.userLocalAuthSessionRepository.createUserLocalAuthSession(
-          userSessionLocalAuthData,
-          tx,
-        );
-      }
 
       return newSession;
     });

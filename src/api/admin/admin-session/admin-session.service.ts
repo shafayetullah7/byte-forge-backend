@@ -3,7 +3,6 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateAdminSession } from './types';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import {
-  adminLocalAuthSessionTable,
   adminSessionTable,
   adminTable,
   sessionTable,
@@ -24,7 +23,7 @@ export class AdminSessionService {
     const {
       deviceInfo,
       ip,
-      adminAuth: { admin, adminLocalAuth },
+      adminAuth: { admin },
     } = payload;
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -42,16 +41,6 @@ export class AdminSessionService {
       };
 
       await tx.insert(adminSessionTable).values(adminSessionData).execute();
-
-      if (adminLocalAuth) {
-        await tx
-          .insert(adminLocalAuthSessionTable)
-          .values({
-            sessionId: newSession.id,
-            localAuthId: adminLocalAuth.adminId,
-          })
-          .execute();
-      }
 
       return newSession;
     });

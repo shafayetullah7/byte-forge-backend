@@ -37,7 +37,7 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
     }
 
-    request.user = { ...userSession, role: 'user' };
+    request.user = { ...userSession };
 
     return true;
   }

@@ -11,7 +11,7 @@ export const AuthenticAdminUser = createParamDecorator(
     const req = ctx.switchToHttp().getRequest<Request>();
 
     const auth = req.user as AccessAdminAuth | undefined;
-    if (!auth || auth.role !== 'admin') {
+    if (!auth) {
       throw new UnauthorizedException('Unauthorized access');
     }
 

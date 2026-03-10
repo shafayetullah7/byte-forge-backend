@@ -1,8 +1,13 @@
-import { TSession, TUser, TUserLocalAuth } from '@/_db/drizzle/schema';
+import {
+  TSession,
+  TUser,
+  TShop,
+} from '@/_db/drizzle/schema';
+
+export type TAuthorizedShop = TShop;
 
 export type AccessUserAuth = {
   user: TUser;
-  userLocalAuth?: TUserLocalAuth;
-  session?: TSession;
-  role: 'user';
+  session: TSession;
+  shop?: TAuthorizedShop;
 };

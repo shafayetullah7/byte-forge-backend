@@ -65,6 +65,7 @@
     "mediaDeleted": "Media deleted successfully",
     "shopCreated": "Shop created successfully",
     "shopUpdated": "Shop updated successfully",
+    "brandingUpdated": "Shop branding updated successfully",
     "plantCreated": "Plant created successfully",
     "plantUpdated": "Plant updated successfully",
     "categoryCreated": "Category created successfully",

@@ -1,9 +1,13 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { ApplySellerDto } from './dto/apply.seller.dto';
+import { UpdateShopDto } from './dto/update-shop.dto';
+import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
-import { TAuthenticUser } from '@/common/types';
+import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
+import { TAuthenticUser, TAuthorizedShop } from '@/common/types';
+import { SellerShopGuard } from '@/common/guards/seller-shop-guard/seller-shop.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 import { TShop } from '@/_db/drizzle/schema';
@@ -50,20 +54,48 @@ export class ShopController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get current user shop' })
-  @ApiResponse({ status: 200, description: 'Shop retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('my-shop')
-  @UseGuards(VerifiedUserAuthGuard)
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
   async getMyShop(
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @AuthenticShop() shop: TAuthorizedShop,
     @I18nLang() lang: string,
-  ): Promise<SuccessResponse<TShop | null>> {
-    const shop = await this.shopService.getShopByUser(authenticUser.user.id);
+  ): Promise<SuccessResponse<any>> {
+    const fullShop = await this.shopService.getShopByUser(shop.ownerId, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.userRetrieved', { lang }),
-      data: shop,
+      data: fullShop,
+    });
+  }
+
+  @Patch('my-shop')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyShop(
+    @Body() dto: UpdateShopDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.updateMyShop(shop.id, dto, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @Patch('my-shop/branding')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyBranding(
+    @Body() dto: UpdateBrandingDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.updateMyBranding(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.brandingUpdated', { lang }),
+      data: updatedShop,
     });
   }
 }

@@ -88,7 +88,6 @@ export class AdminAuthGuard implements CanActivate {
     const requestUser: AccessAdminAuth = {
       admin: adminSession.admin,
       session: adminSession.session,
-      role: 'admin',
     };
 
     request.user = requestUser as any;

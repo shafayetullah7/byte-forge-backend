@@ -15,6 +15,10 @@ import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
+import { UpdateShopDto } from './dto/update-shop.dto';
+import { UpdateBrandingDto } from './dto/update-branding.dto';
+import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 type TShopWithLogo = TShop & {
   logo: { id: string; url: string } | null;
@@ -144,17 +148,130 @@ export class ShopService {
     });
   }
 
-  async getShopByUser(userId: string): Promise<any | null> {
-    const data = await this.db.client.query.shopTable.findFirst({
-      where: eq(shopTable.ownerId, userId),
-      with: {
-        translations: true,
-        logo: true,
-      },
-    });
+  async getShopByUser(userId: string, lang: string): Promise<any | null> {
+    const data = await this.shopRepository.getShopByOwnerWithRelations(userId);
 
     if (!data) return null;
-    return data;
+    return this.mapToLocalizedShop(data, lang);
+  }
+
+  async updateMyShop(shopId: string, dto: UpdateShopDto, lang: string) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and Lock
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Update address if provided
+      if (dto.address) {
+        await this.shopRepository.update(shop.id, { address: dto.address }, tx);
+      }
+
+      // 3. Upsert translations
+      if (dto.translations && dto.translations.length > 0) {
+        for (const translation of dto.translations) {
+          const payload = {
+            ...translation,
+            shopId: shop.id,
+          } as any as TNewShopTranslation;
+          await this.shopRepository.upsertShopTranslation(payload, tx);
+        }
+      }
+
+      const updatedShop = await this.shopRepository.getShopWithRelations(
+        shopId,
+      );
+      return this.mapToLocalizedShop(updatedShop!, lang);
+    });
+  }
+
+  async updateMyBranding(shopId: string, dto: UpdateBrandingDto, lang: string) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and Lock
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Media Ownership Validation
+      const mediaIds: string[] = [];
+      if (dto.logoId) mediaIds.push(dto.logoId);
+      if (dto.bannerId) mediaIds.push(dto.bannerId);
+
+      if (mediaIds.length > 0) {
+        const medias = await this.mediaRepository.findMediaDetailsByIds(
+          mediaIds,
+          { tx, lock: true },
+        );
+
+        if (medias.find((m) => m.userUploadMedia.userId !== shop.ownerId)) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotOwned', { lang }),
+            statusCode: HttpStatus.FORBIDDEN,
+            errorCode: ErrorCode.FORBIDDEN,
+          });
+        }
+
+        if (!this.mediaRepository.verifyMediaExistence(mediaIds, medias)) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotFound', { lang }),
+            statusCode: HttpStatus.NOT_FOUND,
+            errorCode: ErrorCode.NOT_FOUND,
+          });
+        }
+
+        // Mark media as used
+        await this.mediaRepository.useMedia(mediaIds, tx);
+      }
+
+      // 3. Update shop fields
+      await this.shopRepository.update(
+        shop.id,
+        {
+          logoId: dto.logoId,
+          bannerId: dto.bannerId,
+          primaryColor: dto.primaryColor,
+          secondaryColor: dto.secondaryColor,
+          accentColor: dto.accentColor,
+        },
+        tx,
+      );
+
+      const updatedShop = await this.shopRepository.getShopWithRelations(
+        shopId,
+      );
+      return this.mapToLocalizedShop(updatedShop!, lang);
+    });
+  }
+
+
+
+  mapToLocalizedShop(shop: any, lang: string) {
+    const translation = resolveTranslation(shop.translations, lang) as any;
+    return {
+      ...shop,
+      shopName: translation?.shopName ?? '',
+      about: translation?.about ?? '',
+      brandStory: translation?.brandStory ?? '',
+      featuredHighlight: translation?.featuredHighlight ?? '',
+    };
   }
 
   private generateSlug(name: string): string {

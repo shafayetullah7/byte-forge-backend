@@ -15,6 +15,7 @@ These rules map boundaries between Controllers, Services, and Repositories, enfo
 - **Module-Scoped DTOs:** Each distinct module must have its DTOs explicitly scoped within the module's localized `dto` folder (e.g., `src/api/admin/admin-taxonomy/categories/dto/...`). Avoid consolidating cross-cutting DTOs into a global `common/dto` folder.
 - **Union ID / Slug Resolution:** When supporting dual parameterized lookups, dynamically validate input via `id: z.union([z.string().uuid(), z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)])`.
 - **Enforced UUID Constraints:** Use strictly guarded uuid parameters on explicitly targeted relational constraints (e.g. `z.string().uuid()`).
+- **Strict Parameter/Query Validation:** EVERY incoming data point (Param, Query, Body) MUST have its own Zod DTO. Avoid raw primitive types like `@Param('id') id: string`.
 
 ## 2. Repository / Service Separation
 - **No Pagination within Repositories:** Logic detailing offset, bounds, and meta-object (`{ data, meta }`) construction should never reside inside Repository classes.
@@ -38,6 +39,7 @@ These rules map boundaries between Controllers, Services, and Repositories, enfo
 - **API Specific Errors**:
     - **Admin APIs**: Error messages should be in **plain English** only.
     - **Public/User APIs**: Error messages should support bilingualism (`en`/`bn`).
+- **Multilingual Zod Messages**: All validation messages in Zod DTOs for Public/User APIs MUST use translation keys from `message.json` (e.g., `.min(5, { message: 'message.validation.minLength' })`).
 - **Bilingual Validation Feedback**: For Admin content-related validation (e.g., "Bengali name is required"), error messages MUST clearly specify which locale is failing, but the message itself is in English.
 - **Dynamic Retrieval**: All public-facing and admin APIs must return all available translations to ensure data completeness across all supported languages.
 

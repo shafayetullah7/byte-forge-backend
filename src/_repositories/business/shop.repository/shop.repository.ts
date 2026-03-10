@@ -216,4 +216,78 @@ export class ShopRepository {
       .execute();
     return updatedShop;
   }
+
+  async getShopByOwnerWithRelations(ownerId: string) {
+    return await this.db.client.query.shopTable.findFirst({
+      where: eq(shopTable.ownerId, ownerId),
+      with: {
+        translations: true,
+        logo: true,
+        banner: true,
+        shopAddressTable: true,
+        shopContactTable: true,
+        shopSocialMediaTable: true,
+        shopBusinessTable: true,
+        shopVerificationTable: true,
+      },
+    });
+  }
+
+  async getShopByOwnerBranding(ownerId: string) {
+    return await this.db.client.query.shopTable.findFirst({
+      where: eq(shopTable.ownerId, ownerId),
+      with: {
+        translations: true,
+        logo: true,
+        banner: true,
+      },
+    });
+  }
+
+  async getShopByOwnerMinimal(ownerId: string) {
+    return await this.db.client.query.shopTable.findFirst({
+      where: eq(shopTable.ownerId, ownerId),
+      with: {
+        translations: true,
+      },
+    });
+  }
+
+  async getShopWithRelations(id: string) {
+    return await this.db.client.query.shopTable.findFirst({
+      where: eq(shopTable.id, id),
+      with: {
+        translations: true,
+        logo: true,
+        banner: true,
+        shopAddressTable: true,
+        shopContactTable: true,
+        shopSocialMediaTable: true,
+        shopBusinessTable: true,
+        shopVerificationTable: true,
+      },
+    });
+  }
+
+  async upsertShopTranslation(
+    payload: TNewShopTranslation,
+    tx?: DrizzleTx,
+  ): Promise<TShopTranslation> {
+    const executor = this.db.getExecutor(tx);
+    const [translation] = await executor
+      .insert(shopTranslationsTable)
+      .values(payload)
+      .onConflictDoUpdate({
+        target: [shopTranslationsTable.shopId, shopTranslationsTable.locale],
+        set: {
+          shopName: payload.shopName,
+          about: payload.about,
+          brandStory: payload.brandStory,
+          featuredHighlight: payload.featuredHighlight,
+        },
+      })
+      .returning()
+      .execute();
+    return translation;
+  }
 }

@@ -9,15 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
-import { UserLocalAuthGuard } from '@/common/guards/user-local-auth-guard/user-local-auth.guard';
 import { Request, Response } from 'express';
 import { parseDeviceInfo } from '@/common/utils/get-divice-info';
 import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
-import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
-import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
+import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
+import { AccessUserAuth } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import {
@@ -57,26 +56,30 @@ export class UserAuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'User successfully logged in' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @UseGuards(UserLocalAuthGuard)
   @Post('login')
   async login(
-    @LocalAuthenticUser() userAuth: TLocalAuthenticUser,
+    @Body() payload: any, // Will refine DTO later if needed
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    // @Body() payload: LocalLoginDto,
   ) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
+
+    // 1. Validate credentials manually
+    const userAuth = await this.userAuthService.validateCredentials(
+      { email: payload.email, password: payload.password },
+      lang,
+    );
+
+    // 2. Perform login (session creation)
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
     const result = await this.userAuthService.login({
-      userAuth,
+      user: userAuth.user,
       deviceInfo,
       ip,
     });
-
-    // console.log
 
     this.cookieService.setSessionCookie(res, result.id);
 
@@ -95,15 +98,9 @@ export class UserAuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Get('/check')
-  checkAuth(@Req() req: Request) {
+  checkAuth(@AuthenticUser() auth: AccessUserAuth) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(
-        this.i18n.t('message.error.unauthorized', { lang }),
-      );
-    }
 
     const { user } = auth;
 
@@ -119,15 +116,9 @@ export class UserAuthController {
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
   @UseGuards(UserAuthGuard)
   @Post('verify-email')
-  async verifyEmail(@Req() req: Request, @Body() payload: VerifyEmailDto) {
+  async verifyEmail(@AuthenticUser() auth: AccessUserAuth, @Body() payload: VerifyEmailDto) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(
-        this.i18n.t('message.error.unauthorized', { lang }),
-      );
-    }
 
     await this.userAuthService.verifyEmail(auth.user.id, payload.otp);
 
@@ -143,15 +134,9 @@ export class UserAuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(UserAuthGuard)
   @Post('send-verification-email')
-  async sendVerificationEmail(@Req() req: Request) {
+  async sendVerificationEmail(@AuthenticUser() auth: AccessUserAuth) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException(
-        this.i18n.t('message.error.unauthorized', { lang }),
-      );
-    }
 
     const { expiresAt } = await this.userAuthService.resendVerification(
       auth.user.id,
