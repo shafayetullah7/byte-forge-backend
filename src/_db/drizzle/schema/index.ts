@@ -2,7 +2,6 @@ export * from './user';
 export * from './admin';
 export * from './session';
 export * from './auth';
-export * from './test';
 export * from './shop';
 export * from './media';
 export * from './plant';

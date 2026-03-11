@@ -17,7 +17,6 @@ import { ShopApiModule } from './api/shop/shop-api.module';
 
 import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
-import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { MediaModule } from './api/media/media.module';
@@ -64,7 +63,6 @@ import { JwtModule } from '@nestjs/jwt';
     ResponseModule,
     EmailModule,
     AppConfigModule,
-    GraphqlModule,
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,
@@ -89,10 +87,6 @@ import { JwtModule } from '@nestjs/jwt';
     // {
     //   provide: APP_FILTER,
     //   useClass: DrizzleExceptionFilter,
-    // },
-    // {
-    //   provide: APP_FILTER,
-    //   useClass: GqlExceptionFilter,
     // },
     {
       provide: APP_PIPE,

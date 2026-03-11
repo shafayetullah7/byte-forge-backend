@@ -12,8 +12,6 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { GqlArgumentsHost } from '@nestjs/graphql';
-import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 import { DrizzleError } from 'drizzle-orm';
 import { Response } from 'express';
@@ -37,39 +35,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const contextType = host.getType<'graphql' | 'http' | 'ws' | 'rpc'>();
-
-    if (contextType === 'http') {
-      return this.handleHttpException(exception, host);
-    }
-
-    if (contextType === 'graphql') {
-      return this.handleGraphQLException(exception, host);
-    }
-
-    // fallback
-    return this.handleHttpException(exception, host);
-  }
-
-  private handleHttpException(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
     const errorResponse = this.handleException(exception);
 
-    // ✅ Use statusCode from error response (set by handleException)
     return response.status(errorResponse.statusCode).json(errorResponse);
-  }
-
-  private handleGraphQLException(exception: unknown, host: ArgumentsHost) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const gqlHost = GqlArgumentsHost.create(host);
-
-    const errorResponse = this.handleException(exception);
-
-    throw new GraphQLError(errorResponse.message, {
-      extensions: errorResponse,
-    });
   }
 
   private handleException(exception: unknown) {
@@ -119,7 +90,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         code: ErrorCode.DATABASE_ERROR,
         message: this.i18n.t('message.error.database', { lang }),
-        details: this.isProduction() ? this.i18n.t('message.error.internal', { lang }) : error.message,
+        details: this.isProduction()
+          ? this.i18n.t('message.error.internal', { lang })
+          : error.message,
         validationErrors: [],
       });
     }
@@ -160,11 +133,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     });
   }
 
-  private handleBadRequestException(exception: BadRequestException, lang: string) {
+  private handleBadRequestException(
+    exception: BadRequestException,
+    lang: string,
+  ) {
     const res = exception.getResponse();
     let validationErrors: ResponseValidationError[] = [];
-
-    console.log(res);
 
     if (res instanceof ZodValidationException) {
       validationErrors = this.formatZodErrors(res, lang);
