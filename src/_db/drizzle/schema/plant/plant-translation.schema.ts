@@ -1,6 +1,7 @@
-import { pgTable, uuid, varchar, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { plantTable } from './plant.schema';
+import { languagesTable } from '../i18n/language.schema';
 
 export const plantTranslationsTable = pgTable(
   'plant_translations',
@@ -9,14 +10,14 @@ export const plantTranslationsTable = pgTable(
     plantId: uuid('plant_id')
       .references(() => plantTable.id, { onDelete: 'cascade' })
       .notNull(),
-    locale: varchar('locale', { length: 10 }).notNull(), // 'en', 'bn', etc.
+    locale: varchar('locale', { length: 10 })
+      .notNull()
+      .references(() => languagesTable.code),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
     shortDescription: text('short_description'),
   },
-  (table) => ({
-    plantLocaleIdx: uniqueIndex('plant_locale_idx').on(table.plantId, table.locale),
-  }),
+  (t) => [unique().on(t.plantId, t.locale)],
 );
 
 export type TPlantTranslation = typeof plantTranslationsTable.$inferSelect;
@@ -28,6 +29,10 @@ export const plantTranslationsRelations = relations(
     plant: one(plantTable, {
       fields: [plantTranslationsTable.plantId],
       references: [plantTable.id],
+    }),
+    language: one(languagesTable, {
+      fields: [plantTranslationsTable.locale],
+      references: [languagesTable.code],
     }),
   }),
 );

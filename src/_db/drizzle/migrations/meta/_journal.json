@@ -316,6 +316,13 @@
       "when": 1773162792087,
       "tag": "0046_gray_turbo",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1773248732602,
+      "tag": "0047_opposite_joshua_kane",
+      "breakpoints": true
     }
   ]
 }
