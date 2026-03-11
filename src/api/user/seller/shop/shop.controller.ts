@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { ApplySellerDto } from './dto/apply.seller.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
@@ -18,8 +27,14 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiConflictResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Shops')
+@ApiTags('🏪 Seller - Shop Setup')
 @Controller({ path: 'user/seller/shops', version: '1' })
 export class ShopController {
   constructor(
@@ -28,14 +43,18 @@ export class ShopController {
     private readonly i18n: I18nService,
   ) {}
 
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Apply for a new shop' })
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Apply for a new shop',
+    description: 'Submits a shop application for seller verification.',
+  })
   @ApiResponse({
     status: 201,
     description: 'Application submitted successfully',
   })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @ApiConflictResponse('User already owns a shop', 'DUPLICATE_ENTRY')
   @Post('apply')
   @UseGuards(VerifiedUserAuthGuard)
   async applyAsSeller(
@@ -54,6 +73,11 @@ export class ShopController {
     });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Get my shop' })
+  @ApiResponse({ status: 200, description: 'Shop retrieved' })
+  @ApiUnauthorizedResponse()
+  @ApiConflictResponse('Shop not found', 'NOT_FOUND')
   @Get('my-shop')
   @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
   async getMyShop(
@@ -67,6 +91,11 @@ export class ShopController {
     });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Update my shop' })
+  @ApiResponse({ status: 200, description: 'Shop updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
   @Patch('my-shop')
   @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
   async updateMyShop(
@@ -81,6 +110,11 @@ export class ShopController {
     });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Update shop branding' })
+  @ApiResponse({ status: 200, description: 'Branding updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
   @Patch('my-shop/branding')
   @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
   async updateMyBranding(

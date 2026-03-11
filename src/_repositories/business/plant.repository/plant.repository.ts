@@ -19,9 +19,10 @@ import {
   TPlantVariant,
   TNewPlantVariant,
   shopTable,
+  mediaTable,
 } from '@/_db/drizzle/schema';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { SQL, eq, and, ilike, or, sql, exists } from 'drizzle-orm';
+import { SQL, eq, and, ilike, or, sql, exists, inArray } from 'drizzle-orm';
 import { DrizzleTx } from '@/_db/drizzle/types';
 
 export interface PlantQuery {
@@ -60,13 +61,16 @@ export class PlantRepository {
       const searchCondition = or(
         ilike(plantTable.scientificName, `%${options.searchKey}%`),
         exists(
-          this.db.client.select({ id: plantTranslationsTable.id })
+          this.db.client
+            .select({ id: plantTranslationsTable.id })
             .from(plantTranslationsTable)
-            .where(and(
-              eq(plantTranslationsTable.plantId, plantTable.id),
-              ilike(plantTranslationsTable.name, `%${options.searchKey}%`)
-            ))
-        )
+            .where(
+              and(
+                eq(plantTranslationsTable.plantId, plantTable.id),
+                ilike(plantTranslationsTable.name, `%${options.searchKey}%`),
+              ),
+            ),
+        ),
       );
       if (searchCondition) where.push(searchCondition);
     }
@@ -79,15 +83,15 @@ export class PlantRepository {
   async findOne(options?: PlantQuery, tx?: DrizzleTx): Promise<TPlant | null> {
     const executor = this.db.getExecutor(tx);
     const where = this.buildWhere(options);
-    
+
     // Using query API instead of select for single record fetch
     const plant = await executor.query.plantTable.findFirst({
       where: and(...where),
       with: {
         shop: {
-          columns: { status: true }
-        }
-      }
+          columns: { status: true },
+        },
+      },
     });
 
     // Enforce active shop check if it's not a direct ID lookup that bypasses it
@@ -160,6 +164,13 @@ export class PlantRepository {
     mediaItems: Omit<TNewPlantMedia, 'plantId'>[],
     tx: DrizzleTx,
   ): Promise<TPlantMedia[]> {
+    // Get existing media IDs before delete
+    const existingMedia = await tx
+      .select({ mediaId: plantMediaTable.mediaId })
+      .from(plantMediaTable)
+      .where(eq(plantMediaTable.plantId, plantId));
+    const existingMediaIds = existingMedia.map((m) => m.mediaId);
+
     // Delete existing media first
     await tx
       .delete(plantMediaTable)
@@ -167,8 +178,50 @@ export class PlantRepository {
 
     if (mediaItems.length > 0) {
       const items = mediaItems.map((item) => ({ ...item, plantId }));
-      return await tx.insert(plantMediaTable).values(items).returning();
+      const newMedia = await tx
+        .insert(plantMediaTable)
+        .values(items)
+        .returning();
+
+      // Get new media IDs
+      const newMediaIds = mediaItems.map((m) => m.mediaId);
+
+      // Calculate which media to decrement (in old but not in new)
+      const toDecrement = existingMediaIds.filter(
+        (id) => !newMediaIds.includes(id),
+      );
+      // Calculate which media to increment (in new but not in old)
+      const toIncrement = newMediaIds.filter(
+        (id) => !existingMediaIds.includes(id),
+      );
+
+      // Decrement usage for removed media
+      if (toDecrement.length > 0) {
+        await tx
+          .update(mediaTable)
+          .set({ usesCount: sql`GREATEST(${mediaTable.usesCount} - 1, 0)` })
+          .where(inArray(mediaTable.id, toDecrement));
+      }
+
+      // Increment usage for new media
+      if (toIncrement.length > 0) {
+        await tx
+          .update(mediaTable)
+          .set({ usesCount: sql`${mediaTable.usesCount} + 1` })
+          .where(inArray(mediaTable.id, toIncrement));
+      }
+
+      return newMedia;
     }
+
+    // If we had old media and now empty, decrement all old
+    if (existingMediaIds.length > 0) {
+      await tx
+        .update(mediaTable)
+        .set({ usesCount: sql`GREATEST(${mediaTable.usesCount} - 1, 0)` })
+        .where(inArray(mediaTable.id, existingMediaIds));
+    }
+
     return [];
   }
 

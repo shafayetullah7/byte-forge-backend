@@ -29,7 +29,14 @@ import { ResponseService } from '@/common/modules/response/response.service';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
-@ApiTags('User Auth')
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
+
+@ApiTags('👤 User Auth')
 @Controller({ path: 'user/auth', version: '1' })
 export class UserAuthController {
   constructor(
@@ -39,9 +46,12 @@ export class UserAuthController {
     private readonly responseService: ResponseService,
   ) {}
 
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Creates a new user account with email and password.',
+  })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiBadRequestResponse()
   @Post('register')
   async register(@Body() payload: CreateLocalUserDto) {
     const i18nContext = I18nContext.current();
@@ -53,9 +63,12 @@ export class UserAuthController {
     });
   }
 
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({
+    summary: 'Login with email and password',
+    description: 'Authenticates user and returns session tokens.',
+  })
   @ApiResponse({ status: 200, description: 'User successfully logged in' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiUnauthorizedResponse()
   @Post('login')
   async login(
     @Body() payload: any, // Will refine DTO later if needed
@@ -92,10 +105,10 @@ export class UserAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Check if user is authenticated' })
   @ApiResponse({ status: 200, description: 'User is authenticated' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Get('/check')
   checkAuth(@AuthenticUser() auth: AccessUserAuth) {
@@ -110,13 +123,16 @@ export class UserAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Verify user email with OTP' })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('verify-email')
-  async verifyEmail(@AuthenticUser() auth: AccessUserAuth, @Body() payload: VerifyEmailDto) {
+  async verifyEmail(
+    @AuthenticUser() auth: AccessUserAuth,
+    @Body() payload: VerifyEmailDto,
+  ) {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
 
@@ -128,10 +144,10 @@ export class UserAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Resend verification email' })
   @ApiResponse({ status: 200, description: 'Verification email sent' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('send-verification-email')
   async sendVerificationEmail(@AuthenticUser() auth: AccessUserAuth) {
@@ -149,10 +165,10 @@ export class UserAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'User successfully logged out' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

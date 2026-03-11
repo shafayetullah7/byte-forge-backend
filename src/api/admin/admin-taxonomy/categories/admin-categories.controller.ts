@@ -26,10 +26,17 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
+import { ApiPagination } from '@/common/decorators/api-pagination.decorator';
 
-@ApiTags('Categories')
+@ApiTags('🏷️ Admin - Taxonomy')
 @UseGuards(AdminAuthGuard)
-@ApiBearerAuth('JWT-auth')
+@ApiAuth()
 @Controller('admin/categories')
 export class AdminCategoriesController {
   constructor(
@@ -40,7 +47,7 @@ export class AdminCategoriesController {
 
   @ApiOperation({ summary: 'Create a new category' })
   @ApiResponse({ status: 201, description: 'Category created' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiBadRequestResponse()
   @Post()
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     const data = await this.categoriesService.create(createCategoryDto);
@@ -52,11 +59,9 @@ export class AdminCategoriesController {
 
   @ApiOperation({ summary: 'Get all categories' })
   @ApiResponse({ status: 200, description: 'Categories retrieved' })
+  @ApiPagination()
   @Get()
-  async findAll(
-    @Query() query: CategoryQueryDto,
-    @I18nLang() lang: string,
-  ) {
+  async findAll(@Query() query: CategoryQueryDto, @I18nLang() lang: string) {
     const list = await this.categoriesService.findAll(query, lang);
     return this.responseService.paginated({
       message: 'Categories retrieved successfully',
@@ -89,11 +94,9 @@ export class AdminCategoriesController {
 
   @ApiOperation({ summary: 'Get a category by ID' })
   @ApiResponse({ status: 200, description: 'Category retrieved' })
+  @ApiNotFoundResponse('Category')
   @Get(':id')
-  async findOne(
-    @Param() param: CategoryParamDto,
-    @I18nLang() lang: string,
-  ) {
+  async findOne(@Param() param: CategoryParamDto, @I18nLang() lang: string) {
     const data = await this.categoriesService.findOne(param.id, lang);
     return this.responseService.success({
       message: 'Category retrieved successfully',
@@ -103,6 +106,8 @@ export class AdminCategoriesController {
 
   @ApiOperation({ summary: 'Update a category' })
   @ApiResponse({ status: 200, description: 'Category updated' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Category')
   @Patch(':id')
   async update(
     @Param() param: CategoryParamDto,
@@ -122,11 +127,9 @@ export class AdminCategoriesController {
 
   @ApiOperation({ summary: 'Delete a category' })
   @ApiResponse({ status: 200, description: 'Category deleted' })
+  @ApiNotFoundResponse('Category')
   @Delete(':id')
-  async remove(
-    @Param() param: CategoryParamDto,
-    @I18nLang() lang: string,
-  ) {
+  async remove(@Param() param: CategoryParamDto, @I18nLang() lang: string) {
     await this.categoriesService.remove(param.id, lang);
     return this.responseService.success({
       message: 'Category removed successfully',

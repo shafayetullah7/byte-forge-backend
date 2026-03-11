@@ -27,10 +27,17 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
+import { ApiPagination } from '@/common/decorators/api-pagination.decorator';
 
-@ApiTags('Tags')
+@ApiTags('🏷️ Admin - Taxonomy')
 @UseGuards(AdminAuthGuard)
-@ApiBearerAuth('JWT-auth')
+@ApiAuth()
 @Controller('admin/tags')
 export class AdminTagsController {
   constructor(
@@ -41,6 +48,7 @@ export class AdminTagsController {
 
   @ApiOperation({ summary: 'Get all tags' })
   @ApiResponse({ status: 200, description: 'Tags retrieved' })
+  @ApiPagination()
   @Get()
   async findAll(@Query() query: TagQueryDto) {
     const list = await this.tagsService.findAll(query);
@@ -53,6 +61,7 @@ export class AdminTagsController {
 
   @ApiOperation({ summary: 'Get a tag by ID' })
   @ApiResponse({ status: 200, description: 'Tag retrieved' })
+  @ApiNotFoundResponse('Tag')
   @Get(':tagId')
   async findOne(@Param() param: TagParamDto) {
     const data = await this.tagsService.findOne(param.tagId);
@@ -64,6 +73,8 @@ export class AdminTagsController {
 
   @ApiOperation({ summary: 'Update a tag' })
   @ApiResponse({ status: 200, description: 'Tag updated' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Tag')
   @Patch(':tagId')
   async update(
     @Param() param: TagParamDto,
@@ -78,6 +89,7 @@ export class AdminTagsController {
 
   @ApiOperation({ summary: 'Delete a tag' })
   @ApiResponse({ status: 200, description: 'Tag deleted' })
+  @ApiNotFoundResponse('Tag')
   @Delete(':tagId')
   async remove(@Param() param: TagParamDto) {
     await this.tagsService.remove(param.tagId);

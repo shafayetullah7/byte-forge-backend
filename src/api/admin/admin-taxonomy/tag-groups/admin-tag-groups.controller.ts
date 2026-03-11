@@ -33,10 +33,17 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
+import { ApiPagination } from '@/common/decorators/api-pagination.decorator';
 
-@ApiTags('Tag Groups')
+@ApiTags('🏷️ Admin - Taxonomy')
 @UseGuards(AdminAuthGuard)
-@ApiBearerAuth('JWT-auth')
+@ApiAuth()
 @Controller('admin/tag-groups')
 export class AdminTagGroupsController {
   constructor(
@@ -48,6 +55,7 @@ export class AdminTagGroupsController {
 
   @ApiOperation({ summary: 'Create a new tag group' })
   @ApiResponse({ status: 201, description: 'Tag Group created' })
+  @ApiBadRequestResponse()
   @Post()
   async create(@Body() createTagGroupDto: CreateTagGroupDto) {
     const data = await this.tagGroupsService.create(createTagGroupDto);
@@ -59,11 +67,9 @@ export class AdminTagGroupsController {
 
   @ApiOperation({ summary: 'Get all tag groups' })
   @ApiResponse({ status: 200, description: 'Tag Groups retrieved' })
+  @ApiPagination()
   @Get()
-  async findAll(
-    @Query() query: TagGroupQueryDto,
-    @I18nLang() lang: string,
-  ) {
+  async findAll(@Query() query: TagGroupQueryDto, @I18nLang() lang: string) {
     const list = await this.tagGroupsService.findAll(query, lang);
     return this.responseService.paginated({
       message: 'Tag Groups retrieved successfully',
@@ -74,11 +80,9 @@ export class AdminTagGroupsController {
 
   @ApiOperation({ summary: 'Get a tag group by ID' })
   @ApiResponse({ status: 200, description: 'Tag Group retrieved' })
+  @ApiNotFoundResponse('Tag Group')
   @Get(':groupId')
-  async findOne(
-    @Param() param: TagGroupParamDto,
-    @I18nLang() lang: string,
-  ) {
+  async findOne(@Param() param: TagGroupParamDto, @I18nLang() lang: string) {
     const data = await this.tagGroupsService.findOne(param.groupId, lang);
     return this.responseService.success({
       message: 'Tag Group retrieved successfully',
@@ -88,6 +92,8 @@ export class AdminTagGroupsController {
 
   @ApiOperation({ summary: 'Update a tag group' })
   @ApiResponse({ status: 200, description: 'Tag Group updated' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Tag Group')
   @Patch(':groupId')
   async update(
     @Param() param: TagGroupParamDto,
@@ -107,11 +113,9 @@ export class AdminTagGroupsController {
 
   @ApiOperation({ summary: 'Delete a tag group' })
   @ApiResponse({ status: 200, description: 'Tag Group deleted' })
+  @ApiNotFoundResponse('Tag Group')
   @Delete(':groupId')
-  async remove(
-    @Param() param: TagGroupParamDto,
-    @I18nLang() lang: string,
-  ) {
+  async remove(@Param() param: TagGroupParamDto, @I18nLang() lang: string) {
     await this.tagGroupsService.remove(param.groupId, lang);
     return this.responseService.success({
       message: 'Tag Group removed successfully',

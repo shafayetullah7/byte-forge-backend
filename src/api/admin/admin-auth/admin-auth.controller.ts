@@ -28,8 +28,13 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Admin Auth')
+@ApiTags('🔐 Admin Auth')
 @Controller({ path: 'admin/auth', version: '1' })
 export class AdminAuthController {
   constructor(
@@ -40,9 +45,12 @@ export class AdminAuthController {
     private readonly responseService: ResponseService,
   ) {}
 
-  @ApiOperation({ summary: 'Register a new admin' })
+  @ApiOperation({
+    summary: 'Register a new admin',
+    description: 'Creates a new admin account (superadmin only).',
+  })
   @ApiResponse({ status: 201, description: 'Admin successfully registered' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiBadRequestResponse()
   @Post('register')
   async register(@Body() payload: CreateLocalAdminDto, @Req() req: Request) {
     const result = await this.adminAuthService.register(payload);
@@ -53,9 +61,12 @@ export class AdminAuthController {
     });
   }
 
-  @ApiOperation({ summary: 'Admin login' })
+  @ApiOperation({
+    summary: 'Admin login',
+    description: 'Authenticates admin and returns session tokens.',
+  })
   @ApiResponse({ status: 200, description: 'Admin successfully logged in' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiUnauthorizedResponse()
   @Post('login')
   async login(
     @Body() payload: LoginLocalAdminDto,
@@ -89,10 +100,10 @@ export class AdminAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Check if admin is authenticated' })
   @ApiResponse({ status: 200, description: 'Admin is authenticated' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(AdminAuthGuard)
   @Get('check')
   async checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
@@ -104,9 +115,12 @@ export class AdminAuthController {
     });
   }
 
-  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Refreshes the access token using refresh token.',
+  })
   @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  @ApiUnauthorizedResponse()
   @Post('refresh')
   async refresh(
     @Req() req: Request,
@@ -135,10 +149,10 @@ export class AdminAuthController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Admin logout' })
   @ApiResponse({ status: 200, description: 'Admin successfully logged out' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(AdminAuthGuard)
   @Post('logout')
   async logout(

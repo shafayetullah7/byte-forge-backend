@@ -18,10 +18,16 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Languages')
+@ApiTags('🌍 Admin - Languages')
 @UseGuards(AdminAuthGuard)
-@ApiBearerAuth('JWT-auth')
+@ApiAuth()
 @Controller('admin/languages')
 export class AdminLanguagesController {
   constructor(
@@ -42,6 +48,7 @@ export class AdminLanguagesController {
 
   @ApiOperation({ summary: 'Create a new language' })
   @ApiResponse({ status: 201, description: 'Language created' })
+  @ApiBadRequestResponse()
   @Post()
   async create(@Body() createDto: CreateLanguageDto) {
     const data = await this.languagesService.create(createDto);
@@ -53,6 +60,8 @@ export class AdminLanguagesController {
 
   @ApiOperation({ summary: 'Update a language' })
   @ApiResponse({ status: 200, description: 'Language updated' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Language')
   @Patch(':code')
   async update(
     @Param('code') code: string,

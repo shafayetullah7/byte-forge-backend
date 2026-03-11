@@ -52,11 +52,53 @@ async function bootstrap() {
 
   // Swagger configuration
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Byte Forge Auth API')
+    .setTitle('ByteForge E-Commerce API')
     .setDescription(
-      'Authentication, User Management, and Admin API documentation',
+      `
+## About ByteForge API
+
+A comprehensive e-commerce platform API for buying and selling plants online.
+
+### Features
+- 🏪 Multi-vendor shop management
+- 🌱 Plant catalog with variants
+- 📦 Order management (coming soon)
+- 🏷️ Taxonomy & categorization
+- 📱 Media management
+
+### Authentication
+
+All protected endpoints require JWT authentication via Bearer token.
+
+### Rate Limits
+- Standard endpoints: 100 requests/minute
+- Bulk operations: 10 requests/minute
+
+### Error Handling
+
+All errors follow a standard format:
+
+\`\`\`json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "errorCode": "VALIDATION_ERROR",
+  "details": [
+    { "field": "email", "message": "Invalid email format" }
+  ],
+  "timestamp": "2026-03-11T10:00:00Z"
+}
+\`\`\`
+`,
     )
     .setVersion('1.0')
+    .addServer('http://localhost:3000/api', 'Local Development')
+    .setContact(
+      'ByteForge API Support',
+      'https://byteforge.com/support',
+      'api-support@byteforge.com',
+    )
+    .setLicense('Proprietary', 'https://byteforge.com/license')
     .addBearerAuth(
       {
         type: 'http',
@@ -68,22 +110,34 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('User Auth', 'User authentication endpoints')
-    .addTag('User Profile', 'User profile management')
-    .addTag('Password Reset', 'Password reset functionality')
-    .addTag('Plants', 'Plant management for sellers')
-    .addTag('Shops', 'Shop management for sellers')
-    .addTag('Business Account', 'Business account operations')
-    .addTag('Admin Auth', 'Admin authentication endpoints')
-    .addTag('Admin Session', 'Admin session management')
-    .addTag('Categories', 'Category management')
-    .addTag('Tags', 'Tag management')
-    .addTag('Tag Groups', 'Tag group management')
-    .addTag('Languages', 'Language management')
-    .addTag('Media', 'Media upload and management')
-    .addTag('Tree Categories', 'Public category tree')
-    .addTag('Email', 'Email functionality')
-    .addTag('Cloudinary', 'Cloudinary integration')
+    .addTag(
+      '🚀 Getting Started',
+      'API overview, authentication, and error handling',
+    )
+    .addTag(
+      '👤 User Auth',
+      'User registration, login, logout, OTP verification',
+    )
+    .addTag('👤 User Profile', 'Get and update user profile')
+    .addTag(
+      '🔐 Password Reset',
+      'Request password reset, verify OTP, set new password',
+    )
+    .addTag(
+      '🏪 Seller - Shop Setup',
+      'Apply for seller, manage shop details and branding',
+    )
+    .addTag('🌱 Seller - Plant Catalog', 'Create, read, update, delete plants')
+    .addTag('📁 Media', 'Upload, delete, and manage media files')
+    .addTag('🔐 Admin Auth', 'Admin login, refresh token, logout')
+    .addTag(
+      '🏪 Admin - Shop Management',
+      'Verify, suspend, deactivate, reactivate shops',
+    )
+    .addTag('🏷️ Admin - Taxonomy', 'Manage categories, tags, and tag groups')
+    .addTag('🌍 Admin - Languages', 'Manage supported languages')
+    .addTag('🏪 Public - Shops', 'Browse shops without authentication')
+    .addTag('📂 Public - Categories', 'Browse category tree and details')
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);

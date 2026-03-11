@@ -63,10 +63,11 @@ export class ShopService {
         });
       }
 
-      const shopWithName = await this.shopRepository.findShopByNameInTranslations(
-        englishTranslation.shopName,
-        { tx, lock: true },
-      );
+      const shopWithName =
+        await this.shopRepository.findShopByNameInTranslations(
+          englishTranslation.shopName,
+          { tx, lock: true },
+        );
 
       if (shopWithName) {
         throw new CustomException({
@@ -108,8 +109,8 @@ export class ShopService {
           });
         }
 
-        // Mark media as used
-        await this.mediaRepository.useMedia(mediaIds, tx);
+        // Mark media as used (increment count)
+        await this.mediaRepository.incrementMediaUsage(mediaIds, tx);
       }
 
       // 4. Create Shop
@@ -187,9 +188,8 @@ export class ShopService {
         }
       }
 
-      const updatedShop = await this.shopRepository.getShopWithRelations(
-        shopId,
-      );
+      const updatedShop =
+        await this.shopRepository.getShopWithRelations(shopId);
       return this.mapToLocalizedShop(updatedShop!, lang);
     });
   }
@@ -237,8 +237,23 @@ export class ShopService {
           });
         }
 
-        // Mark media as used
-        await this.mediaRepository.useMedia(mediaIds, tx);
+        // Mark media as used (increment count)
+        await this.mediaRepository.incrementMediaUsage(mediaIds, tx);
+      }
+
+      // 2b. Decrement old media if replaced
+      const oldMediaIdsToDecrement: string[] = [];
+      if (dto.logoId && shop.logoId && dto.logoId !== shop.logoId) {
+        oldMediaIdsToDecrement.push(shop.logoId);
+      }
+      if (dto.bannerId && shop.bannerId && dto.bannerId !== shop.bannerId) {
+        oldMediaIdsToDecrement.push(shop.bannerId);
+      }
+      if (oldMediaIdsToDecrement.length > 0) {
+        await this.mediaRepository.decrementMediaUsage(
+          oldMediaIdsToDecrement,
+          tx,
+        );
       }
 
       // 3. Update shop fields
@@ -254,14 +269,11 @@ export class ShopService {
         tx,
       );
 
-      const updatedShop = await this.shopRepository.getShopWithRelations(
-        shopId,
-      );
+      const updatedShop =
+        await this.shopRepository.getShopWithRelations(shopId);
       return this.mapToLocalizedShop(updatedShop!, lang);
     });
   }
-
-
 
   mapToLocalizedShop(shop: any, lang: string) {
     const translation = resolveTranslation(shop.translations, lang) as any;

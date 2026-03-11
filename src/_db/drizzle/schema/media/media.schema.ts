@@ -35,7 +35,7 @@ export const mediaTable = pgTable('media', {
     .$onUpdate(() => new Date())
     .notNull(),
 
-  usedAt: timestamp('used_at', { mode: 'date', withTimezone: true }),
+  usesCount: integer('uses_count').default(0).notNull(),
 
   uses: json('uses').$type<MediaUses | null>().default(null), // <-- typed JSON column
 });

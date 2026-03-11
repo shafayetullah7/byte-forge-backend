@@ -12,8 +12,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import { ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
 
-@ApiTags('User Profile')
+@ApiTags('👤 User Profile')
 @Controller({ path: 'user/profile', version: '1' })
 export class UserController {
   constructor(
@@ -22,10 +24,10 @@ export class UserController {
     private readonly responseService: ResponseService,
   ) {}
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Get()
   async getUser(@AuthenticUser() userAuth: TAuthenticUser) {

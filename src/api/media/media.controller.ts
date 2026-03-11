@@ -29,8 +29,15 @@ import {
 } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { I18nLang, I18nService } from 'nestjs-i18n';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+  ApiForbiddenResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Media')
+@ApiTags('📁 Media')
 @Controller({ path: 'media', version: '1' })
 export class MediaController {
   constructor(
@@ -39,12 +46,15 @@ export class MediaController {
     private readonly i18n: I18nService,
   ) {}
 
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Upload a file' })
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Upload a file',
+    description: 'Uploads an image or video file to Cloudinary.',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'File uploaded successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBadRequestResponse('INVALID_FILE_TYPE')
+  @ApiUnauthorizedResponse()
   @Post('upload')
   @UseGuards(UserAuthGuard)
   @UseInterceptors(
@@ -87,11 +97,12 @@ export class MediaController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Delete a media file' })
-  @ApiResponse({ status: 204, description: 'File deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'File not found' })
+  @ApiResponse({ status: 200, description: 'File deleted successfully' })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('File')
+  @ApiForbiddenResponse('File is in use')
   @Delete(':id')
   @UseGuards(UserAuthGuard)
   async deleteMedia(
@@ -106,10 +117,10 @@ export class MediaController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Get all media for current user' })
   @ApiResponse({ status: 200, description: 'Media list retrieved' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @Get()
   @UseGuards(UserAuthGuard)
   async getMedia(

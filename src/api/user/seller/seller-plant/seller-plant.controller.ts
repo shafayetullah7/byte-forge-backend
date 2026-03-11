@@ -29,8 +29,14 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Plants')
+@ApiTags('🌱 Seller - Plant Catalog')
 @Controller({ path: 'user/seller/plants', version: '1' })
 @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
 export class SellerPlantController {
@@ -40,11 +46,14 @@ export class SellerPlantController {
     private readonly i18n: I18nService,
   ) {}
 
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create a new plant' })
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Create a new plant',
+    description: 'Creates a new plant listing with variants and media.',
+  })
   @ApiResponse({ status: 201, description: 'Plant created' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
   @Post()
   async create(
     @AuthenticShop() shop: TAuthorizedShop,
@@ -58,10 +67,10 @@ export class SellerPlantController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Get all plants' })
   @ApiResponse({ status: 200, description: 'Plants retrieved' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse()
   @Get()
   async findAll(
     @AuthenticShop() shop: TAuthorizedShop,
@@ -76,10 +85,10 @@ export class SellerPlantController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Get a plant by ID' })
   @ApiResponse({ status: 200, description: 'Plant retrieved' })
-  @ApiResponse({ status: 404, description: 'Plant not found' })
+  @ApiNotFoundResponse('Plant')
   @Get(':id')
   async findOne(
     @AuthenticShop() shop: TAuthorizedShop,
@@ -93,10 +102,11 @@ export class SellerPlantController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Update a plant' })
   @ApiResponse({ status: 200, description: 'Plant updated' })
-  @ApiResponse({ status: 404, description: 'Plant not found' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Plant')
   @Patch(':id')
   async update(
     @AuthenticShop() shop: TAuthorizedShop,
@@ -111,10 +121,10 @@ export class SellerPlantController {
     });
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @ApiAuth()
   @ApiOperation({ summary: 'Delete a plant' })
-  @ApiResponse({ status: 204, description: 'Plant deleted' })
-  @ApiResponse({ status: 404, description: 'Plant not found' })
+  @ApiResponse({ status: 200, description: 'Plant deleted' })
+  @ApiNotFoundResponse('Plant')
   @Delete(':id')
   async remove(
     @AuthenticShop() shop: TAuthorizedShop,

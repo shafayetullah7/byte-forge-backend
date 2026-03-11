@@ -9,8 +9,12 @@ import { PasswordResetService } from './password-reset.service';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
 
-@ApiTags('Password Reset')
+@ApiTags('🔐 Password Reset')
 @Controller({ path: 'user/password-reset', version: '1' })
 export class PasswordResetController {
   constructor(
@@ -19,9 +23,12 @@ export class PasswordResetController {
     private readonly responseService: ResponseService,
   ) {}
 
-  @ApiOperation({ summary: 'Request password reset' })
+  @ApiOperation({
+    summary: 'Request password reset',
+    description: 'Sends a password reset OTP to the user email.',
+  })
   @ApiResponse({ status: 200, description: 'Password reset OTP sent' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiNotFoundResponse('User')
   @Post('forgot')
   async forgotPassword(@Body() payload: ForgotPasswordDto) {
     const i18nContext = I18nContext.current();
@@ -36,9 +43,12 @@ export class PasswordResetController {
     });
   }
 
-  @ApiOperation({ summary: 'Verify password reset OTP' })
+  @ApiOperation({
+    summary: 'Verify password reset OTP',
+    description: 'Verifies the OTP token for password reset.',
+  })
   @ApiResponse({ status: 200, description: 'OTP verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
+  @ApiBadRequestResponse('INVALID_OTP')
   @Post('verify')
   async verifyResetOtp(@Body() payload: VerifyResetOtpDto) {
     const i18nContext = I18nContext.current();
@@ -53,9 +63,12 @@ export class PasswordResetController {
     });
   }
 
-  @ApiOperation({ summary: 'Resend password reset OTP' })
+  @ApiOperation({
+    summary: 'Resend password reset OTP',
+    description: 'Resends the password reset OTP.',
+  })
   @ApiResponse({ status: 200, description: 'OTP resent successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid token' })
+  @ApiBadRequestResponse('INVALID_TOKEN')
   @Post('resend')
   async resendResetOtp(@Body() payload: ResendResetOtpDto) {
     const i18nContext = I18nContext.current();
@@ -70,9 +83,12 @@ export class PasswordResetController {
     });
   }
 
-  @ApiOperation({ summary: 'Reset password with new password' })
+  @ApiOperation({
+    summary: 'Reset password with new password',
+    description: 'Sets a new password using the verified token.',
+  })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid token or password' })
+  @ApiBadRequestResponse('INVALID_TOKEN_OR_PASSWORD')
   @Post('reset')
   async resetPassword(@Body() payload: ResetPasswordDto) {
     const i18nContext = I18nContext.current();
