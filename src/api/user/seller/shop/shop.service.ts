@@ -17,6 +17,9 @@ import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
+import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
+import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
+import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
@@ -272,6 +275,108 @@ export class ShopService {
       const updatedShop =
         await this.shopRepository.getShopWithRelations(shopId);
       return this.mapToLocalizedShop(updatedShop!, lang);
+    });
+  }
+
+  private async updateShopSection<T>(
+    shopId: string,
+    lang: string,
+    updateFn: (tx: any) => Promise<void>,
+  ) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and Lock
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Perform the update
+      await updateFn(tx);
+
+      const updatedShop =
+        await this.shopRepository.getShopWithRelations(shopId);
+      return this.mapToLocalizedShop(updatedShop!, lang);
+    });
+  }
+
+  async updateMyShopContact(
+    shopId: string,
+    dto: UpdateShopContactDto,
+    lang: string,
+  ) {
+    return this.updateShopSection(shopId, lang, async (tx) => {
+      await this.shopRepository.upsertShopContact(
+        shopId,
+        {
+          ...(dto.businessEmail !== undefined && {
+            businessEmail: dto.businessEmail,
+          }),
+          ...(dto.phone !== undefined && { phone: dto.phone }),
+          ...(dto.alternativePhone !== undefined && {
+            alternativePhone: dto.alternativePhone,
+          }),
+          ...(dto.whatsapp !== undefined && { whatsapp: dto.whatsapp }),
+          ...(dto.telegram !== undefined && { telegram: dto.telegram }),
+        },
+        tx,
+      );
+    });
+  }
+
+  async updateMyShopSocialMedia(
+    shopId: string,
+    dto: UpdateShopSocialMediaDto,
+    lang: string,
+  ) {
+    return this.updateShopSection(shopId, lang, async (tx) => {
+      await this.shopRepository.upsertShopSocialMedia(
+        shopId,
+        {
+          ...(dto.facebook !== undefined && { facebook: dto.facebook }),
+          ...(dto.instagram !== undefined && { instagram: dto.instagram }),
+          ...(dto.x !== undefined && { x: dto.x }),
+        },
+        tx,
+      );
+    });
+  }
+
+  async updateMyShopAddress(
+    shopId: string,
+    dto: UpdateShopAddressDto,
+    lang: string,
+  ) {
+    return this.updateShopSection(shopId, lang, async (tx) => {
+      await this.shopRepository.upsertShopAddress(
+        shopId,
+        {
+          ...(dto.country !== undefined && { country: dto.country }),
+          ...(dto.division !== undefined && { division: dto.division }),
+          ...(dto.district !== undefined && { district: dto.district }),
+          ...(dto.street !== undefined && { street: dto.street }),
+          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
+          ...(dto.latitude !== undefined && {
+            // Ensure consistent precision for GPS coordinates (10 decimal places)
+            latitude: dto.latitude.toFixed(10),
+          }),
+          ...(dto.longitude !== undefined && {
+            // Ensure consistent precision for GPS coordinates (10 decimal places)
+            longitude: dto.longitude.toFixed(10),
+          }),
+          ...(dto.googleMapsLink !== undefined && {
+            googleMapsLink: dto.googleMapsLink,
+          }),
+        },
+        tx,
+      );
     });
   }
 

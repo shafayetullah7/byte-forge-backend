@@ -1,5 +1,6 @@
 import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
 import { shopTable } from './shop.schema';
+import { relations } from 'drizzle-orm';
 
 export const shopContactTable = pgTable('shop_contact', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -28,3 +29,10 @@ export const shopContactTable = pgTable('shop_contact', {
 // Corrected types
 export type TShopContact = typeof shopContactTable.$inferSelect;
 export type TNewShopContact = typeof shopContactTable.$inferInsert;
+
+export const shopContactRelations = relations(shopContactTable, ({ one }) => ({
+  shop: one(shopTable, {
+    fields: [shopContactTable.shopId],
+    references: [shopTable.id],
+  }),
+}));

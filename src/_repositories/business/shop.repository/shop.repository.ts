@@ -290,4 +290,128 @@ export class ShopRepository {
       .execute();
     return translation;
   }
+
+  async upsertShopContact(
+    shopId: string,
+    payload: Partial<
+      Pick<
+        TNewShopContact,
+        'businessEmail' | 'phone' | 'alternativePhone' | 'whatsapp' | 'telegram'
+      >
+    >,
+    tx?: DrizzleTx,
+  ): Promise<TShopContact> {
+    const executor = this.db.getExecutor(tx);
+    const [contact] = await executor
+      .insert(shopContactTable)
+      .values({
+        shopId,
+        businessEmail: payload.businessEmail ?? '', // Default to empty string for required field
+        phone: payload.phone ?? '', // Default to empty string for required field
+        alternativePhone: payload.alternativePhone ?? null,
+        whatsapp: payload.whatsapp ?? null,
+        telegram: payload.telegram ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [shopContactTable.shopId],
+        set: {
+          ...(payload.businessEmail !== undefined && {
+            businessEmail: payload.businessEmail,
+          }),
+          ...(payload.phone !== undefined && { phone: payload.phone }),
+          ...(payload.alternativePhone !== undefined && {
+            alternativePhone: payload.alternativePhone,
+          }),
+          ...(payload.whatsapp !== undefined && { whatsapp: payload.whatsapp }),
+          ...(payload.telegram !== undefined && { telegram: payload.telegram }),
+        },
+      })
+      .returning()
+      .execute();
+    return contact;
+  }
+
+  async upsertShopSocialMedia(
+    shopId: string,
+    payload: Partial<Pick<TNewShopSocialMedia, 'facebook' | 'instagram' | 'x'>>,
+    tx?: DrizzleTx,
+  ): Promise<TShopSocialMedia> {
+    const executor = this.db.getExecutor(tx);
+    const [socialMedia] = await executor
+      .insert(shopSocialMediaTable)
+      .values({
+        shopId,
+        facebook: payload.facebook ?? null,
+        instagram: payload.instagram ?? null,
+        x: payload.x ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [shopSocialMediaTable.shopId],
+        set: {
+          ...(payload.facebook !== undefined && { facebook: payload.facebook }),
+          ...(payload.instagram !== undefined && {
+            instagram: payload.instagram,
+          }),
+          ...(payload.x !== undefined && { x: payload.x }),
+        },
+      })
+      .returning()
+      .execute();
+    return socialMedia;
+  }
+
+  async upsertShopAddress(
+    shopId: string,
+    payload: Partial<
+      Pick<
+        TNewShopAddress,
+        | 'country'
+        | 'division'
+        | 'district'
+        | 'street'
+        | 'postalCode'
+        | 'latitude'
+        | 'longitude'
+        | 'googleMapsLink'
+      >
+    >,
+    tx?: DrizzleTx,
+  ): Promise<TShopAddress> {
+    const executor = this.db.getExecutor(tx);
+    const [address] = await executor
+      .insert(shopAddressTable)
+      .values({
+        shopId,
+        country: payload.country ?? '', // Required field
+        division: payload.division ?? '', // Required field
+        district: payload.district ?? '', // Required field
+        street: payload.street ?? '', // Required field
+        postalCode: payload.postalCode ?? '', // Required field
+        latitude: payload.latitude ?? null,
+        longitude: payload.longitude ?? null,
+        googleMapsLink: payload.googleMapsLink ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [shopAddressTable.shopId],
+        set: {
+          ...(payload.country !== undefined && { country: payload.country }),
+          ...(payload.division !== undefined && { division: payload.division }),
+          ...(payload.district !== undefined && { district: payload.district }),
+          ...(payload.street !== undefined && { street: payload.street }),
+          ...(payload.postalCode !== undefined && {
+            postalCode: payload.postalCode,
+          }),
+          ...(payload.latitude !== undefined && { latitude: payload.latitude }),
+          ...(payload.longitude !== undefined && {
+            longitude: payload.longitude,
+          }),
+          ...(payload.googleMapsLink !== undefined && {
+            googleMapsLink: payload.googleMapsLink,
+          }),
+        },
+      })
+      .returning()
+      .execute();
+    return address;
+  }
 }

@@ -12,6 +12,9 @@ import { ShopService } from './shop.service';
 import { ApplySellerDto } from './dto/apply.seller.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
+import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
+import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
+import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
@@ -129,6 +132,75 @@ export class ShopController {
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.brandingUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Update shop contact information' })
+  @ApiResponse({ status: 200, description: 'Contact info updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @Patch('my-shop/contact')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyShopContact(
+    @Body() dto: UpdateShopContactDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.updateMyShopContact(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.contactUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Update shop social media links' })
+  @ApiResponse({ status: 200, description: 'Social media links updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @Patch('my-shop/social-media')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyShopSocialMedia(
+    @Body() dto: UpdateShopSocialMediaDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.updateMyShopSocialMedia(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.socialMediaUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Update shop address and location' })
+  @ApiResponse({ status: 200, description: 'Address and location updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @Patch('my-shop/address')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyShopAddress(
+    @Body() dto: UpdateShopAddressDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.updateMyShopAddress(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.addressUpdated', { lang }),
       data: updatedShop,
     });
   }
