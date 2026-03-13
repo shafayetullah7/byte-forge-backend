@@ -40,9 +40,51 @@ export const updateShopAddressSchema = z
       .max(180, { message: 'message.validation.invalidLongitude' })
       .optional(),
     googleMapsLink: z
-      .string()
       .url({ message: 'message.validation.invalidUrl' })
       .max(500, { message: 'message.validation.maxLength' })
+      .optional(),
+    // Translations for address fields (for Bengali - 'bn' locale)
+    // English values are stored in the main address fields, translations are for other languages
+    translations: z
+      .object({
+        country: z
+          .string()
+          .min(2, { message: 'message.validation.minLength' })
+          .max(100, { message: 'message.validation.maxLength' })
+          .optional(),
+        division: z
+          .string()
+          .min(2, { message: 'message.validation.minLength' })
+          .max(100, { message: 'message.validation.maxLength' })
+          .optional(),
+        district: z
+          .string()
+          .min(2, { message: 'message.validation.minLength' })
+          .max(100, { message: 'message.validation.maxLength' })
+          .optional(),
+        street: z
+          .string()
+          .min(5, { message: 'message.validation.minLength' })
+          .max(255, { message: 'message.validation.maxLength' })
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          // At least one translation field must be provided
+          const translationFields = [
+            'country',
+            'division',
+            'district',
+            'street',
+          ];
+          return translationFields.some(
+            (field) => data[field as keyof typeof data] !== undefined,
+          );
+        },
+        {
+          message: 'message.validation.atLeastOne',
+        },
+      )
       .optional(),
   })
   .refine((data) => Object.values(data).some((val) => val !== undefined), {

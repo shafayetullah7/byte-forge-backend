@@ -1,4 +1,5 @@
 export * from './device.type.enum';
+export * from './language.enum';
 export * from './mime.type.enum';
 
 export * from './shop.status.enum';

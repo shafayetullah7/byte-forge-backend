@@ -9,6 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { shopTable } from './shop.schema';
 import { relations } from 'drizzle-orm';
+import { shopAddressTranslationsTable } from './shop.address.translation.schema';
 
 export const shopAddressTable = pgTable('shop_address', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -45,9 +46,13 @@ export const shopAddressTable = pgTable('shop_address', {
 export type TShopAddress = typeof shopAddressTable.$inferSelect;
 export type TNewShopAddress = typeof shopAddressTable.$inferInsert;
 
-export const shopAddressRelations = relations(shopAddressTable, ({ one }) => ({
-  shop: one(shopTable, {
-    fields: [shopAddressTable.shopId],
-    references: [shopTable.id],
+export const shopAddressRelations = relations(
+  shopAddressTable,
+  ({ one, many }) => ({
+    shop: one(shopTable, {
+      fields: [shopAddressTable.shopId],
+      references: [shopTable.id],
+    }),
+    translations: many(shopAddressTranslationsTable),
   }),
-}));
+);

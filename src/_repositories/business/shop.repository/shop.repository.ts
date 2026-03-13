@@ -4,6 +4,7 @@ import { ShopStatusEnum } from '@/_db/drizzle/enum';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   shopAddressTable,
+  shopAddressTranslationsTable,
   shopBusinessTable,
   shopContactTable,
   shopManagerTable,
@@ -13,6 +14,7 @@ import {
   shopVerificationTable,
   TNewShop,
   TNewShopAddress,
+  TNewShopAddressTranslation,
   TNewShopBusiness,
   TNewShopContact,
   TNewShopManager,
@@ -21,6 +23,7 @@ import {
   TNewShopVerification,
   TShop,
   TShopAddress,
+  TShopAddressTranslation,
   TShopBusiness,
   TShopContact,
   TShopManager,
@@ -224,7 +227,11 @@ export class ShopRepository {
         translations: true,
         logo: true,
         banner: true,
-        shopAddressTable: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
+          },
+        },
         shopContactTable: true,
         shopSocialMediaTable: true,
         shopBusinessTable: true,
@@ -260,7 +267,11 @@ export class ShopRepository {
         translations: true,
         logo: true,
         banner: true,
-        shopAddressTable: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
+          },
+        },
         shopContactTable: true,
         shopSocialMediaTable: true,
         shopBusinessTable: true,
@@ -413,5 +424,51 @@ export class ShopRepository {
       .returning()
       .execute();
     return address;
+  }
+
+  /**
+   * Upserts shop address translation for a specific locale
+   * @param addressId The ID of the address to translate
+   * @param payload Translation fields (country, division, district, street)
+   * @param locale The locale code (e.g., 'bn', 'en') for this translation
+   * @param tx Optional database transaction
+   */
+  async upsertShopAddressTranslation(
+    addressId: string,
+    payload: Partial<
+      Pick<
+        TNewShopAddressTranslation,
+        'country' | 'division' | 'district' | 'street'
+      >
+    >,
+    locale: string,
+    tx?: DrizzleTx,
+  ): Promise<TShopAddressTranslation> {
+    const executor = this.db.getExecutor(tx);
+    const [translation] = await executor
+      .insert(shopAddressTranslationsTable)
+      .values({
+        addressId,
+        locale,
+        country: payload.country ?? null,
+        division: payload.division ?? null,
+        district: payload.district ?? null,
+        street: payload.street ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [
+          shopAddressTranslationsTable.addressId,
+          shopAddressTranslationsTable.locale,
+        ],
+        set: {
+          ...(payload.country !== undefined && { country: payload.country }),
+          ...(payload.division !== undefined && { division: payload.division }),
+          ...(payload.district !== undefined && { district: payload.district }),
+          ...(payload.street !== undefined && { street: payload.street }),
+        },
+      })
+      .returning()
+      .execute();
+    return translation;
   }
 }

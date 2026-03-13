@@ -183,7 +183,11 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ summary: 'Update shop address and location' })
+  @ApiOperation({
+    summary: 'Update shop address and location (with Bengali translations)',
+    description:
+      'Updates shop address information. Supports Bengali translations for address fields (English stored in main fields, Bengali in translation table).',
+  })
   @ApiResponse({ status: 200, description: 'Address and location updated' })
   @ApiBadRequestResponse()
   @ApiUnauthorizedResponse()

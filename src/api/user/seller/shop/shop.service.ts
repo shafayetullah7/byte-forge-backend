@@ -355,7 +355,8 @@ export class ShopService {
     lang: string,
   ) {
     return this.updateShopSection(shopId, lang, async (tx) => {
-      await this.shopRepository.upsertShopAddress(
+      // 1. Upsert main address
+      const address = await this.shopRepository.upsertShopAddress(
         shopId,
         {
           ...(dto.country !== undefined && { country: dto.country }),
@@ -377,17 +378,68 @@ export class ShopService {
         },
         tx,
       );
+
+      // 2. Upsert address translations if provided (for 'bn' locale)
+      if (dto.translations) {
+        await this.shopRepository.upsertShopAddressTranslation(
+          address.id,
+          {
+            ...(dto.translations.country !== undefined && {
+              country: dto.translations.country,
+            }),
+            ...(dto.translations.division !== undefined && {
+              division: dto.translations.division,
+            }),
+            ...(dto.translations.district !== undefined && {
+              district: dto.translations.district,
+            }),
+            ...(dto.translations.street !== undefined && {
+              street: dto.translations.street,
+            }),
+          },
+          'bn', // Always saving translations for Bengali
+          tx,
+        );
+      }
     });
   }
 
+  /**
+   * Maps shop data to include localized content based on requested language
+   * Merges translated fields (shop name, about, etc.) and localized address fields
+   */
   mapToLocalizedShop(shop: any, lang: string) {
     const translation = resolveTranslation(shop.translations, lang) as any;
+
+    // Get localized address if available
+    let localizedAddress = {};
+    if (shop.shopAddressTable && shop.shopAddressTable.translations) {
+      const addressTranslation = resolveTranslation(
+        shop.shopAddressTable.translations,
+        lang,
+      ) as any;
+      if (addressTranslation) {
+        localizedAddress = {
+          country: addressTranslation.country || shop.shopAddressTable.country,
+          division:
+            addressTranslation.division || shop.shopAddressTable.division,
+          district:
+            addressTranslation.district || shop.shopAddressTable.district,
+          street: addressTranslation.street || shop.shopAddressTable.street,
+        };
+      }
+    }
+
     return {
       ...shop,
       shopName: translation?.shopName ?? '',
       about: translation?.about ?? '',
       brandStory: translation?.brandStory ?? '',
       featuredHighlight: translation?.featuredHighlight ?? '',
+      shopAddressTable: {
+        ...shop.shopAddressTable,
+        ...localizedAddress,
+      },
     };
   }
 

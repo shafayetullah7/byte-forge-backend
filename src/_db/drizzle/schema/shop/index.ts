@@ -1,5 +1,6 @@
 export * from './manager.schema';
 export * from './shop.address.schema';
+export * from './shop.address.translation.schema';
 export * from './shop.business.schema';
 export * from './shop.contact.schema';
 export * from './shop.manager.schema';
