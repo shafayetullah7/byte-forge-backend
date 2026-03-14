@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
+import { UserAuthV2Service } from './user-auth-v2.service';
 import { UserAuthController } from './user-auth.controller';
 import { UserLocalAuthService } from './user-local-auth.service';
 import { HashingModule } from '@/common/modules/hashing/hashing.module';
@@ -25,6 +26,6 @@ import { UserLocalAuthRepositoryModule } from '@/_repositories/user/user.local.a
     UserLocalAuthRepositoryModule,
   ],
   controllers: [UserAuthController],
-  providers: [UserAuthService, UserLocalAuthService],
+  providers: [UserAuthService, UserLocalAuthService, UserAuthV2Service],
 })
 export class UserAuthModule {}

@@ -9,7 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
+import { UserAuthV2Service } from './user-auth-v2.service';
 import { Request, Response } from 'express';
+import * as crypto from 'crypto';
 import { parseDeviceInfo } from '@/common/utils/get-divice-info';
 import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
@@ -41,6 +43,7 @@ import {
 export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,
+    private readonly userAuthV2Service: UserAuthV2Service,
     private readonly cookieService: CookieService,
     private readonly i18n: I18nService,
     private readonly responseService: ResponseService,
@@ -184,6 +187,51 @@ export class UserAuthController {
       message: this.i18n.t('message.success.loggedOut', { lang }),
       data: null,
     });
+  }
+
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Refreshes both access and refresh tokens using current refresh token. Old tokens are invalidated via session ID rotation.',
+  })
+  @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
+  @ApiUnauthorizedResponse()
+  @Post('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.userRefreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    try {
+      const { tokens, user, session } =
+        await this.userAuthV2Service.refreshTokens(refreshToken);
+
+      // Set new access token (rotated)
+      this.cookieService.setUserAccessToken(res, tokens.accessToken);
+
+      // Set new refresh token (rotated - old one is now invalid due to session ID change)
+      this.cookieService.setUserRefreshToken(res, tokens.refreshToken);
+
+      // Rotate XSRF Token (for CSRF protection)
+      const xsrfToken = crypto.randomUUID();
+      this.cookieService.setUserXsrfToken(res, xsrfToken);
+
+      return this.responseService.success({
+        message: 'Tokens refreshed successfully',
+        data: {
+          tokens,
+          user,
+        },
+      });
+    } catch (error) {
+      // Clear tokens on auth failure (user deactivated, session revoked, etc.)
+      this.cookieService.clearUserTokens(res);
+      throw error;
+    }
   }
 
   // === Password Reset Flow ===

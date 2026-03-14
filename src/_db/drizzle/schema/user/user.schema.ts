@@ -22,6 +22,7 @@ export const userTable = pgTable('users', {
   emailVerified: boolean('email_verified')
     .generatedAlwaysAs(sql`email_verified_at IS NOT NULL`)
     .notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
     .notNull(),

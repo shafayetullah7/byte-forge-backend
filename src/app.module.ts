@@ -23,6 +23,7 @@ import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
 import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
+import { UserAuthJWtGuardModule } from './common/guards/user-auth-jwt-guard/user-auth-jwt-guard.module';
 import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 
@@ -66,6 +67,7 @@ import { JwtModule } from '@nestjs/jwt';
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,
+    UserAuthJWtGuardModule,
     VerifiedUserAuthGuardModule,
     AdminAuthGuardModule,
     AppEnvModule,
