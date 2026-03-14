@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { AppConfigService } from '../app-config/app-config.service';
 
@@ -72,6 +71,45 @@ export class CookieService {
     });
   }
 
+  setUserAccessToken(res: Response, token: string) {
+    const isProduction = this.configService.nodeEnv === 'production';
+
+    res.cookie('userAccessToken', token, {
+      httpOnly: true,
+      secure: true, // Required for SameSite: None
+      maxAge: 15 * 60 * 1000, // 15 minutes (Access Token lifetime)
+      sameSite: 'none',
+      domain: isProduction ? this.configService.cookieDomain : undefined,
+      path: '/',
+    });
+  }
+
+  setUserRefreshToken(res: Response, token: string) {
+    const isProduction = this.configService.nodeEnv === 'production';
+
+    res.cookie('userRefreshToken', token, {
+      httpOnly: true,
+      secure: true, // Required for SameSite: None
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (Refresh Token lifetime)
+      sameSite: 'none',
+      domain: isProduction ? this.configService.cookieDomain : undefined,
+      path: '/',
+    });
+  }
+
+  setUserXsrfToken(res: Response, token: string) {
+    const isProduction = this.configService.nodeEnv === 'production';
+
+    res.cookie('userXsrfToken', token, {
+      httpOnly: false, // Must be readable by frontend
+      secure: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (same as refresh token)
+      sameSite: 'none',
+      domain: isProduction ? this.configService.cookieDomain : undefined,
+      path: '/',
+    });
+  }
+
   clearSessionCookie(res: Response) {
     const isProduction = this.configService.nodeEnv === 'production';
 
@@ -110,5 +148,21 @@ export class CookieService {
     res.clearCookie('adminAccessToken', options);
     res.clearCookie('adminRefreshToken', options);
     res.clearCookie('xsrf-token', { ...options, httpOnly: false });
+  }
+
+  clearUserTokens(res: Response) {
+    const isProduction = this.configService.nodeEnv === 'production';
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+      domain: isProduction ? this.configService.cookieDomain : undefined,
+      path: '/',
+    };
+
+    res.clearCookie('userAccessToken', options);
+    res.clearCookie('userRefreshToken', options);
+    res.clearCookie('userXsrfToken', { ...options, httpOnly: false });
   }
 }

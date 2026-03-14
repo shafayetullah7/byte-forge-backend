@@ -130,4 +130,18 @@ export class AppConfigService {
   get jwtAdminRefreshExp(): AppEnv['JWT_ADMIN_REFRESH_EXP'] {
     return this.configService.getOrThrow('JWT_ADMIN_REFRESH_EXP');
   }
+
+  // === User JWT ===
+  get jwtUserAccessSecret(): AppEnv['JWT_USER_ACCESS_SECRET'] {
+    return this.configService.getOrThrow('JWT_USER_ACCESS_SECRET');
+  }
+  get jwtUserAccessExp(): AppEnv['JWT_USER_ACCESS_EXP'] {
+    return this.configService.getOrThrow('JWT_USER_ACCESS_EXP');
+  }
+  get jwtUserRefreshSecret(): AppEnv['JWT_USER_REFRESH_SECRET'] {
+    return this.configService.getOrThrow('JWT_USER_REFRESH_SECRET');
+  }
+  get jwtUserRefreshExp(): AppEnv['JWT_USER_REFRESH_EXP'] {
+    return this.configService.getOrThrow('JWT_USER_REFRESH_EXP');
+  }
 }

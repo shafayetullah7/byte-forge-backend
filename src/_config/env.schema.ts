@@ -51,9 +51,35 @@ export const envSchema = z
 
     // === Admin JWT ===
     JWT_ADMIN_ACCESS_SECRET: z.string().min(32),
-    JWT_ADMIN_ACCESS_EXP: z.string().regex(/^\d+(s|m|h|d|w|y|)$|^\d+$/i, 'Invalid duration format (e.g. 15m, 1h, 7d)'),
+    JWT_ADMIN_ACCESS_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
     JWT_ADMIN_REFRESH_SECRET: z.string().min(32),
-    JWT_ADMIN_REFRESH_EXP: z.string().regex(/^\d+(s|m|h|d|w|y|)$|^\d+$/i, 'Invalid duration format (e.g. 15m, 1h, 7d)'),
+    JWT_ADMIN_REFRESH_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+
+    // === User JWT ===
+    JWT_USER_ACCESS_SECRET: z.string().min(32),
+    JWT_USER_ACCESS_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+    JWT_USER_REFRESH_SECRET: z.string().min(32),
+    JWT_USER_REFRESH_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
   })
   .transform((data) => {
     const dbUrl = data.DATABASE_URL;
