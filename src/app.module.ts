@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import {
   AcceptLanguageResolver,
-  CookieResolver,
+  HeaderResolver,
   I18nModule,
   QueryResolver,
 } from 'nestjs-i18n';
@@ -48,7 +48,7 @@ import { JwtModule } from '@nestjs/jwt';
         watch: true,
       },
       resolvers: [
-        new CookieResolver(['locale']), // Read 'locale' cookie from frontend
+        new HeaderResolver(['x-locale']), // Read x-locale header from frontend
         { use: QueryResolver, options: ['lang'] },
         AcceptLanguageResolver,
       ],
