@@ -1,6 +1,11 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
-import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
+import {
+  AcceptLanguageResolver,
+  CookieResolver,
+  I18nModule,
+  QueryResolver,
+} from 'nestjs-i18n';
 import * as path from 'path';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
@@ -43,6 +48,7 @@ import { JwtModule } from '@nestjs/jwt';
         watch: true,
       },
       resolvers: [
+        new CookieResolver(['locale']), // Read 'locale' cookie from frontend
         { use: QueryResolver, options: ['lang'] },
         AcceptLanguageResolver,
       ],
