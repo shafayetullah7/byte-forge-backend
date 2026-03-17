@@ -220,11 +220,15 @@ export class MediaRepository implements IMediaRepository {
     return records.some((record) => record.usesCount > 0);
   }
 
-  async incrementMediaUsage(mediaIds: string[], tx: DrizzleTx) {
+  async incrementMediaUsage(
+    mediaIds: string[],
+    tx: DrizzleTx,
+    incrementBy: number = 1,
+  ) {
     if (mediaIds.length === 0) return;
     await tx
       .update(mediaTable)
-      .set({ usesCount: sql`${mediaTable.usesCount} + 1` })
+      .set({ usesCount: sql`${mediaTable.usesCount} + ${incrementBy}` })
       .where(inArray(mediaTable.id, mediaIds))
       .returning();
   }

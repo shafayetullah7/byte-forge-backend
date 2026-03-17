@@ -2,15 +2,8 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { ApplySellerDto } from './dto/apply.seller.dto';
-import {
-  mediaTable,
-  shopTable,
-  TNewShop,
-  TNewShopVerification,
-  TShop,
-} from '@/_db/drizzle/schema';
+import { TNewShop, TNewShopVerification } from '@/_db/drizzle/schema';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
-import { eq } from 'drizzle-orm';
 import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
@@ -22,10 +15,11 @@ import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
-
-type TShopWithLogo = TShop & {
-  logo: { id: string; url: string } | null;
-};
+import {
+  LocalizedShopDetails,
+  ShopStatus,
+  TShopWithBranding,
+} from './shop.types';
 
 @Injectable()
 export class ShopService {
@@ -152,11 +146,36 @@ export class ShopService {
     });
   }
 
-  async getShopByUser(userId: string, lang: string): Promise<any | null> {
-    const data = await this.shopRepository.getShopByOwnerWithRelations(userId);
+  /**
+   * Get localized shop details - returns shop info with translations, logo, and banner only
+   * Used for public shop display and basic shop information
+   */
+  async getLocalizedShopDetails(
+    userId: string,
+    lang: string,
+  ): Promise<LocalizedShopDetails | null> {
+    const data = await this.shopRepository.getShopByOwnerBranding(userId);
 
     if (!data) return null;
-    return this.mapToLocalizedShop(data, lang);
+
+    return this.mapToLocalizedShopDetails(data, lang);
+  }
+
+  /**
+   * Get minimal shop status for routing decisions
+   * Returns only essential fields to check if user has a shop setup
+   */
+  async getShopStatus(userId: string): Promise<ShopStatus | null> {
+    const data = await this.shopRepository.getShopByOwnerMinimal(userId);
+
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      slug: data.slug,
+      status: data.status,
+      hasTranslations: data.translations?.length > 0,
+    };
   }
 
   async updateMyShop(shopId: string, dto: UpdateShopDto, lang: string) {
@@ -191,9 +210,10 @@ export class ShopService {
         }
       }
 
-      const updatedShop =
-        await this.shopRepository.getShopWithRelations(shopId);
-      return this.mapToLocalizedShop(updatedShop!, lang);
+      const updatedShop = await this.shopRepository.getShopByOwnerBranding(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
     });
   }
 
@@ -272,16 +292,17 @@ export class ShopService {
         tx,
       );
 
-      const updatedShop =
-        await this.shopRepository.getShopWithRelations(shopId);
-      return this.mapToLocalizedShop(updatedShop!, lang);
+      const updatedShop = await this.shopRepository.getShopByOwnerBranding(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
     });
   }
 
-  private async updateShopSection<T>(
+  private async updateShopSection(
     shopId: string,
     lang: string,
-    updateFn: (tx: any) => Promise<void>,
+    updateFn: (tx: any, shop: { ownerId: string }) => Promise<void>,
   ) {
     return this.db.transaction(async (tx) => {
       // 1. Fetch and Lock
@@ -299,11 +320,12 @@ export class ShopService {
       }
 
       // 2. Perform the update
-      await updateFn(tx);
+      await updateFn(tx, shop);
 
-      const updatedShop =
-        await this.shopRepository.getShopWithRelations(shopId);
-      return this.mapToLocalizedShop(updatedShop!, lang);
+      const updatedShop = await this.shopRepository.getShopByOwnerBranding(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
     });
   }
 
@@ -405,41 +427,53 @@ export class ShopService {
   }
 
   /**
-   * Maps shop data to include localized content based on requested language
-   * Merges translated fields (shop name, about, etc.) and localized address fields
+   * Maps shop branding data to include localized content based on requested language
+   * Returns simplified shop details with only translations, logo, and banner
    */
-  mapToLocalizedShop(shop: any, lang: string) {
-    const translation = resolveTranslation(shop.translations, lang) as any;
-
-    // Get localized address if available
-    let localizedAddress = {};
-    if (shop.shopAddressTable && shop.shopAddressTable.translations) {
-      const addressTranslation = resolveTranslation(
-        shop.shopAddressTable.translations,
-        lang,
-      ) as any;
-      if (addressTranslation) {
-        localizedAddress = {
-          country: addressTranslation.country || shop.shopAddressTable.country,
-          division:
-            addressTranslation.division || shop.shopAddressTable.division,
-          district:
-            addressTranslation.district || shop.shopAddressTable.district,
-          street: addressTranslation.street || shop.shopAddressTable.street,
-        };
-      }
-    }
+  private mapToLocalizedShopDetails(
+    shop: TShopWithBranding,
+    lang: string,
+  ): LocalizedShopDetails {
+    const translation = resolveTranslation(shop.translations, lang) as {
+      shopName: string;
+      about: string | null;
+      brandStory: string | null;
+      featuredHighlight: string | null;
+    } | null;
 
     return {
-      ...shop,
+      id: shop.id,
+      ownerId: shop.ownerId,
+      slug: shop.slug,
+      address: shop.address,
+      logoId: shop.logoId,
+      bannerId: shop.bannerId,
+      status: shop.status,
+      createdAt: shop.createdAt,
+      updatedAt: shop.updatedAt,
       shopName: translation?.shopName ?? '',
-      about: translation?.about ?? '',
-      brandStory: translation?.brandStory ?? '',
-      featuredHighlight: translation?.featuredHighlight ?? '',
-      shopAddressTable: {
-        ...shop.shopAddressTable,
-        ...localizedAddress,
-      },
+      about: translation?.about ?? null,
+      brandStory: translation?.brandStory ?? null,
+      featuredHighlight: translation?.featuredHighlight ?? null,
+      logo: shop.logo
+        ? {
+            id: shop.logo.id,
+            url: shop.logo.url,
+            mimeType: shop.logo.mimeType,
+            fileName: shop.logo.fileName,
+            size: shop.logo.size,
+          }
+        : null,
+      banner: shop.banner
+        ? {
+            id: shop.banner.id,
+            url: shop.banner.url,
+            mimeType: shop.banner.mimeType,
+            fileName: shop.banner.fileName,
+            size: shop.banner.size,
+          }
+        : null,
+      translations: shop.translations,
     };
   }
 

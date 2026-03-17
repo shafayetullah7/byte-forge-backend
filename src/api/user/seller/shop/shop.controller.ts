@@ -9,6 +9,9 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
+import { LocalizedShopDetails, ShopStatus } from './shop.types';
+import { CustomException } from '@/common/exceptions/custom.exception';
+import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { ApplySellerDto } from './dto/apply.seller.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
@@ -35,6 +38,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiConflictResponse,
+  ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 
 @ApiTags('🏪 Seller - Shop Setup')
@@ -77,20 +81,68 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ summary: 'Get my shop' })
-  @ApiResponse({ status: 200, description: 'Shop retrieved' })
+  @ApiOperation({
+    summary: 'Check shop status',
+    description:
+      'Returns minimal shop information to check if user has a shop setup. Used for routing decisions (redirect to shop dashboard or setup form). Returns 404 if no shop exists.',
+  })
+  @ApiResponse({ status: 200, description: 'Shop status retrieved' })
   @ApiUnauthorizedResponse()
-  @ApiConflictResponse('Shop not found', 'NOT_FOUND')
-  @Get('my-shop')
-  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
-  async getMyShop(
-    @AuthenticShop() shop: TAuthorizedShop,
-    @I18nLang() lang: string,
-  ): Promise<SuccessResponse<any>> {
-    const fullShop = await this.shopService.getShopByUser(shop.ownerId, lang);
+  @ApiNotFoundResponse('Shop')
+  @Get('my-shop/status')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getMyShopStatus(
+    @AuthenticUser() authenticUser: TAuthenticUser,
+  ): Promise<SuccessResponse<ShopStatus>> {
+    const shopStatus = await this.shopService.getShopStatus(
+      authenticUser.user.id,
+    );
+
+    if (!shopStatus) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.shopNotFound', { lang: 'en' }),
+        statusCode: 404,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
     return this.responseService.success({
-      message: this.i18n.t('message.success.userRetrieved', { lang }),
-      data: fullShop,
+      message: 'Shop status retrieved',
+      data: shopStatus,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get localized shop details',
+    description:
+      "Retrieves the authenticated user's shop details with translations, logo, and banner. Returns 404 if no shop exists.",
+  })
+  @ApiResponse({ status: 200, description: 'Shop details retrieved' })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Shop')
+  @Get('my-shop')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getMyShop(
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<LocalizedShopDetails>> {
+    const shopDetails = await this.shopService.getLocalizedShopDetails(
+      authenticUser.user.id,
+      lang,
+    );
+
+    if (!shopDetails) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.shopNotFound', { lang }),
+        statusCode: 404,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopRetrieved', { lang }),
+      data: shopDetails,
     });
   }
 

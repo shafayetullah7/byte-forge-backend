@@ -35,4 +35,9 @@ export interface IMediaRepository {
   ): Promise<any>;
   areMediaUsed(records: TMedia[]): boolean;
   useMedia(mediaIds: string[], tx: DrizzleTx): Promise<void>;
+  incrementMediaUsage(
+    mediaIds: string[],
+    tx: DrizzleTx,
+    incrementBy?: number,
+  ): Promise<void>;
 }
