@@ -111,7 +111,25 @@ export class ShopService {
       }
 
       // 4. Create Shop
-      const slug = this.generateSlug(englishTranslation.shopName);
+      // Use provided slug or generate from English shop name
+      const slug =
+        payload.slug || this.generateSlug(englishTranslation.shopName);
+
+      // Validate slug uniqueness if provided
+      if (payload.slug) {
+        const existingShop = await this.shopRepository.findShopBySlug(slug, {
+          tx,
+          lock: false,
+        });
+        if (existingShop) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.shopSlugTaken', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.VALIDATION_ERROR,
+          });
+        }
+      }
+
       const shopPayload: TNewShop = {
         ownerId: userId,
         slug,

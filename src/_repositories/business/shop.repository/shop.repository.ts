@@ -54,6 +54,21 @@ export class ShopRepository {
       .execute();
     return data;
   }
+
+  async findShopBySlug(
+    slug: string,
+    transaction?: TLockTransaction,
+  ): Promise<TShop | undefined> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(shopTable)
+      .where(eq(shopTable.slug, slug));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [shop] = await lockQuery.execute();
+    return shop;
+  }
   async createShop(payload: TNewShop, tx?: DrizzleTx): Promise<TShop> {
     const executor = this.db.getExecutor(tx);
     const [createdShop] = await executor

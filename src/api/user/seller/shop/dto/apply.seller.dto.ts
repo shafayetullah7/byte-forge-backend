@@ -1,6 +1,17 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+// Reusable SlugSchema for URL-safe slugs
+export const SlugSchema = z
+  .string()
+  .trim()
+  .min(1, 'Slug is required')
+  .max(255, 'Slug must be at most 255 characters')
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'Slug must be lowercase alphanumeric with hyphens only (e.g. my-shop)',
+  );
+
 export const shopTranslationSchema = z.object({
   locale: z.string().min(2).max(10),
   shopName: z
@@ -23,6 +34,9 @@ export const applySellerSchema = z.object({
     .trim()
     .min(5, { message: 'message.validation.minLength' })
     .max(500, { message: 'message.validation.maxLength' }),
+
+  // Optional slug - if not provided, will be generated from English shop name
+  slug: SlugSchema.optional(),
 
   logoId: z.uuid({ message: 'message.validation.invalidUuid' }).optional(),
   bannerId: z.uuid({ message: 'message.validation.invalidUuid' }).optional(),
