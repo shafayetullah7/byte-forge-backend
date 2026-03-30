@@ -4,6 +4,7 @@ import {
   timestamp,
   pgEnum,
   varchar,
+  text,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopTable } from './shop.schema';
@@ -47,6 +48,10 @@ export const shopVerificationTable = pgTable('shop_verification', {
     .default(ShopVerificationStatusEnum.PENDING)
     .notNull(),
   verifiedAt: timestamp('verified_at', { mode: 'date', withTimezone: true }),
+
+  // Admin verification fields
+  rejectionReason: text('rejection_reason'),
+  adminNotes: text('admin_notes'),
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()

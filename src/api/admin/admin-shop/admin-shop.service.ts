@@ -67,6 +67,11 @@ export class AdminShopService {
             dto.status === ShopVerificationStatusEnum.APPROVED
               ? new Date()
               : null,
+          rejectionReason:
+            dto.status === ShopVerificationStatusEnum.REJECTED
+              ? dto.reason
+              : null,
+          adminNotes: dto.adminNotes || null,
         },
         { shopId },
         tx,
@@ -142,18 +147,22 @@ export class AdminShopService {
       this.db.client
         .select({
           totalShops: count(),
-          pendingShops: sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.PENDING} THEN 1 ELSE 0 END)`.mapWith(
-            Number,
-          ),
-          activeShops: sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.ACTIVE} THEN 1 ELSE 0 END)`.mapWith(
-            Number,
-          ),
-          suspendedShops: sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.SUSPENDED} THEN 1 ELSE 0 END)`.mapWith(
-            Number,
-          ),
-          deactivatedShops: sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.DEACTIVATED} THEN 1 ELSE 0 END)`.mapWith(
-            Number,
-          ),
+          pendingShops:
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.PENDING} THEN 1 ELSE 0 END)`.mapWith(
+              Number,
+            ),
+          activeShops:
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.ACTIVE} THEN 1 ELSE 0 END)`.mapWith(
+              Number,
+            ),
+          suspendedShops:
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.SUSPENDED} THEN 1 ELSE 0 END)`.mapWith(
+              Number,
+            ),
+          deactivatedShops:
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.DEACTIVATED} THEN 1 ELSE 0 END)`.mapWith(
+              Number,
+            ),
         })
         .from(shopTable),
       this.db.client

@@ -1,4 +1,5 @@
 import { TMedia, TShop, TShopTranslation } from '@/_db/drizzle/schema';
+import { TShopVerification } from '@/_db/drizzle/schema/shop';
 
 /**
  * Shop with branding relations - matches the return type of getShopByOwnerBranding
@@ -7,6 +8,22 @@ export type TShopWithBranding = TShop & {
   translations: TShopTranslation[];
   logo: TMedia | null;
   banner: TMedia | null;
+};
+
+/**
+ * Verification status returned to users
+ * Excludes sensitive admin notes
+ */
+export type VerificationStatus = {
+  id: string;
+  shopId: string;
+  status: string;
+  tradeLicenseNumber: string | null;
+  tinNumber: string | null;
+  rejectionReason: string | null;
+  verifiedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 /**

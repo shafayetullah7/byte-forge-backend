@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
+import { ShopVerificationRepository } from '@/_repositories/business/shop.verification.repository/shop.verification.repository';
 import { ApplySellerDto } from './dto/apply.seller.dto';
 import { TNewShop, TNewShopVerification } from '@/_db/drizzle/schema';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
@@ -13,12 +14,14 @@ import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
 import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
+import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import {
   LocalizedShopDetails,
   ShopStatus,
   TShopWithBranding,
+  VerificationStatus,
 } from './shop.types';
 
 @Injectable()
@@ -26,6 +29,7 @@ export class ShopService {
   constructor(
     private readonly db: DrizzleService,
     private readonly shopRepository: ShopRepository,
+    private readonly shopVerificationRepository: ShopVerificationRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly i18n: I18nService,
   ) {}
@@ -502,5 +506,145 @@ export class ShopService {
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  /**
+   * Get verification status for a user's shop
+   */
+  async getVerificationStatus(
+    userId: string,
+  ): Promise<VerificationStatus | null> {
+    const shop = await this.shopRepository.getShopByOwnerId(userId);
+
+    if (!shop) {
+      return null;
+    }
+
+    const verification = await this.shopVerificationRepository.findOne({
+      shopId: shop.id,
+    });
+
+    if (!verification) {
+      return null;
+    }
+
+    return {
+      id: verification.id,
+      shopId: verification.shopId,
+      status: verification.status,
+      tradeLicenseNumber: verification.tradeLicenseNumber,
+      tinNumber: verification.tinNumber,
+      rejectionReason: verification.rejectionReason,
+      verifiedAt: verification.verifiedAt,
+      createdAt: verification.createdAt,
+      updatedAt: verification.updatedAt,
+    };
+  }
+
+  /**
+   * Update verification documents for a shop
+   */
+  async updateVerificationDocuments(
+    shopId: string,
+    dto: UpdateVerificationDto,
+    lang: string,
+  ) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and Lock
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Validate media ownership if documents are provided
+      const mediaIds: string[] = [];
+      if (dto.tradeLicenseDocumentId) mediaIds.push(dto.tradeLicenseDocumentId);
+      if (dto.tinDocumentId) mediaIds.push(dto.tinDocumentId);
+      if (dto.utilityBillDocumentId) mediaIds.push(dto.utilityBillDocumentId);
+
+      if (mediaIds.length > 0) {
+        const medias = await this.mediaRepository.findMediaDetailsByIds(
+          mediaIds,
+          { tx, lock: true },
+        );
+
+        if (medias.find((m) => m.userUploadMedia.userId !== shop.ownerId)) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotOwned', { lang }),
+            statusCode: HttpStatus.FORBIDDEN,
+            errorCode: ErrorCode.FORBIDDEN,
+          });
+        }
+
+        if (!this.mediaRepository.verifyMediaExistence(mediaIds, medias)) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotFound', { lang }),
+            statusCode: HttpStatus.NOT_FOUND,
+            errorCode: ErrorCode.NOT_FOUND,
+          });
+        }
+
+        // Mark media as used (increment count)
+        await this.mediaRepository.incrementMediaUsage(mediaIds, tx);
+      }
+
+      // 3. Get existing verification record
+      const existingVerification =
+        await this.shopVerificationRepository.findOne({ shopId });
+
+      if (!existingVerification) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.verificationNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 4. Update verification record
+      const updatePayload: Partial<TNewShopVerification> = {};
+
+      if (dto.tradeLicenseNumber !== undefined) {
+        updatePayload.tradeLicenseNumber = dto.tradeLicenseNumber;
+      }
+      if (dto.tradeLicenseDocumentId !== undefined) {
+        updatePayload.tradeLicenseDocument = dto.tradeLicenseDocumentId;
+      }
+      if (dto.tinNumber !== undefined) {
+        updatePayload.tinNumber = dto.tinNumber;
+      }
+      if (dto.tinDocumentId !== undefined) {
+        updatePayload.tinDocument = dto.tinDocumentId;
+      }
+      if (dto.utilityBillDocumentId !== undefined) {
+        updatePayload.utilityBillDocument = dto.utilityBillDocumentId;
+      }
+
+      // Reset status to PENDING if any document is updated
+      if (
+        dto.tradeLicenseDocumentId ||
+        dto.tinDocumentId ||
+        dto.utilityBillDocumentId
+      ) {
+        updatePayload.status = ShopVerificationStatusEnum.PENDING;
+        updatePayload.rejectionReason = null;
+      }
+
+      await this.shopVerificationRepository.update(
+        updatePayload,
+        { shopId },
+        tx,
+      );
+
+      // 5. Return updated verification status
+      return this.getVerificationStatus(shop.ownerId);
+    });
   }
 }

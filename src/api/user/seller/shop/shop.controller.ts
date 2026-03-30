@@ -9,7 +9,11 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
-import { LocalizedShopDetails, ShopStatus } from './shop.types';
+import {
+  LocalizedShopDetails,
+  ShopStatus,
+  VerificationStatus,
+} from './shop.types';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { ApplySellerDto } from './dto/apply.seller.dto';
@@ -18,6 +22,7 @@ import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
 import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
+import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
@@ -258,6 +263,75 @@ export class ShopController {
     return this.responseService.success({
       message: this.i18n.t('message.success.addressUpdated', { lang }),
       data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get shop verification status',
+    description:
+      "Returns the current verification status of the user's shop, including document status and any rejection reasons.",
+  })
+  @ApiResponse({ status: 200, description: 'Verification status retrieved' })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Shop')
+  @Get('my-shop/verification')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getMyShopVerification(
+    @AuthenticUser() authenticUser: TAuthenticUser,
+  ): Promise<SuccessResponse<VerificationStatus>> {
+    const verification = await this.shopService.getVerificationStatus(
+      authenticUser.user.id,
+    );
+
+    if (!verification) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.shopNotFound', { lang: 'en' }),
+        statusCode: 404,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
+    return this.responseService.success({
+      message: 'Verification status retrieved',
+      data: verification,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Update shop verification documents',
+    description:
+      'Updates verification documents (trade license, TIN, utility bill). Resets verification status to PENDING when documents are updated.',
+  })
+  @ApiResponse({ status: 200, description: 'Verification documents updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Shop')
+  @Patch('my-shop/verification')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async updateMyShopVerification(
+    @Body() dto: UpdateVerificationDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<VerificationStatus>> {
+    const verification = await this.shopService.updateVerificationDocuments(
+      shop.id,
+      dto,
+      lang,
+    );
+
+    if (!verification) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.verificationNotFound', { lang }),
+        statusCode: 404,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.verificationUpdated', { lang }),
+      data: verification,
     });
   }
 }
