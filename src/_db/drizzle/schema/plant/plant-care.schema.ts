@@ -1,5 +1,7 @@
 import { pgTable, uuid, varchar, text } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { plantTable } from './plant.schema';
+import { plantCareTranslationsTable } from './plant-care-translation.schema';
 
 export const plantCareTable = pgTable('plant_care', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -21,3 +23,7 @@ export const plantCareTable = pgTable('plant_care', {
 
 export type TPlantCare = typeof plantCareTable.$inferSelect;
 export type TNewPlantCare = typeof plantCareTable.$inferInsert;
+
+export const plantCareRelations = relations(plantCareTable, ({ many }) => ({
+  translations: many(plantCareTranslationsTable),
+}));

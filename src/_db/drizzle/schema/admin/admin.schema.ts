@@ -4,7 +4,7 @@ import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
 export const adminTable = pgTable('admins', {
   id: uuid('id')
     .primaryKey()
-    .default(sql`gen_random_uuid()`),
+    .defaultRandom(),
   firstName: varchar('first_name', { length: 50 }).notNull(),
   lastName: varchar('last_name', { length: 50 }).notNull(),
   userName: varchar('user_name', { length: 50 }).unique().notNull(),

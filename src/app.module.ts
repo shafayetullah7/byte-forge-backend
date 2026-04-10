@@ -1,5 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DrizzleModule } from './_db/drizzle/drizzle.module';
+import {
+  AcceptLanguageResolver,
+  HeaderResolver,
+  I18nModule,
+  QueryResolver,
+} from 'nestjs-i18n';
+import * as path from 'path';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
 import { envSchema } from './_config/env.schema';
@@ -11,25 +18,41 @@ import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
 import { TreeCategoriesModule } from './api/library/tree-categories/tree-categories.module';
 import { AdminApiModule } from './api/admin/admin-api.module';
+import { ShopApiModule } from './api/shop/shop-api.module';
 
 import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
-import { GraphqlModule } from './graphql/graphql.module';
 import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { MediaModule } from './api/media/media.module';
 import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
 import { LoggerModule } from './common/modules/logger/logger.module';
 import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
+import { UserAuthJWtGuardModule } from './common/guards/user-auth-jwt-guard/user-auth-jwt-guard.module';
 import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
+import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({ global: true }),
     DrizzleModule,
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        new HeaderResolver(['x-locale']), // Read x-locale header from frontend
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
@@ -39,6 +62,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     }),
     UserApiModule,
     AdminApiModule,
+    ShopApiModule,
     TreeCategoriesModule,
     MediaModule,
     HashingModule,
@@ -46,11 +70,12 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ResponseModule,
     EmailModule,
     AppConfigModule,
-    GraphqlModule,
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,
+    UserAuthJWtGuardModule,
     VerifiedUserAuthGuardModule,
+    AdminAuthGuardModule,
     AppEnvModule,
   ],
   controllers: [],
@@ -71,10 +96,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     //   provide: APP_FILTER,
     //   useClass: DrizzleExceptionFilter,
     // },
-    // {
-    //   provide: APP_FILTER,
-    //   useClass: GqlExceptionFilter,
-    // },
     {
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
@@ -83,6 +104,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer.apply(LoggerMiddleware).forRoutes('*path');
   }
 }

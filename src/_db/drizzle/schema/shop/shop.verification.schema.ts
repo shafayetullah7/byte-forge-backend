@@ -1,16 +1,24 @@
 import {
   pgTable,
   uuid,
-  text,
-  varchar,
   timestamp,
   pgEnum,
+  varchar,
+  text,
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { shopTable } from './shop.schema';
+import { mediaTable } from '../media';
+import { ShopVerificationStatusEnum } from '../../enum';
 
-export const ShopVerificationStatusEnum = pgEnum(
+export const shopVerificationStatusEnum = pgEnum(
   'shop_verification_status_enum',
-  ['PENDING', 'REVIEWING', 'APPROVED', 'REJECTED'],
+  [
+    ShopVerificationStatusEnum.PENDING,
+    ShopVerificationStatusEnum.REVIEWING,
+    ShopVerificationStatusEnum.APPROVED,
+    ShopVerificationStatusEnum.REJECTED,
+  ],
 );
 
 export const shopVerificationTable = pgTable('shop_verification', {
@@ -23,11 +31,27 @@ export const shopVerificationTable = pgTable('shop_verification', {
 
   // Shop-specific documents
   tradeLicenseNumber: varchar('trade_license_number', { length: 100 }),
-  tradeLicenseDocument: text('trade_license_document'), // URL or path
-  utilityBillDocument: text('utility_bill_document'), // optional supporting doc
+  tradeLicenseDocument: uuid('trade_license_document').references(
+    () => mediaTable.id,
+    { onDelete: 'no action' },
+  ),
+  tinNumber: varchar('tin_number', { length: 100 }),
+  tinDocument: uuid('tin_document').references(() => mediaTable.id, {
+    onDelete: 'no action',
+  }),
+  utilityBillDocument: uuid('utility_bill_document').references(
+    () => mediaTable.id,
+    { onDelete: 'no action' },
+  ),
 
-  status: ShopVerificationStatusEnum('status').default('PENDING').notNull(),
+  status: shopVerificationStatusEnum('status')
+    .default(ShopVerificationStatusEnum.PENDING)
+    .notNull(),
   verifiedAt: timestamp('verified_at', { mode: 'date', withTimezone: true }),
+
+  // Admin verification fields
+  rejectionReason: text('rejection_reason'),
+  adminNotes: text('admin_notes'),
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()
@@ -38,6 +62,16 @@ export const shopVerificationTable = pgTable('shop_verification', {
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export const shopVerificationRelations = relations(
+  shopVerificationTable,
+  ({ one }) => ({
+    shop: one(shopTable, {
+      fields: [shopVerificationTable.shopId],
+      references: [shopTable.id],
+    }),
+  }),
+);
 
 // Types
 export type TShopVerification = typeof shopVerificationTable.$inferSelect;

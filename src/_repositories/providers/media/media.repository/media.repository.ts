@@ -23,6 +23,7 @@ import {
   isNull,
   not,
   SQL,
+  sql,
 } from 'drizzle-orm';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TAllowedMimeType } from '@/_db/drizzle/enum';
@@ -106,7 +107,7 @@ export class MediaRepository implements IMediaRepository {
     if (mediaIds?.length) conditions.push(inArray(mediaTable.id, mediaIds));
     if (typeof used === 'boolean')
       conditions.push(
-        used ? not(isNull(mediaTable.usedAt)) : isNull(mediaTable.usedAt),
+        used ? not(isNull(mediaTable.usesCount)) : isNull(mediaTable.usesCount),
       );
 
     const query = executor
@@ -216,15 +217,34 @@ export class MediaRepository implements IMediaRepository {
     return true;
   }
   areMediaUsed(records: TMedia[]) {
-    return records.some((record) => record.usedAt !== null);
+    return records.some((record) => record.usesCount > 0);
+  }
+
+  async incrementMediaUsage(
+    mediaIds: string[],
+    tx: DrizzleTx,
+    incrementBy: number = 1,
+  ) {
+    if (mediaIds.length === 0) return;
+    await tx
+      .update(mediaTable)
+      .set({ usesCount: sql`${mediaTable.usesCount} + ${incrementBy}` })
+      .where(inArray(mediaTable.id, mediaIds))
+      .returning();
+  }
+
+  async decrementMediaUsage(mediaIds: string[], tx: DrizzleTx) {
+    if (mediaIds.length === 0) return;
+    // Only decrement if count is greater than 0
+    await tx
+      .update(mediaTable)
+      .set({ usesCount: sql`GREATEST(${mediaTable.usesCount} - 1, 0)` })
+      .where(inArray(mediaTable.id, mediaIds))
+      .returning();
   }
 
   async useMedia(mediaIds: string[], tx: DrizzleTx) {
-    await tx
-      .update(mediaTable)
-      .set({ usedAt: new Date() })
-      .where(inArray(mediaTable.id, mediaIds))
-      .returning();
+    await this.incrementMediaUsage(mediaIds, tx);
   }
 
   areValidMediaType(

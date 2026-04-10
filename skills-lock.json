@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "postgres-drizzle": {
+      "source": "ccheney/robust-skills",
+      "sourceType": "github",
+      "computedHash": "60534e1aa880981e26360db836115df77a8e73be219c7a027e635802686b5bd9"
+    }
+  }
+}

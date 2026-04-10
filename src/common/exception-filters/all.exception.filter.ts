@@ -12,8 +12,6 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { GqlArgumentsHost } from '@nestjs/graphql';
-import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 import { DrizzleError } from 'drizzle-orm';
 import { Response } from 'express';
@@ -24,6 +22,7 @@ import { ResponseValidationError } from '../modules/response/dto/response.valida
 import { ValidationError } from 'class-validator';
 import { AppEnvService } from '../../_config/app-env/app-env.service';
 import { ZodValidationException } from 'nestjs-zod';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -32,60 +31,37 @@ export class AllExceptionsFilter implements ExceptionFilter {
   constructor(
     private readonly responseService: ResponseService,
     private readonly appEnvService: AppEnvService,
+    private readonly i18n: I18nService,
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const contextType = host.getType<'graphql' | 'http' | 'ws' | 'rpc'>();
-
-    if (contextType === 'http') {
-      return this.handleHttpException(exception, host);
-    }
-
-    if (contextType === 'graphql') {
-      return this.handleGraphQLException(exception, host);
-    }
-
-    // fallback
-    return this.handleHttpException(exception, host);
-  }
-
-  private handleHttpException(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
     const errorResponse = this.handleException(exception);
 
-    // ✅ Use statusCode from error response (set by handleException)
     return response.status(errorResponse.statusCode).json(errorResponse);
   }
 
-  private handleGraphQLException(exception: unknown, host: ArgumentsHost) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const gqlHost = GqlArgumentsHost.create(host);
-
-    const errorResponse = this.handleException(exception);
-
-    throw new GraphQLError(errorResponse.message, {
-      extensions: errorResponse,
-    });
-  }
-
   private handleException(exception: unknown) {
+    const i18n = I18nContext.current();
+    const lang = i18n ? i18n.lang : 'en';
+
     // 1. Zod Validation Errors
     if (exception instanceof ZodValidationException) {
-      const validationErrors = this.formatZodErrors(exception);
+      const validationErrors = this.formatZodErrors(exception, lang);
       return this.responseService.error({
         statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Please review the provided data',
-        details: 'Check the validationErrors array for details',
+        message: this.i18n.t('message.validation.error', { lang }),
+        details: this.i18n.t('message.validation.details', { lang }),
         validationErrors,
       });
     }
 
     // 2. NestJS BadRequestException (often from ClassValidator)
     if (exception instanceof BadRequestException) {
-      return this.handleBadRequestException(exception);
+      return this.handleBadRequestException(exception, lang);
     }
 
     // 3. Drizzle Database Errors
@@ -103,9 +79,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return this.responseService.error({
           statusCode: HttpStatus.CONFLICT,
           code: ErrorCode.CONFLICT,
-          message: 'Entry already exists',
+          message: this.i18n.t('message.error.conflict', { lang }),
           details: this.isProduction()
-            ? 'A record with this information already exists'
+            ? this.i18n.t('message.error.conflictDetails', { lang })
             : error.detail || error.message,
         });
       }
@@ -113,8 +89,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return this.responseService.error({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         code: ErrorCode.DATABASE_ERROR,
-        message: 'Database error occurred',
-        details: this.isProduction() ? 'Internal server error' : error.message,
+        message: this.i18n.t('message.error.database', { lang }),
+        details: this.isProduction()
+          ? this.i18n.t('message.error.internal', { lang })
+          : error.message,
         validationErrors: [],
       });
     }
@@ -124,7 +102,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return this.responseService.error({
         statusCode: exception.statusCode, // ✅ Use explicit status from CustomException
         code: exception.errorCode,
-        message: exception.message,
+        message: exception.message, // TODO: Consider if CustomExceptions should store i18n keys
         details: exception.details || exception.message || 'Unknown error',
       });
     }
@@ -135,7 +113,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return this.responseService.error({
         statusCode: status, // ✅ Use status from HttpException
         code: this.getErrorCode(exception, status),
-        message: this.getErrorMessage(exception, status),
+        message: this.getErrorMessage(exception, status, lang),
         details: exception.message,
       });
     }
@@ -148,26 +126,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return this.responseService.error({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       code: ErrorCode.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
+      message: this.i18n.t('message.error.internal', { lang }),
       details: this.isProduction()
-        ? 'An unexpected error occurred'
+        ? this.i18n.t('message.error.internal', { lang })
         : (exception as Error).message,
     });
   }
 
-  private handleBadRequestException(exception: BadRequestException) {
+  private handleBadRequestException(
+    exception: BadRequestException,
+    lang: string,
+  ) {
     const res = exception.getResponse();
     let validationErrors: ResponseValidationError[] = [];
 
-    console.log(res);
-
     if (res instanceof ZodValidationException) {
-      validationErrors = this.formatZodErrors(res);
+      validationErrors = this.formatZodErrors(res, lang);
       return this.responseService.error({
         statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation failed',
-        details: 'Check validationErrors array for details',
+        message: this.i18n.t('message.validation.error', { lang }),
+        details: this.i18n.t('message.validation.details', { lang }),
         validationErrors,
       });
     }
@@ -195,7 +174,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: HttpStatus.BAD_REQUEST,
       code: ErrorCode.VALIDATION_ERROR,
       message: exception.message,
-      details: 'Check validationErrors array for details',
+      details: this.i18n.t('message.validation.details', { lang }),
       validationErrors,
     });
   }
@@ -261,38 +240,43 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private getErrorMessage(
     exception: HttpException,
     status: HttpStatus,
+    lang: string,
   ): string {
     if (exception.message) return exception.message;
 
     switch (status) {
       case HttpStatus.BAD_REQUEST:
-        return 'Bad request';
+        return this.i18n.t('message.validation.error', { lang });
       case HttpStatus.UNAUTHORIZED:
-        return 'Unauthorized';
+        return this.i18n.t('message.error.unauthorized', { lang });
       case HttpStatus.FORBIDDEN:
-        return 'Forbidden';
+        return this.i18n.t('message.error.forbidden', { lang });
       case HttpStatus.NOT_FOUND:
-        return 'Not found';
+        return this.i18n.t('message.error.notFound', { lang });
       case HttpStatus.CONFLICT:
-        return 'Conflict';
-      case HttpStatus.TOO_MANY_REQUESTS:
-        return 'Too many requests';
-      case HttpStatus.METHOD_NOT_ALLOWED:
-        return 'Method not allowed';
+        return this.i18n.t('message.error.conflict', { lang });
       default:
-        return 'Internal server error';
+        return this.i18n.t('message.error.internal', { lang });
     }
   }
 
   private formatZodErrors(
     zodError: ZodValidationException,
+    lang: string,
   ): ResponseValidationError[] {
     const error = zodError.getZodError() as ZodError;
     // console.log('zodError', zodError);
     return error.issues.map((issue) => {
+      let args: any = {};
+      if (issue.code === 'too_small') {
+        args = { count: (issue as any).minimum };
+      } else if (issue.code === 'too_big') {
+        args = { count: (issue as any).maximum };
+      }
+
       return {
         field: issue.path.join('.') || 'unknown_field',
-        message: issue.message,
+        message: this.i18n.t(issue.message, { lang, args }),
         code: issue.code,
       };
     });

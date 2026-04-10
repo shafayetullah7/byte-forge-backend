@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { shopTable } from './shop.schema';
 
 export const shopSocialMediaTable = pgTable('shop_social_media', {
@@ -23,3 +24,13 @@ export const shopSocialMediaTable = pgTable('shop_social_media', {
 
 export type TShopSocialMedia = typeof shopSocialMediaTable.$inferSelect;
 export type TNewShopSocialMedia = typeof shopSocialMediaTable.$inferInsert;
+
+export const shopSocialMediaRelations = relations(
+  shopSocialMediaTable,
+  ({ one }) => ({
+    shop: one(shopTable, {
+      fields: [shopSocialMediaTable.shopId],
+      references: [shopTable.id],
+    }),
+  }),
+);

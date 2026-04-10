@@ -9,5 +9,6 @@ import { AdminSessionModule } from '../admin-session/admin-session.module';
   imports: [AdminModule, AdminSessionModule],
   controllers: [AdminAuthController],
   providers: [AdminAuthService, AdminLocalAuthService],
+  exports: [AdminAuthService],
 })
 export class AdminAuthModule {}

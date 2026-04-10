@@ -8,10 +8,9 @@ import { AccessUserAuth, TAuthenticUser } from '../types';
 
 export const AuthenticUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): TAuthenticUser => {
-    const req = ctx.switchToHttp().getRequest<Request>();
-
+    const req = ctx.switchToHttp().getRequest() as any;
     const auth = req.user as AccessUserAuth | undefined;
-    if (!auth || auth.role !== 'user') {
+    if (!auth) {
       throw new UnauthorizedException('Unauthorized access');
     }
 

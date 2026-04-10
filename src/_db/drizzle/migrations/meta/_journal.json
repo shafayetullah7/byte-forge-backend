@@ -260,6 +260,90 @@
       "when": 1768150682160,
       "tag": "0038_melted_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1771778139849,
+      "tag": "0039_graceful_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1772122023474,
+      "tag": "0040_thick_pet_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1772123244911,
+      "tag": "0041_tense_gertrude_yorkes",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1772640482404,
+      "tag": "0042_smooth_sandman",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1772641583465,
+      "tag": "0043_military_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1772641670833,
+      "tag": "0044_puzzling_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1773074244217,
+      "tag": "0045_bitter_madripoor",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1773162792087,
+      "tag": "0046_gray_turbo",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1773248732602,
+      "tag": "0047_opposite_joshua_kane",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1773418881894,
+      "tag": "0048_luxuriant_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1773504545193,
+      "tag": "0049_adorable_serpent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1774803912614,
+      "tag": "0050_next_the_stranger",
+      "breakpoints": true
     }
   ]
 }

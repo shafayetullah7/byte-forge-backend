@@ -130,7 +130,7 @@ export class MediaService {
         ) {
           throw new NotFoundException('Media not found');
         }
-        if (mediaRecord.media.usedAt != null) {
+        if (mediaRecord.media.usesCount > 0) {
           throw new ForbiddenException('File is already in use');
         }
         const { media, cloudinaryMedia } = mediaRecord;
@@ -183,9 +183,9 @@ export class MediaService {
     }
     if (used !== undefined) {
       if (used) {
-        conditions.push(not(isNull(mediaTable.usedAt)));
+        conditions.push(not(isNull(mediaTable.usesCount)));
       } else {
-        conditions.push(isNull(mediaTable.usedAt));
+        conditions.push(isNull(mediaTable.usesCount));
       }
     }
     const query = executor
@@ -255,6 +255,7 @@ export class MediaService {
       throw new ForbiddenException('File is already in use');
     }
 
-    return this.mediaRepository.useMedia(mediaIds, tx);
+    // Increment usage count instead of setting usedAt
+    return this.mediaRepository.incrementMediaUsage(mediaIds, tx);
   }
 }

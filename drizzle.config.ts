@@ -1,13 +1,18 @@
 import * as dotenv from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
 
-dotenv.config();
+const env = process.env.NODE_ENV || 'development';
 
-// const databaseUrl = process.env.DATABASE_URL;
-// if (!databaseUrl) {
-//   throw new Error('DATABASE_URL is missing in environment variables');
-// }
-// console.log({ databaseUrl });
+dotenv.config({ path: `.env.${env}` });
+
+console.log(`Loading environment: ${env}`);
+console.log({
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_NAME: process.env.DB_NAME,
+});
 
 export default defineConfig({
   schema: './src/_db/drizzle/schema',
@@ -15,11 +20,11 @@ export default defineConfig({
   dialect: 'postgresql',
   dbCredentials: {
     // url: databaseUrl,
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'mydb',
+    host: process.env.DB_HOST!,
+    port: parseInt(process.env.DB_PORT!),
+    user: process.env.DB_USER!,
+    password: process.env.DB_PASSWORD!,
+    database: process.env.DB_NAME!,
     ssl: process.env.NODE_ENV === 'production',
   },
   verbose: true,

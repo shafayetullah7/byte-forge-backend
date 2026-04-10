@@ -9,19 +9,27 @@
     "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",
-    // "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/tests/*": ["./tests/*"]
     },
     "incremental": true,
+
+    // Drizzle ORM compatibility settings
     "skipLibCheck": true,
+    "strict": true,
     "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
+
+    "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
-    // "types": ["node"],
+    "types": ["node", "multer", "jest", "supertest"],
     "typeRoots": ["./node_modules/@types", "./src/globalTypes"]
-  }
+  },
+  // Silence baseUrl deprecation warning (needed for paths resolution)
+  "ignoreDeprecations": "6.0"
 }

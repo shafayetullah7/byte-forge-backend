@@ -9,126 +9,230 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
-import { UserLocalAuthGuard } from '@/common/guards/user-local-auth-guard/user-local-auth.guard';
+import { UserAuthV2Service } from './user-auth-v2.service';
 import { Request, Response } from 'express';
+import * as crypto from 'crypto';
 import { parseDeviceInfo } from '@/common/utils/get-divice-info';
 import { getClientIp } from '@/common/utils/get-client-ip';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
-import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
-import { LocalAuthenticUser } from '@/common/decorators/local-authentic-user.decorator';
-import { TLocalAuthenticUser, AuthAccess } from '@/common/types';
+import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
+import { AccessUserAuth } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { I18nContext, I18nService } from 'nestjs-i18n';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
+
+@ApiTags('👤 User Auth')
 @Controller({ path: 'user/auth', version: '1' })
 export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,
+    private readonly userAuthV2Service: UserAuthV2Service,
     private readonly cookieService: CookieService,
+    private readonly i18n: I18nService,
+    private readonly responseService: ResponseService,
   ) {}
 
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Creates a new user account with email and password.',
+  })
+  @ApiResponse({ status: 201, description: 'User successfully registered' })
+  @ApiBadRequestResponse()
   @Post('register')
   async register(@Body() payload: CreateLocalUserDto) {
-    const result = await this.userAuthService.register(payload);
-    return { success: true, message: 'New user created', data: { ...result } };
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
+    const result = await this.userAuthService.register(payload, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.userCreated', { lang }),
+      data: result,
+    });
   }
 
-  @UseGuards(UserLocalAuthGuard)
+  @ApiOperation({
+    summary: 'Login with email and password',
+    description: 'Authenticates user and returns session tokens.',
+  })
+  @ApiResponse({ status: 200, description: 'User successfully logged in' })
+  @ApiUnauthorizedResponse()
   @Post('login')
   async login(
-    @LocalAuthenticUser() userAuth: TLocalAuthenticUser,
+    @Body() payload: any, // Will refine DTO later if needed
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    // @Body() payload: LocalLoginDto,
   ) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
+
+    // 1. Validate credentials manually
+    const userAuth = await this.userAuthService.validateCredentials(
+      { email: payload.email, password: payload.password },
+      lang,
+    );
+
+    // 2. Perform login (session creation)
     const userAgent = req.headers['user-agent'] || '';
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
     const result = await this.userAuthService.login({
-      userAuth,
+      user: userAuth.user,
       deviceInfo,
       ip,
     });
 
-    // console.log
-
     this.cookieService.setSessionCookie(res, result.id);
 
-    return {
-      success: true,
-      message: 'User logged in',
+    return this.responseService.success({
+      message: this.i18n.t('message.success.userLoggedIn', { lang }),
       data: {
         session: result,
         user: userAuth.user,
       },
-    };
+    });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Check if user is authenticated' })
+  @ApiResponse({ status: 200, description: 'User is authenticated' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Get('/check')
-  checkAuth(@Req() req: Request) {
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
-    }
+  checkAuth(@AuthenticUser() auth: AccessUserAuth) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
 
     const { user } = auth;
 
-    return { success: true, message: 'User authenticated', data: user };
+    return this.responseService.success({
+      message: this.i18n.t('message.success.userAuthenticated', { lang }),
+      data: user,
+    });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Verify user email with OTP' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('verify-email')
-  async verifyEmail(@Req() req: Request, @Body() payload: VerifyEmailDto) {
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
-    }
+  async verifyEmail(
+    @AuthenticUser() auth: AccessUserAuth,
+    @Body() payload: VerifyEmailDto,
+  ) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
 
     await this.userAuthService.verifyEmail(auth.user.id, payload.otp);
 
-    return {
-      success: true,
-      message: 'Email verified successfully',
-    };
+    return this.responseService.success({
+      message: this.i18n.t('message.success.emailVerified', { lang }),
+      data: null,
+    });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('send-verification-email')
-  async sendVerificationEmail(@Req() req: Request) {
-    const auth = req.user as AuthAccess;
-    if (!auth || auth.role !== 'user') {
-      throw new UnauthorizedException('Unauthorized access');
-    }
+  async sendVerificationEmail(@AuthenticUser() auth: AccessUserAuth) {
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
 
-    const { expiresAt } = await this.userAuthService.resendVerification(auth.user.id);
+    const { expiresAt } = await this.userAuthService.resendVerification(
+      auth.user.id,
+      lang,
+    );
 
-    return {
-      success: true,
-      message: 'Verification code sent to your email',
+    return this.responseService.success({
+      message: this.i18n.t('message.success.verificationSent', { lang }),
       data: { expiresAt },
-    };
+    });
   }
 
+  @ApiAuth()
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'User successfully logged out' })
+  @ApiUnauthorizedResponse()
   @UseGuards(UserAuthGuard)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const sessionId = req.cookies?.sessionId;
+    const i18nContext = I18nContext.current();
+    const lang = i18nContext ? i18nContext.lang : 'en';
+    const sessionId = req.cookies?.['sessionId'] as string | undefined;
     if (sessionId) {
       await this.userAuthService.logout(sessionId);
     }
     this.cookieService.clearSessionCookie(res);
 
-    return {
-      success: true,
-      message: 'User logged out successfully',
-    };
+    return this.responseService.success({
+      message: this.i18n.t('message.success.loggedOut', { lang }),
+      data: null,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Refreshes both access and refresh tokens using current refresh token. Old tokens are invalidated via session ID rotation.',
+  })
+  @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
+  @ApiUnauthorizedResponse()
+  @Post('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.userRefreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    try {
+      const { tokens, user, session } =
+        await this.userAuthV2Service.refreshTokens(refreshToken);
+
+      // Set new access token (rotated)
+      this.cookieService.setUserAccessToken(res, tokens.accessToken);
+
+      // Set new refresh token (rotated - old one is now invalid due to session ID change)
+      this.cookieService.setUserRefreshToken(res, tokens.refreshToken);
+
+      // Rotate XSRF Token (for CSRF protection)
+      const xsrfToken = crypto.randomUUID();
+      this.cookieService.setUserXsrfToken(res, xsrfToken);
+
+      return this.responseService.success({
+        message: 'Tokens refreshed successfully',
+        data: {
+          tokens,
+          user,
+        },
+      });
+    } catch (error) {
+      // Clear tokens on auth failure (user deactivated, session revoked, etc.)
+      this.cookieService.clearUserTokens(res);
+      throw error;
+    }
   }
 
   // === Password Reset Flow ===
-
-
 }

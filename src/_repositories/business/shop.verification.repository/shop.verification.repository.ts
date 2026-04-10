@@ -1,18 +1,19 @@
-import { SQL, eq, and } from 'drizzle-orm';
+import { SQL, eq, and, desc } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import {
-  ShopVerificationStatusEnum,
+  shopVerificationStatusEnum,
   shopVerificationTable,
   TShopVerification,
   TNewShopVerification,
 } from '@/_db/drizzle/schema';
+import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
 import { Injectable } from '@nestjs/common';
 
 export interface ShopVerificationQuery {
   id?: string;
   shopId?: string;
-  status?: (typeof ShopVerificationStatusEnum.enumValues)[number];
+  status?: (typeof shopVerificationStatusEnum.enumValues)[number];
 }
 
 @Injectable()

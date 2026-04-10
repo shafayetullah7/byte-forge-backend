@@ -1,7 +1,170 @@
-import { Controller } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import * as crypto from 'crypto';
 import { AdminAuthService } from './admin-auth.service';
+import { CreateLocalAdminDto } from './dto/create.local.admin.dto';
+import { Request, Response } from 'express';
+import { I18nContext, I18nService } from 'nestjs-i18n';
+import { parseDeviceInfo } from '@/common/utils/get-divice-info';
+import { getClientIp } from '@/common/utils/get-client-ip';
+import { CookieService } from '@/common/modules/cookie/cookie.service';
+import { LoginLocalAdminDto } from './dto/login.local.admin.dto';
+import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
+import { AuthenticAdminUser } from '@/common/decorators/authentic-admin.decorator';
+import { AuthenticAdmin } from '@/common/types';
+import { AdminSessionService } from '../admin-session/admin-session.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { ResponseService } from '@/common/modules/response/response.service';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+} from '@/common/decorators/api-error.decorator';
 
+@ApiTags('🔐 Admin Auth')
 @Controller({ path: 'admin/auth', version: '1' })
 export class AdminAuthController {
-  constructor(private readonly adminAuthService: AdminAuthService) {}
+  constructor(
+    private readonly adminAuthService: AdminAuthService,
+    private readonly adminSessionService: AdminSessionService,
+    private readonly cookieService: CookieService,
+    private readonly i18n: I18nService,
+    private readonly responseService: ResponseService,
+  ) {}
+
+  @ApiOperation({
+    summary: 'Register a new admin',
+    description: 'Creates a new admin account (superadmin only).',
+  })
+  @ApiResponse({ status: 201, description: 'Admin successfully registered' })
+  @ApiBadRequestResponse()
+  @Post('register')
+  async register(@Body() payload: CreateLocalAdminDto, @Req() req: Request) {
+    const result = await this.adminAuthService.register(payload);
+
+    return this.responseService.success({
+      message: 'Admin registered successfully',
+      data: result,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Admin login',
+    description: 'Authenticates admin and returns session tokens.',
+  })
+  @ApiResponse({ status: 200, description: 'Admin successfully logged in' })
+  @ApiUnauthorizedResponse()
+  @Post('login')
+  async login(
+    @Body() payload: LoginLocalAdminDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceInfo = parseDeviceInfo(userAgent);
+    const ip = getClientIp(req);
+
+    const { tokens, admin, session } = await this.adminAuthService.login(
+      payload.email,
+      payload.password,
+      deviceInfo,
+      ip,
+    );
+
+    this.cookieService.setAdminAccessToken(res, tokens.accessToken);
+    this.cookieService.setAdminRefreshToken(res, tokens.refreshToken);
+
+    // Set XSRF Token for Double Submit Cookie protection
+    const xsrfToken = crypto.randomUUID();
+    this.cookieService.setXsrfToken(res, xsrfToken);
+
+    return this.responseService.success({
+      message: 'Admin logged in successfully',
+      data: {
+        tokens,
+        admin,
+      },
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Check if admin is authenticated' })
+  @ApiResponse({ status: 200, description: 'Admin is authenticated' })
+  @ApiUnauthorizedResponse()
+  @UseGuards(AdminAuthGuard)
+  @Get('check')
+  async checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
+    const { createdAt, updatedAt, ...adminProfile } = adminAuth.admin;
+
+    return this.responseService.success({
+      message: 'Admin authenticated',
+      data: adminProfile,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Refreshes the access token using refresh token.',
+  })
+  @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
+  @ApiUnauthorizedResponse()
+  @Post('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.adminRefreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    const { tokens, admin, session } =
+      await this.adminAuthService.refreshTokens(refreshToken);
+
+    this.cookieService.setAdminAccessToken(res, tokens.accessToken);
+
+    // Also rotate XSRF Token
+    const xsrfToken = crypto.randomUUID();
+    this.cookieService.setXsrfToken(res, xsrfToken);
+
+    return this.responseService.success({
+      message: 'Tokens refreshed successfully',
+      data: {
+        tokens,
+        admin,
+      },
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Admin logout' })
+  @ApiResponse({ status: 200, description: 'Admin successfully logged out' })
+  @ApiUnauthorizedResponse()
+  @UseGuards(AdminAuthGuard)
+  @Post('logout')
+  async logout(
+    @AuthenticAdminUser() adminAuth: AuthenticAdmin,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.adminSessionService.revokeSession(adminAuth.session.id);
+    this.cookieService.clearAdminTokens(res);
+
+    return this.responseService.success({
+      message: 'Admin logged out successfully',
+      data: null,
+    });
+  }
 }

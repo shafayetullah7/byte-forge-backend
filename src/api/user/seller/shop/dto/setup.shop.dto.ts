@@ -11,24 +11,24 @@ import { z } from 'zod';
 
 export const setupShopSchema = z.object({
   shopName: z
-    .string({ error: 'Shop name is required.' })
+    .string({ error: 'message.validation.required' })
     .trim()
-    .min(1, { message: 'Shop name cannot be empty.' })
-    .max(255, { message: 'Shop name must not exceed 255 characters.' }),
+    .min(1, { message: 'message.validation.notEmpty' })
+    .max(255, { message: 'message.validation.maxLength' }),
 
   about: z
-    .string({ error: 'About section is required.' })
+    .string({ error: 'message.validation.required' })
     .trim()
     .min(10, {
-      message: 'About section must be at least 10 characters long.',
+      message: 'message.validation.minLength',
     })
-    .max(2000, { message: 'About section must not exceed 2000 characters.' }),
+    .max(2000, { message: 'message.validation.maxLength' }),
 
   establishDate: z.iso.date().optional(),
 
-  logoId: z.uuid({ message: 'Logo must be a valid UUID.' }).optional(),
+  logoId: z.uuid({ message: 'message.validation.invalidUuid' }).optional(),
 
-  bannerId: z.uuid({ message: 'Banner must be a valid UUID.' }).optional(),
+  bannerId: z.uuid({ message: 'message.validation.invalidUuid' }).optional(),
 });
 
 export class SetupShopDto extends createZodDto(setupShopSchema) {}

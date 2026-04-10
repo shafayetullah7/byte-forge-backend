@@ -45,7 +45,6 @@ export class AppLoggerService implements LoggerService {
       'RouterExplorer',
       'InstanceLoader',
       'NestFactory',
-      'GraphQLModule',
     ];
     if (context && internalContexts.includes(context)) {
       return;

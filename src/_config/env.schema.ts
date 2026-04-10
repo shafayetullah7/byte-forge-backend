@@ -44,6 +44,42 @@ export const envSchema = z
     // === JWT Secrets ===
     JWT_SECRET_RESET_REQUEST: z.string().min(32),
     JWT_SECRET_RESET_ACCESS: z.string().min(32),
+
+    // === Session & Cookie ===
+    SESSION_MAX_AGE: z.coerce.number().optional(),
+    COOKIE_DOMAIN: z.string().optional(),
+
+    // === Admin JWT ===
+    JWT_ADMIN_ACCESS_SECRET: z.string().min(32),
+    JWT_ADMIN_ACCESS_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+    JWT_ADMIN_REFRESH_SECRET: z.string().min(32),
+    JWT_ADMIN_REFRESH_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+
+    // === User JWT ===
+    JWT_USER_ACCESS_SECRET: z.string().min(32),
+    JWT_USER_ACCESS_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+    JWT_USER_REFRESH_SECRET: z.string().min(32),
+    JWT_USER_REFRESH_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
   })
   .transform((data) => {
     const dbUrl = data.DATABASE_URL;

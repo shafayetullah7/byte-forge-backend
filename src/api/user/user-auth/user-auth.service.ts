@@ -7,7 +7,6 @@ import { UserService } from '../user/user.service';
 import { DeviceInfo, TSession, userTable } from '@/_db/drizzle/schema';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
-import { UserLocalAuthSessionRepositoryService } from '@/_repositories/auth/user-local-auth-session-repository/user-local-auth-session-repository.service';
 import { OtpService } from '@/common/modules/otp/otp.service';
 import { EmailService } from '@/common/modules/email/email.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
@@ -19,6 +18,8 @@ import { UserRepository } from '@/_repositories/user/user.repository/user.reposi
 import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
 
 import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { I18nService } from 'nestjs-i18n';
+import { AccessUserAuth } from '@/common/types';
 
 @Injectable()
 export class UserAuthService {
@@ -28,18 +29,18 @@ export class UserAuthService {
     private readonly userService: UserService,
     private readonly userSessionRepository: UserSessionRepository,
     private readonly sessionRepository: SessionRepository,
-    private readonly userLocalAuthSessionRepository: UserLocalAuthSessionRepositoryService,
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
     private readonly userRepository: UserRepository,
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
 
     private readonly hashingService: HashingService,
+    private readonly i18n: I18nService,
   ) {}
 
 
 
-  async register(payload: CreateLocalUserDto) {
+  async register(payload: CreateLocalUserDto, lang: string = 'en') {
     const { email, password, firstName, lastName, userName } = payload;
 
     // Check if username already exists using UserRepository
@@ -48,7 +49,7 @@ export class UserAuthService {
     });
     if (existingUserByUsername) {
       throw new CustomException({
-        message: 'Username already exists',
+        message: this.i18n.t('message.error.usernameExists', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.DUPLICATE_ENTRY,
       });
@@ -60,7 +61,7 @@ export class UserAuthService {
     });
     if (existingUserByEmail) {
       throw new CustomException({
-        message: 'Email already exists',
+        message: this.i18n.t('message.error.emailExists', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.DUPLICATE_ENTRY,
       });
@@ -101,14 +102,43 @@ export class UserAuthService {
     }
   }
 
+  async validateCredentials(payload: {
+    email: string;
+    password: string;
+  }, lang: string = 'en') {
+    const user = await this.userLocalAuthService.getLocalUser({ email: payload.email });
+
+    if (!user) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.userNotFound', { lang }),
+        statusCode: HttpStatus.NOT_FOUND,
+        errorCode: ErrorCode.NOT_FOUND,
+      });
+    }
+
+    const passMatch = await this.hashingService.compare(
+      payload.password,
+      user.userLocalAuth.password,
+    );
+
+    if (!passMatch) {
+      throw new CustomException({
+        message: this.i18n.t('message.error.invalidPassword', { lang }),
+        statusCode: HttpStatus.UNAUTHORIZED,
+        errorCode: ErrorCode.INVALID_CREDENTIALS,
+      });
+    }
+
+    return user;
+  }
+
   async login(payload: {
-    userAuth: UserAuth;
+    user: any;
     deviceInfo: DeviceInfo;
     ip: string;
   }): Promise<TSession> {
     const result = await this.drizzle.transaction(async (tx) => {
-      const { userAuth, deviceInfo, ip } = payload;
-      const { user } = userAuth;
+      const { user, deviceInfo, ip } = payload;
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // now + 7 days
 
       const sessionData = {
@@ -123,17 +153,6 @@ export class UserAuthService {
         userId: user.id,
       };
       await this.userSessionRepository.createUserSession(userSessionData, tx);
-
-      if (userAuth.userLocalAuth) {
-        const userSessionLocalAuthData = {
-          sessionId: newSession.id,
-          localAuthId: userAuth.userLocalAuth.userId,
-        };
-        await this.userLocalAuthSessionRepository.createUserLocalAuthSession(
-          userSessionLocalAuthData,
-          tx,
-        );
-      }
 
       return newSession;
     });
@@ -151,28 +170,29 @@ export class UserAuthService {
 
       if (user?.emailVerifiedAt) {
         throw new CustomException({
-          message: 'Email already verified',
+          message: this.i18n.t('message.error.emailAlreadyVerified'),
           statusCode: HttpStatus.CONFLICT,
           errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
         });
       }
 
-      // Verify OTP
+      // Verify OTP (Pass transaction context tx to prevent deadlocks)
       await this.otpService.verifyOtp(
         userId,
         otp,
         OtpPurpose.ACCOUNT_VERIFICATION,
+        tx,
       );
 
-      // Update user's emailVerifiedAt
-      await this.drizzle.client
+      // Update user's emailVerifiedAt (Use transaction context tx!)
+      await tx
         .update(userTable)
         .set({ emailVerifiedAt: new Date() })
         .where(eq(userTable.id, userId));
     });
   }
 
-  async resendVerification(userId: string): Promise<{ expiresAt: Date }> {
+  async resendVerification(userId: string, lang: string = 'en'): Promise<{ expiresAt: Date }> {
     // Get user's email verification status
     const [user] = await this.drizzle.client
       .select({
@@ -187,7 +207,7 @@ export class UserAuthService {
 
     if (!user) {
       throw new CustomException({
-        message: 'User not found',
+        message: this.i18n.t('message.error.userNotFound', { lang }),
         statusCode: HttpStatus.NOT_FOUND,
         errorCode: ErrorCode.NOT_FOUND,
       });
@@ -196,7 +216,7 @@ export class UserAuthService {
     // Check if already verified
     if (user.emailVerifiedAt) {
       throw new CustomException({
-        message: 'Email already verified',
+        message: this.i18n.t('message.error.emailAlreadyVerified', { lang }),
         statusCode: HttpStatus.CONFLICT,
         errorCode: ErrorCode.EMAIL_ALREADY_VERIFIED,
       });
@@ -209,7 +229,7 @@ export class UserAuthService {
 
     if (!localUser) {
       throw new CustomException({
-        message: 'User email not found',
+        message: this.i18n.t('message.error.userEmailNotFound', { lang }),
         statusCode: HttpStatus.NOT_FOUND,
         errorCode: ErrorCode.NOT_FOUND,
       });
@@ -225,6 +245,7 @@ export class UserAuthService {
     await this.emailService.sendVerificationEmail(
       localUser.userLocalAuth.email,
       otp,
+      lang,
     );
     console.log('[DEBUG] Verification email sent successfully (service layer)');
 

@@ -1,15 +1,12 @@
 services:
   app:
     build: .
-    env_file: .env.${NODE_ENV:-development} # Dynamic env file loading
+    env_file: .env.${NODE_ENV} # Dynamic env file loading
     ports:
-      - '${APP_EXTERNAL_PORT:-3005}:${PORT:-3005}'
+      - '${APP_EXTERNAL_PORT}:${PORT}'
     volumes:
       - .:/app # Live code sync
       - /app/node_modules # Isolate node_modules
-    # environment:
-    #   - DATABASE_URL=postgres://user:password@db:5432/mydb
-    #   - NODE_ENV=development
     depends_on:
       db:
         condition: service_healthy
@@ -17,19 +14,15 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${DB_USER:-admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234}
-      POSTGRES_DB: ${DB_NAME:-mydb}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - '${DB_EXTERNAL_PORT:-5435}:5432' # Fixed: moved from app to db
+      - '${DB_EXTERNAL_PORT}:5432'
     volumes:
-      - pgdata_${NODE_ENV:-development}:/var/lib/postgresql/data # Dynamic volume
+      - pgdata_${NODE_ENV}:/var/lib/postgresql/data # Dynamic volume
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-mydb}',
-        ]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 10

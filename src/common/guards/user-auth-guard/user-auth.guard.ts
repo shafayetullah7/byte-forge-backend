@@ -16,7 +16,7 @@ export class UserAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest() as any;
     const sessionId = request.cookies?.sessionId as undefined | string;
 
     if (!sessionId) {
@@ -37,7 +37,7 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
     }
 
-    request.user = { ...userSession, role: 'user' };
+    request.user = { ...userSession };
 
     return true;
   }
