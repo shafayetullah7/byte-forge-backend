@@ -2,6 +2,8 @@ import { IsString, MinLength } from 'class-validator';
 
 export class SuspendShopDto {
   @IsString()
-  @MinLength(10, { message: 'Suspension reason must be at least 10 characters' })
+  @MinLength(10, {
+    message: 'Suspension reason must be at least 10 characters',
+  })
   reason: string;
 }

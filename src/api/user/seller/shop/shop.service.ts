@@ -116,8 +116,7 @@ export class ShopService {
 
       // 4. Create Shop
       // Use provided slug or generate from English shop name
-      const slug =
-        payload.slug || this.generateSlug(englishTranslation.name);
+      const slug = payload.slug || this.generateSlug(englishTranslation.name);
 
       // Validate slug uniqueness if provided
       if (payload.slug) {
@@ -644,5 +643,31 @@ export class ShopService {
       // 5. Return updated verification status
       return this.getVerificationStatus(shop.ownerId);
     });
+  }
+
+  async submitForReview(shopId: string, dto: UpdateShopDto, lang: string) {
+    // Update shop with major changes
+    // Note: This is a simplified implementation
+    // Full implementation would update translations and log to history
+    console.log('Submit for review:', shopId, dto);
+  }
+
+  async uploadImages(
+    shopId: string,
+    files: { logo?: Express.Multer.File; banner?: Express.Multer.File },
+  ) {
+    const result: { logoId?: string; bannerId?: string } = {};
+    // Placeholder for image upload logic
+    return result;
+  }
+
+  async deleteShop(shopId: string, lang: string) {
+    // Placeholder - full implementation needs orders module
+    console.log('Delete shop:', shopId);
+  }
+
+  async getVerificationHistory(shopId: string, lang: string) {
+    // Placeholder - returns empty array for now
+    return [];
   }
 }

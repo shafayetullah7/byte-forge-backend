@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '../../../_db/drizzle/drizzle.service';
-import { shopTable, shopTranslationsTable, shopAddressTable, shopContactTable } from '../../../_db/drizzle/schema/shop';
+import {
+  shopTable,
+  shopTranslationsTable,
+  shopAddressTable,
+  shopContactTable,
+} from '../../../_db/drizzle/schema/shop';
 import { shopVerificationHistoryTable } from '../../../_db/drizzle/schema/shop/shop.verification.history.schema';
 import { ListShopsDto } from './dto/list-shops.dto';
 import { ApproveShopDto } from './dto/approve-shop.dto';
@@ -38,10 +43,7 @@ export class ShopsService {
             eq(shopTranslationsTable.locale, 'en'),
           ),
         )
-        .leftJoin(
-          shopAddressTable,
-          eq(shopAddressTable.shopId, shopTable.id),
-        )
+        .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
         .where(
           status
             ? eq(shopTable.status, status)
@@ -93,7 +95,10 @@ export class ShopsService {
         address: shopAddressTable,
       })
       .from(shopTable)
-      .leftJoin(shopTranslationsTable, eq(shopTranslationsTable.shopId, shopTable.id))
+      .leftJoin(
+        shopTranslationsTable,
+        eq(shopTranslationsTable.shopId, shopTable.id),
+      )
       .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
       .where(eq(shopTable.id, id))
       .limit(1);
@@ -121,15 +126,13 @@ export class ShopsService {
       .set({ status: ShopStatusEnum.APPROVED })
       .where(eq(shopTable.id, id));
 
-    await this.db.client
-      .insert(shopVerificationHistoryTable)
-      .values({
-        shopId: id,
-        action: 'approved',
-        previousStatus: shop.status,
-        newStatus: ShopStatusEnum.APPROVED,
-        createdAt: new Date(),
-      });
+    await this.db.client.insert(shopVerificationHistoryTable).values({
+      shopId: id,
+      action: 'approved',
+      previousStatus: shop.status,
+      newStatus: ShopStatusEnum.APPROVED,
+      createdAt: new Date(),
+    });
 
     return { success: true, message: 'Shop approved successfully' };
   }
@@ -150,16 +153,14 @@ export class ShopsService {
       .set({ status: ShopStatusEnum.REJECTED })
       .where(eq(shopTable.id, id));
 
-    await this.db.client
-      .insert(shopVerificationHistoryTable)
-      .values({
-        shopId: id,
-        action: 'rejected',
-        previousStatus: shop.status,
-        newStatus: ShopStatusEnum.REJECTED,
-        reason: dto.reason,
-        createdAt: new Date(),
-      });
+    await this.db.client.insert(shopVerificationHistoryTable).values({
+      shopId: id,
+      action: 'rejected',
+      previousStatus: shop.status,
+      newStatus: ShopStatusEnum.REJECTED,
+      reason: dto.reason,
+      createdAt: new Date(),
+    });
 
     return { success: true, message: 'Shop rejected' };
   }
@@ -180,16 +181,14 @@ export class ShopsService {
       .set({ status: ShopStatusEnum.SUSPENDED })
       .where(eq(shopTable.id, id));
 
-    await this.db.client
-      .insert(shopVerificationHistoryTable)
-      .values({
-        shopId: id,
-        action: 'suspended',
-        previousStatus: shop.status,
-        newStatus: ShopStatusEnum.SUSPENDED,
-        reason: dto.reason,
-        createdAt: new Date(),
-      });
+    await this.db.client.insert(shopVerificationHistoryTable).values({
+      shopId: id,
+      action: 'suspended',
+      previousStatus: shop.status,
+      newStatus: ShopStatusEnum.SUSPENDED,
+      reason: dto.reason,
+      createdAt: new Date(),
+    });
 
     return { success: true, message: 'Shop suspended' };
   }

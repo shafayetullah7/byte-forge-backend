@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -39,6 +40,7 @@ import {
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import { ApiConsumes } from '@nestjs/swagger';
 import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
@@ -332,6 +334,81 @@ export class ShopController {
     return this.responseService.success({
       message: this.i18n.t('message.success.verificationUpdated', { lang }),
       data: verification,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Submit shop for review (major changes)',
+    description:
+      'Submits major changes (name, address) for admin re-verification',
+  })
+  @ApiResponse({ status: 200, description: 'Shop submitted for review' })
+  @Patch('my-shop/submit-for-review')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async submitForReview(
+    @Body() dto: UpdateShopDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    await this.shopService.submitForReview(shop.id, dto, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopSubmittedForReview', { lang }),
+      data: {},
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Upload shop images (logo, banner)' })
+  @ApiResponse({ status: 200, description: 'Images uploaded successfully' })
+  @ApiConsumes('multipart/form-data')
+  @Post('my-shop/images')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async uploadImages(
+    @Body() files: { logo?: Express.Multer.File; banner?: Express.Multer.File },
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<{ logoId?: string; bannerId?: string }>> {
+    const result = await this.shopService.uploadImages(shop.id, files);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.imagesUploaded', { lang }),
+      data: result,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Delete shop' })
+  @ApiResponse({ status: 200, description: 'Shop deleted successfully' })
+  @ApiConflictResponse('Shop has pending orders')
+  @Delete('my-shop')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async deleteShop(
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    await this.shopService.deleteShop(shop.id, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopDeleted', { lang }),
+      data: {},
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Get shop verification history' })
+  @ApiResponse({ status: 200, description: 'Verification history retrieved' })
+  @Get('my-shop/history')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async getVerificationHistory(
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any[]>> {
+    const history = await this.shopService.getVerificationHistory(
+      shop.id,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.historyRetrieved', { lang }),
+      data: history,
     });
   }
 }
