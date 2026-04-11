@@ -217,7 +217,7 @@ export class ShopRepository {
     const baseQuery = executor
       .select()
       .from(shopTranslationsTable)
-      .where(eq(shopTranslationsTable.shopName, shopName));
+      .where(eq(shopTranslationsTable.name, shopName));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
     const [translation] = await lockQuery.execute();
@@ -306,10 +306,9 @@ export class ShopRepository {
       .onConflictDoUpdate({
         target: [shopTranslationsTable.shopId, shopTranslationsTable.locale],
         set: {
-          shopName: payload.shopName,
-          about: payload.about,
-          brandStory: payload.brandStory,
-          featuredHighlight: payload.featuredHighlight,
+          name: payload.name,
+          description: payload.description,
+          businessHours: payload.businessHours,
         },
       })
       .returning()

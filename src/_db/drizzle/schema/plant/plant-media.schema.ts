@@ -8,8 +8,9 @@ export const plantMediaTable = pgTable('plant_media', {
   plantId: uuid('plant_id')
     .references(() => plantTable.id, { onDelete: 'cascade' })
     .notNull(),
-  variantId: uuid('variant_id')
-    .references(() => plantVariantTable.id, { onDelete: 'set null' }),
+  variantId: uuid('variant_id').references(() => plantVariantTable.id, {
+    onDelete: 'set null',
+  }),
   mediaId: uuid('media_id')
     .references(() => mediaTable.id, { onDelete: 'cascade' })
     .notNull(),

@@ -13,7 +13,9 @@ const createCategorySchema = z.object({
   parentId: z.string().uuid('Invalid UUID for parent ID').optional(),
   isActive: z.boolean().optional(),
   commissionRate: z.number().min(0).max(100).optional(),
-  translations: z.array(translationSchema).min(1, 'At least one translation is required'),
+  translations: z
+    .array(translationSchema)
+    .min(1, 'At least one translation is required'),
 });
 
 export class CreateCategoryDto extends createZodDto(createCategorySchema) {}

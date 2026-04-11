@@ -9,13 +9,7 @@ import { AdminTagTranslationsService } from './services/admin-tag-translations.s
 @Module({
   imports: [TagRepositoryModule, TagGroupRepositoryModule],
   controllers: [AdminTagsController],
-  providers: [
-    AdminTagsService, 
-    AdminTagTranslationsService
-  ],
-  exports: [
-    AdminTagsService, 
-    AdminTagTranslationsService
-  ],
+  providers: [AdminTagsService, AdminTagTranslationsService],
+  exports: [AdminTagsService, AdminTagTranslationsService],
 })
 export class AdminTagsModule {}

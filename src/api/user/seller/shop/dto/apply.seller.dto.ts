@@ -14,18 +14,17 @@ export const SlugSchema = z
 
 export const shopTranslationSchema = z.object({
   locale: z.string().min(2).max(10),
-  shopName: z
+  name: z
     .string({ error: 'message.validation.required' })
     .trim()
     .min(1, { message: 'message.validation.notEmpty' })
     .max(255, { message: 'message.validation.maxLength' }),
-  about: z
+  description: z
     .string({ error: 'message.validation.required' })
     .trim()
     .min(10, { message: 'message.validation.minLength' })
     .max(2000, { message: 'message.validation.maxLength' }),
-  brandStory: z.string().trim().optional(),
-  featuredHighlight: z.string().trim().optional(),
+  businessHours: z.string().trim().optional(),
 });
 
 export const applySellerSchema = z.object({

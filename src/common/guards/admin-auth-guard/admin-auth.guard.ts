@@ -26,7 +26,7 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest() as any;
+    const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse<Response>();
 
     // 1. CSRF Protection (Double Submit Cookie)
@@ -41,7 +41,7 @@ export class AdminAuthGuard implements CanActivate {
     }
 
     // 2. JWT Verification
-    let accessToken = request.cookies?.adminAccessToken;
+    const accessToken = request.cookies?.adminAccessToken;
     const refreshToken = request.cookies?.adminRefreshToken;
 
     let payload: any;
@@ -60,21 +60,30 @@ export class AdminAuthGuard implements CanActivate {
       }
 
       try {
-        const refreshResult = await this.adminAuthService.refreshTokens(refreshToken);
-        
+        const refreshResult =
+          await this.adminAuthService.refreshTokens(refreshToken);
+
         // Update access token in cookies (Auto-refresh)
-        this.cookieService.setAdminAccessToken(response, refreshResult.tokens.accessToken);
-        
-        payload = await this.jwtService.verifyAsync(refreshResult.tokens.accessToken, {
-          secret: this.configService.jwtAdminAccessSecret,
-        });
+        this.cookieService.setAdminAccessToken(
+          response,
+          refreshResult.tokens.accessToken,
+        );
+
+        payload = await this.jwtService.verifyAsync(
+          refreshResult.tokens.accessToken,
+          {
+            secret: this.configService.jwtAdminAccessSecret,
+          },
+        );
       } catch (refreshError) {
         throw new UnauthorizedException('Session expired');
       }
     }
 
     // 3. Session Validation in DB
-    const adminSession = await this.adminSessionService.getAdminSession(payload.sessionId);
+    const adminSession = await this.adminSessionService.getAdminSession(
+      payload.sessionId,
+    );
 
     if (!adminSession) {
       throw new UnauthorizedException('Invalid session');

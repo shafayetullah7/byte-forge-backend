@@ -7,4 +7,6 @@ export const tagTranslationParamSchema = tagParamSchema.extend({
   locale: z.string().regex(LOCALE_REGEX, { message: 'Invalid locale format' }),
 });
 
-export class TagTranslationParamDto extends createZodDto(tagTranslationParamSchema) {}
+export class TagTranslationParamDto extends createZodDto(
+  tagTranslationParamSchema,
+) {}

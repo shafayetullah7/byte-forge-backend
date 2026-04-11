@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { categoryTranslationsTable, categoriesTable } from '@/_db/drizzle/schema/taxonomy';
+import {
+  categoryTranslationsTable,
+  categoriesTable,
+} from '@/_db/drizzle/schema/taxonomy';
 import { eq, and, isNull } from 'drizzle-orm';
 import { UpsertCategoryTranslationDto } from '../dto/upsert-category-translation.dto';
 
@@ -11,9 +18,13 @@ export class AdminCategoryTranslationsService {
   async findAllByCategory(categoryId: string) {
     // Verify category exists
     const category = await this.db.client.query.categoriesTable.findFirst({
-      where: and(eq(categoriesTable.id, categoryId), isNull(categoriesTable.deletedAt)),
+      where: and(
+        eq(categoriesTable.id, categoryId),
+        isNull(categoriesTable.deletedAt),
+      ),
     });
-    if (!category) throw new NotFoundException(`Category with ID ${categoryId} not found`);
+    if (!category)
+      throw new NotFoundException(`Category with ID ${categoryId} not found`);
 
     return await this.db.client
       .select()
@@ -26,9 +37,13 @@ export class AdminCategoryTranslationsService {
 
     // Verify category exists
     const category = await this.db.client.query.categoriesTable.findFirst({
-      where: and(eq(categoriesTable.id, categoryId), isNull(categoriesTable.deletedAt)),
+      where: and(
+        eq(categoriesTable.id, categoryId),
+        isNull(categoriesTable.deletedAt),
+      ),
     });
-    if (!category) throw new NotFoundException(`Category with ID ${categoryId} not found`);
+    if (!category)
+      throw new NotFoundException(`Category with ID ${categoryId} not found`);
 
     const [translation] = await this.db.client
       .insert(categoryTranslationsTable)
@@ -39,7 +54,10 @@ export class AdminCategoryTranslationsService {
         description,
       })
       .onConflictDoUpdate({
-        target: [categoryTranslationsTable.categoryId, categoryTranslationsTable.locale],
+        target: [
+          categoryTranslationsTable.categoryId,
+          categoryTranslationsTable.locale,
+        ],
         set: { name, description },
       })
       .returning();
@@ -49,19 +67,25 @@ export class AdminCategoryTranslationsService {
 
   async remove(categoryId: string, locale: string) {
     if (locale === 'en') {
-      throw new BadRequestException("The base English ('en') translation cannot be deleted.");
+      throw new BadRequestException(
+        "The base English ('en') translation cannot be deleted.",
+      );
     }
 
     const result = await this.db.client
       .delete(categoryTranslationsTable)
-      .where(and(
-        eq(categoryTranslationsTable.categoryId, categoryId),
-        eq(categoryTranslationsTable.locale, locale)
-      ))
+      .where(
+        and(
+          eq(categoryTranslationsTable.categoryId, categoryId),
+          eq(categoryTranslationsTable.locale, locale),
+        ),
+      )
       .returning();
 
     if (result.length === 0) {
-      throw new NotFoundException(`Translation for locale '${locale}' not found for category ${categoryId}`);
+      throw new NotFoundException(
+        `Translation for locale '${locale}' not found for category ${categoryId}`,
+      );
     }
   }
 }

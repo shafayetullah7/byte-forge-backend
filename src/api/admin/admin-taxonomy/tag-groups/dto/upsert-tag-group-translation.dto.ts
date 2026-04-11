@@ -7,4 +7,6 @@ const upsertTagGroupTranslationSchema = z.object({
   description: z.string().optional(),
 });
 
-export class UpsertTagGroupTranslationDto extends createZodDto(upsertTagGroupTranslationSchema) {}
+export class UpsertTagGroupTranslationDto extends createZodDto(
+  upsertTagGroupTranslationSchema,
+) {}

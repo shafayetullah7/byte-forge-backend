@@ -66,7 +66,7 @@ export class ShopService {
 
       const shopWithName =
         await this.shopRepository.findShopByNameInTranslations(
-          englishTranslation.shopName,
+          englishTranslation.name,
           { tx, lock: true },
         );
 
@@ -117,7 +117,7 @@ export class ShopService {
       // 4. Create Shop
       // Use provided slug or generate from English shop name
       const slug =
-        payload.slug || this.generateSlug(englishTranslation.shopName);
+        payload.slug || this.generateSlug(englishTranslation.name);
 
       // Validate slug uniqueness if provided
       if (payload.slug) {
@@ -457,10 +457,9 @@ export class ShopService {
     lang: string,
   ): LocalizedShopDetails {
     const translation = resolveTranslation(shop.translations, lang) as {
-      shopName: string;
-      about: string | null;
-      brandStory: string | null;
-      featuredHighlight: string | null;
+      name: string;
+      description: string | null;
+      businessHours: string | null;
     } | null;
 
     return {
@@ -473,10 +472,9 @@ export class ShopService {
       status: shop.status,
       createdAt: shop.createdAt,
       updatedAt: shop.updatedAt,
-      shopName: translation?.shopName ?? '',
-      about: translation?.about ?? null,
-      brandStory: translation?.brandStory ?? null,
-      featuredHighlight: translation?.featuredHighlight ?? null,
+      name: translation?.name ?? '',
+      description: translation?.description ?? null,
+      businessHours: translation?.businessHours ?? null,
       logo: shop.logo
         ? {
             id: shop.logo.id,

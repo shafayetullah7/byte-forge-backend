@@ -1,10 +1,16 @@
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { tagGroupsTable, tagsTable, tagGroupTranslationsTable, tagTranslationsTable, TNewTagGroup, TTagGroup } from '@/_db/drizzle/schema/taxonomy';
+import {
+  tagGroupsTable,
+  tagsTable,
+  tagGroupTranslationsTable,
+  tagTranslationsTable,
+  TNewTagGroup,
+  TTagGroup,
+} from '@/_db/drizzle/schema/taxonomy';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { eq, isNull, and, SQL, count, asc, desc, sql } from 'drizzle-orm';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '../../_types/lock.transaction';
-
 
 import { TagGroupQueryDto } from '@/api/admin/admin-taxonomy/tag-groups/dto/tag-group-query.dto';
 
@@ -13,7 +19,7 @@ export class TagGroupRepository {
   constructor(private readonly db: DrizzleService) {}
 
   private buildWhere(options: TagGroupQueryDto) {
-    const where:SQL[] = [];
+    const where: SQL[] = [];
 
     if (options.id) where.push(eq(tagGroupsTable.id, options.id));
     // Name and search filters are now handled in the service layer using i18n translation tables
@@ -28,9 +34,10 @@ export class TagGroupRepository {
     return and(...where);
   }
 
-
-
-  async findOne(id: string, transaction?: TLockTransaction): Promise<(TTagGroup & { tags: any[] }) | undefined> {
+  async findOne(
+    id: string,
+    transaction?: TLockTransaction,
+  ): Promise<(TTagGroup & { tags: any[] }) | undefined> {
     const executor = this.db.getExecutor(transaction?.tx);
     return await executor.query.tagGroupsTable.findFirst({
       where: and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)),
@@ -42,17 +49,24 @@ export class TagGroupRepository {
     });
   }
 
-
-  async findBySlug(slug: string, transaction?: TLockTransaction): Promise<TTagGroup | undefined> {
+  async findBySlug(
+    slug: string,
+    transaction?: TLockTransaction,
+  ): Promise<TTagGroup | undefined> {
     const executor = this.db.getExecutor(transaction?.tx);
     const result = await executor.query.tagGroupsTable.findFirst({
-      where: and(eq(tagGroupsTable.slug, slug), isNull(tagGroupsTable.deletedAt)),
+      where: and(
+        eq(tagGroupsTable.slug, slug),
+        isNull(tagGroupsTable.deletedAt),
+      ),
     });
     return result;
   }
 
-
-  async create(data: { slug: string; isActive?: boolean }, tx?: DrizzleTx): Promise<TTagGroup> {
+  async create(
+    data: { slug: string; isActive?: boolean },
+    tx?: DrizzleTx,
+  ): Promise<TTagGroup> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
       .insert(tagGroupsTable)
@@ -64,14 +78,13 @@ export class TagGroupRepository {
     return result[0];
   }
 
-
   async createTranslations(
     groupId: string,
     translations: { locale: string; name: string; description?: string }[],
-    tx?: DrizzleTx
+    tx?: DrizzleTx,
   ) {
     if (!translations.length) return [];
-    
+
     const executor = this.db.getExecutor(tx);
     return await executor
       .insert(tagGroupTranslationsTable)
@@ -81,23 +94,25 @@ export class TagGroupRepository {
           locale: t.locale,
           name: t.name,
           description: t.description,
-        }))
+        })),
       )
       .returning();
   }
 
-
-  async update(id: string, data: Partial<TNewTagGroup>, tx?: DrizzleTx): Promise<TTagGroup> {
+  async update(
+    id: string,
+    data: Partial<TNewTagGroup>,
+    tx?: DrizzleTx,
+  ): Promise<TTagGroup> {
     const executor = this.db.getExecutor(tx);
     const result = await executor
       .update(tagGroupsTable)
       .set(data)
       .where(and(eq(tagGroupsTable.id, id), isNull(tagGroupsTable.deletedAt)))
       .returning();
-    
+
     return result[0];
   }
-
 
   async softDelete(id: string, tx?: DrizzleTx): Promise<void> {
     const executor = this.db.getExecutor(tx);
@@ -110,16 +125,19 @@ export class TagGroupRepository {
     // 2. Soft-delete the group, mangling the slug to free the unique slot
     await executor
       .update(tagGroupsTable)
-      .set({ 
-        deletedAt: new Date(), 
+      .set({
+        deletedAt: new Date(),
         isActive: false,
-        slug: sql`${tagGroupsTable.slug} || '-deleted-' || ${Date.now()}`
+        slug: sql`${tagGroupsTable.slug} || '-deleted-' || ${Date.now()}`,
       })
       .where(eq(tagGroupsTable.id, id));
   }
 
-
-  async incrementTagCount(id: string, amount = 1, tx?: DrizzleTx): Promise<void> {
+  async incrementTagCount(
+    id: string,
+    amount = 1,
+    tx?: DrizzleTx,
+  ): Promise<void> {
     const executor = this.db.getExecutor(tx);
     await executor
       .update(tagGroupsTable)
@@ -129,7 +147,11 @@ export class TagGroupRepository {
       .where(eq(tagGroupsTable.id, id));
   }
 
-  async decrementTagCount(id: string, amount = 1, tx?: DrizzleTx): Promise<void> {
+  async decrementTagCount(
+    id: string,
+    amount = 1,
+    tx?: DrizzleTx,
+  ): Promise<void> {
     const executor = this.db.getExecutor(tx);
     await executor
       .update(tagGroupsTable)
@@ -139,5 +161,4 @@ export class TagGroupRepository {
       })
       .where(eq(tagGroupsTable.id, id));
   }
-
 }

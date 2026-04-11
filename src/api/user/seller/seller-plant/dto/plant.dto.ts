@@ -35,7 +35,7 @@ const MediaItemSchema = z.object({
 const VariantSchema = z.object({
   name: z.string().min(1).max(255),
   sku: z.string().max(100).optional(),
-  
+
   // Attributes (Open fields)
   potSize: z.string().max(50).optional(),
   plantHeight: z.coerce.number().int().min(0).optional(), // cm
@@ -50,7 +50,7 @@ const VariantSchema = z.object({
   price: z.number().int().min(0).default(0),
   salePrice: z.number().int().min(0).optional(),
   costPrice: z.number().int().min(0).optional(),
-  
+
   // Inventory (Moved here)
   stockCount: z.number().int().min(0).default(0),
   trackQuantity: z.boolean().default(true),
@@ -67,20 +67,30 @@ const PlantTranslationSchema = z.object({
 // --- Primary DTOs ---
 
 export const CreatePlantSchema = z.object({
-  categoryId: z.uuid({ message: 'message.validation.invalidUuid' }).optional().nullable(),
-  name: z.string().min(1, { message: 'message.validation.notEmpty' }).max(255, { message: 'message.validation.maxLength' }),
+  categoryId: z
+    .uuid({ message: 'message.validation.invalidUuid' })
+    .optional()
+    .nullable(),
+  name: z
+    .string()
+    .min(1, { message: 'message.validation.notEmpty' })
+    .max(255, { message: 'message.validation.maxLength' }),
   scientificName: z.string().max(255).optional(),
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   isFeatured: z.boolean().default(false),
   status: z.enum(['active', 'draft', 'archived']).default('draft'),
-  translations: z.array(PlantTranslationSchema).min(1, { message: 'Base translation required' }),
+  translations: z
+    .array(PlantTranslationSchema)
+    .min(1, { message: 'Base translation required' }),
 
   // Nested Modular Data
   care: CareSchema.optional(),
   seo: SeoSchema.optional(),
   media: z.array(MediaItemSchema).optional(),
-  variants: z.array(VariantSchema).min(1, { message: 'At least one variant is required' }),
+  variants: z
+    .array(VariantSchema)
+    .min(1, { message: 'At least one variant is required' }),
 });
 
 export class CreatePlantDto extends createZodDto(CreatePlantSchema) {}

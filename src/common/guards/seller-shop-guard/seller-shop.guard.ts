@@ -10,7 +10,7 @@ import { AccessUserAuth } from '@/common/types';
 @Injectable()
 export class SellerShopGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest() as any;
+    const request = context.switchToHttp().getRequest();
     const auth = request.user as AccessUserAuth | undefined;
 
     if (!auth?.shop) {

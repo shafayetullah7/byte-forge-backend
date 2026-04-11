@@ -13,9 +13,7 @@ export const categoryHierarchyTable = pgTable(
       .references(() => categoriesTable.id, { onDelete: 'cascade' }),
     depth: integer('depth').notNull(),
   },
-  (table) => [
-    primaryKey({ columns: [table.ancestorId, table.descendantId] }),
-  ],
+  (table) => [primaryKey({ columns: [table.ancestorId, table.descendantId] })],
 );
 
 export type TCategoryHierarchy = typeof categoryHierarchyTable.$inferSelect;

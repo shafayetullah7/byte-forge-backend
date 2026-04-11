@@ -67,7 +67,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 3. Drizzle Database Errors
     if (exception instanceof DrizzleError || (exception as any).code) {
       const error = exception as any;
-      const pgCode = error.code || (error.originalError as any)?.code;
+      const pgCode = error.code || error.originalError?.code;
 
       this.logger.error(
         `Database Error [${pgCode || 'unknown'}]: ${error.message}`,

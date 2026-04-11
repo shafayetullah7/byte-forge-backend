@@ -30,40 +30,47 @@ export async function seedLanguages() {
   try {
     // 1. Insert/Update the wanted languages
     for (const lang of languages) {
-      await db.insert(schema.languagesTable)
+      await db
+        .insert(schema.languagesTable)
         .values(lang)
         .onConflictDoUpdate({
           target: schema.languagesTable.code,
-          set: { name: lang.name, isRtl: lang.isRtl, isActive: lang.isActive }
+          set: { name: lang.name, isRtl: lang.isRtl, isActive: lang.isActive },
         });
     }
 
     // 2. Remove languages NOT in our list
     // Note: This might fail if there are active translations in other languages
     // because of foreign key constraints without cascade delete.
-    const allowedCodes = languages.map(l => l.code);
-    
+    const allowedCodes = languages.map((l) => l.code);
+
     // We try to delete dependent translations first to ensure we can remove the language
     console.log('🧹 Cleaning up unused translations and languages...');
-    
-    await db.delete(schema.tagTranslationsTable)
+
+    await db
+      .delete(schema.tagTranslationsTable)
       .where(notInArray(schema.tagTranslationsTable.locale, allowedCodes));
-      
-    await db.delete(schema.tagGroupTranslationsTable)
+
+    await db
+      .delete(schema.tagGroupTranslationsTable)
       .where(notInArray(schema.tagGroupTranslationsTable.locale, allowedCodes));
-      
-    await db.delete(schema.categoryTranslationsTable)
+
+    await db
+      .delete(schema.categoryTranslationsTable)
       .where(notInArray(schema.categoryTranslationsTable.locale, allowedCodes));
-      
-    await db.delete(schema.languagesTable)
+
+    await db
+      .delete(schema.languagesTable)
       .where(notInArray(schema.languagesTable.code, allowedCodes));
 
     console.log('✅ Languages refinement completed!');
   } catch (error: any) {
     if (error.code === '23503') {
-        console.warn('⚠️ Could not remove some languages due to foreign key constraints. Make sure all translations are cleared.');
+      console.warn(
+        '⚠️ Could not remove some languages due to foreign key constraints. Make sure all translations are cleared.',
+      );
     } else {
-        console.error('❌ Languages refinement failed:', error);
+      console.error('❌ Languages refinement failed:', error);
     }
     throw error;
   }

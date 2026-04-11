@@ -7,4 +7,6 @@ export const tagGroupTranslationParamSchema = groupIdParamSchema.extend({
   locale: z.string().regex(LOCALE_REGEX, { message: 'Invalid locale format' }),
 });
 
-export class TagGroupTranslationParamDto extends createZodDto(tagGroupTranslationParamSchema) {}
+export class TagGroupTranslationParamDto extends createZodDto(
+  tagGroupTranslationParamSchema,
+) {}

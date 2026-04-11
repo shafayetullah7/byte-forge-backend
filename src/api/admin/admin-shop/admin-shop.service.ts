@@ -148,7 +148,7 @@ export class AdminShopService {
         .select({
           totalShops: count(),
           pendingShops:
-            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.PENDING} THEN 1 ELSE 0 END)`.mapWith(
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.PENDING_VERIFICATION} THEN 1 ELSE 0 END)`.mapWith(
               Number,
             ),
           activeShops:
@@ -159,8 +159,8 @@ export class AdminShopService {
             sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.SUSPENDED} THEN 1 ELSE 0 END)`.mapWith(
               Number,
             ),
-          deactivatedShops:
-            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.DEACTIVATED} THEN 1 ELSE 0 END)`.mapWith(
+          inactiveShops:
+            sql<number>`SUM(CASE WHEN ${shopTable.status} = ${ShopStatusEnum.INACTIVE} THEN 1 ELSE 0 END)`.mapWith(
               Number,
             ),
         })
@@ -180,7 +180,7 @@ export class AdminShopService {
       pendingShops: stat?.pendingShops || 0,
       activeShops: stat?.activeShops || 0,
       suspendedShops: stat?.suspendedShops || 0,
-      deactivatedShops: stat?.deactivatedShops || 0,
+      inactiveShops: stat?.inactiveShops || 0,
       pendingVerifications: verificationCount[0]?.total || 0,
     };
   }
@@ -221,15 +221,14 @@ export class AdminShopService {
       throw new NotFoundException('Shop not found');
     }
 
-    if (shop.status === ShopStatusEnum.DEACTIVATED) {
+    if (shop.status === ShopStatusEnum.INACTIVE) {
       throw new BadRequestException('Shop is already deactivated');
     }
 
     await this.shopRepository.update(shopId, {
-      status: ShopStatusEnum.DEACTIVATED,
+      status: ShopStatusEnum.INACTIVE,
     });
 
-    // Note: Deactivation reason can be added via future migration
     return { message: 'Shop deactivated successfully' };
   }
 
@@ -242,7 +241,7 @@ export class AdminShopService {
 
     if (
       shop.status !== ShopStatusEnum.SUSPENDED &&
-      shop.status !== ShopStatusEnum.DEACTIVATED
+      shop.status !== ShopStatusEnum.INACTIVE
     ) {
       throw new BadRequestException(
         'Only suspended or deactivated shops can be reactivated',

@@ -6,12 +6,13 @@ import { AdminAuthModule } from '@/api/admin/admin-auth/admin-auth.module';
 
 @Global()
 @Module({
-  imports: [
-    AdminSessionModule,
+  imports: [AdminSessionModule, SessionRepositoryModule, AdminAuthModule],
+  providers: [AdminAuthGuard],
+  exports: [
+    AdminAuthGuard,
     SessionRepositoryModule,
     AdminAuthModule,
+    AdminSessionModule,
   ],
-  providers: [AdminAuthGuard],
-  exports: [AdminAuthGuard, SessionRepositoryModule, AdminAuthModule, AdminSessionModule],
 })
 export class AdminAuthGuardModule {}

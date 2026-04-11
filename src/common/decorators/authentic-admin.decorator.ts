@@ -8,7 +8,7 @@ import { AccessAdminAuth, AuthenticAdmin } from '../types';
 
 export const AuthenticAdminUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthenticAdmin => {
-    const req = ctx.switchToHttp().getRequest() as any;
+    const req = ctx.switchToHttp().getRequest();
 
     const auth = req.user as AccessAdminAuth | undefined;
     if (!auth) {

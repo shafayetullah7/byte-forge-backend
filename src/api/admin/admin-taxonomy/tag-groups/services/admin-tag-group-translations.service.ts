@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UpsertTagGroupTranslationDto } from '../dto/upsert-tag-group-translation.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { tagGroupTranslationsTable, tagGroupsTable } from '@/_db/drizzle/schema/taxonomy';
+import {
+  tagGroupTranslationsTable,
+  tagGroupsTable,
+} from '@/_db/drizzle/schema/taxonomy';
 import { languagesTable } from '@/_db/drizzle/schema/i18n/language.schema';
 import { eq, and, isNull } from 'drizzle-orm';
 
@@ -11,9 +18,13 @@ export class AdminTagGroupTranslationsService {
 
   async findAllByGroup(groupId: string) {
     const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: and(eq(tagGroupsTable.id, groupId), isNull(tagGroupsTable.deletedAt)),
+      where: and(
+        eq(tagGroupsTable.id, groupId),
+        isNull(tagGroupsTable.deletedAt),
+      ),
     });
-    if (!group) throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
+    if (!group)
+      throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
 
     return this.db.client.query.tagGroupTranslationsTable.findMany({
       where: eq(tagGroupTranslationsTable.groupId, groupId),
@@ -23,7 +34,10 @@ export class AdminTagGroupTranslationsService {
   async upsert(groupId: string, dto: UpsertTagGroupTranslationDto) {
     // Verify tag group exists and is active (not soft-deleted)
     const group = await this.db.client.query.tagGroupsTable.findFirst({
-      where: and(eq(tagGroupsTable.id, groupId), isNull(tagGroupsTable.deletedAt)),
+      where: and(
+        eq(tagGroupsTable.id, groupId),
+        isNull(tagGroupsTable.deletedAt),
+      ),
     });
     if (!group) {
       throw new NotFoundException(`Tag Group with ID ${groupId} not found`);
@@ -34,7 +48,9 @@ export class AdminTagGroupTranslationsService {
       where: eq(languagesTable.code, dto.locale),
     });
     if (!language) {
-      throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+      throw new BadRequestException(
+        `Language locale '${dto.locale}' is not supported`,
+      );
     }
 
     const [translation] = await this.db.client
@@ -46,7 +62,10 @@ export class AdminTagGroupTranslationsService {
         description: dto.description,
       })
       .onConflictDoUpdate({
-        target: [tagGroupTranslationsTable.groupId, tagGroupTranslationsTable.locale],
+        target: [
+          tagGroupTranslationsTable.groupId,
+          tagGroupTranslationsTable.locale,
+        ],
         set: { name: dto.name, description: dto.description },
       })
       .returning();
@@ -56,19 +75,25 @@ export class AdminTagGroupTranslationsService {
 
   async remove(groupId: string, locale: string) {
     if (locale === 'en' || locale === 'bn') {
-      throw new BadRequestException(`Deleting the mandatory '${locale}' locale is not permitted.`);
+      throw new BadRequestException(
+        `Deleting the mandatory '${locale}' locale is not permitted.`,
+      );
     }
 
     const result = await this.db.client
       .delete(tagGroupTranslationsTable)
-      .where(and(
-        eq(tagGroupTranslationsTable.groupId, groupId),
-        eq(tagGroupTranslationsTable.locale, locale)
-      ))
+      .where(
+        and(
+          eq(tagGroupTranslationsTable.groupId, groupId),
+          eq(tagGroupTranslationsTable.locale, locale),
+        ),
+      )
       .returning();
 
     if (result.length === 0) {
-      throw new NotFoundException(`Translation for locale '${locale}' on group '${groupId}' not found`);
+      throw new NotFoundException(
+        `Translation for locale '${locale}' on group '${groupId}' not found`,
+      );
     }
   }
 }

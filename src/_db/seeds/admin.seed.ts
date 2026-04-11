@@ -12,7 +12,7 @@ dotenv.config({ path: `.env.${env}` });
 console.log(`Loading environment: ${env}`);
 
 console.log({
-  env:process.env.NODE_ENV ,
+  env: process.env.NODE_ENV,
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,
   DB_USER: process.env.DB_USER,
@@ -26,7 +26,7 @@ const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-}
+};
 
 console.log(config);
 
@@ -55,9 +55,11 @@ export async function seedAdmin() {
 
   try {
     // Check if admin already exists before seeding
-    const existing = await db.select().from(schema.adminLocalAuthTable).where(
-      eq(schema.adminLocalAuthTable.email, DEFAULT_ADMIN.email)
-    ).limit(1);
+    const existing = await db
+      .select()
+      .from(schema.adminLocalAuthTable)
+      .where(eq(schema.adminLocalAuthTable.email, DEFAULT_ADMIN.email))
+      .limit(1);
 
     if (existing.length > 0) {
       console.log('⚠️ Admin already exists. Skipping Drizzle Seed.');
@@ -77,7 +79,7 @@ export async function seedAdmin() {
         },
         with: {
           adminLocalAuthTable: 1,
-        }
+        },
       },
       adminLocalAuthTable: {
         count: 1,
@@ -85,7 +87,7 @@ export async function seedAdmin() {
           email: f.valuesFromArray({ values: [DEFAULT_ADMIN.email] }),
           password: f.valuesFromArray({ values: [hashedAdminPassword] }),
           verfied: f.valuesFromArray({ values: [true] }),
-        }
+        },
       },
     }));
 

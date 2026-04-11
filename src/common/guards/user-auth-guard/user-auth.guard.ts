@@ -16,7 +16,7 @@ export class UserAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest() as any;
+    const request = context.switchToHttp().getRequest();
     const sessionId = request.cookies?.sessionId as undefined | string;
 
     if (!sessionId) {

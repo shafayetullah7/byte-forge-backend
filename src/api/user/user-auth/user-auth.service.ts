@@ -38,8 +38,6 @@ export class UserAuthService {
     private readonly i18n: I18nService,
   ) {}
 
-
-
   async register(payload: CreateLocalUserDto, lang: string = 'en') {
     const { email, password, firstName, lastName, userName } = payload;
 
@@ -102,11 +100,16 @@ export class UserAuthService {
     }
   }
 
-  async validateCredentials(payload: {
-    email: string;
-    password: string;
-  }, lang: string = 'en') {
-    const user = await this.userLocalAuthService.getLocalUser({ email: payload.email });
+  async validateCredentials(
+    payload: {
+      email: string;
+      password: string;
+    },
+    lang: string = 'en',
+  ) {
+    const user = await this.userLocalAuthService.getLocalUser({
+      email: payload.email,
+    });
 
     if (!user) {
       throw new CustomException({
@@ -192,7 +195,10 @@ export class UserAuthService {
     });
   }
 
-  async resendVerification(userId: string, lang: string = 'en'): Promise<{ expiresAt: Date }> {
+  async resendVerification(
+    userId: string,
+    lang: string = 'en',
+  ): Promise<{ expiresAt: Date }> {
     // Get user's email verification status
     const [user] = await this.drizzle.client
       .select({
@@ -203,7 +209,12 @@ export class UserAuthService {
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    console.log('[DEBUG] resendVerification for user:', userId, 'Found:', !!user);
+    console.log(
+      '[DEBUG] resendVerification for user:',
+      userId,
+      'Found:',
+      !!user,
+    );
 
     if (!user) {
       throw new CustomException({
@@ -240,7 +251,10 @@ export class UserAuthService {
       userId,
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
-    console.log('[DEBUG] Sending verification email to:', localUser.userLocalAuth.email);
+    console.log(
+      '[DEBUG] Sending verification email to:',
+      localUser.userLocalAuth.email,
+    );
     console.log('[DEBUG] OTP generated:', otp); // REMOVE IN PRODUCTION
     await this.emailService.sendVerificationEmail(
       localUser.userLocalAuth.email,

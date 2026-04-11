@@ -28,12 +28,21 @@ export class EmailService {
         this.provider = this.consoleProvider;
         break;
     }
-    console.log('[DEBUG] EmailService initialized with provider:', providerType || 'default(console)');
+    console.log(
+      '[DEBUG] EmailService initialized with provider:',
+      providerType || 'default(console)',
+    );
   }
 
-  async sendVerificationEmail(to: string, otp: string, lang: string = 'en'): Promise<void> {
+  async sendVerificationEmail(
+    to: string,
+    otp: string,
+    lang: string = 'en',
+  ): Promise<void> {
     const subject = this.i18n.t('message.email.verification.subject', { lang });
-    const greeting = this.i18n.t('message.email.verification.greeting', { lang });
+    const greeting = this.i18n.t('message.email.verification.greeting', {
+      lang,
+    });
     const body = this.i18n.t('message.email.verification.body', { lang });
     const expiry = this.i18n.t('message.email.verification.expiry', { lang });
     const ignore = this.i18n.t('message.email.verification.ignore', { lang });
@@ -55,9 +64,17 @@ export class EmailService {
     await this.provider.sendEmail({ to, subject, text, html });
   }
 
-  async sendPasswordResetEmail(to: string, otp: string, lang: string = 'en'): Promise<void> {
-    const subject = this.i18n.t('message.email.passwordReset.subject', { lang });
-    const greeting = this.i18n.t('message.email.passwordReset.greeting', { lang });
+  async sendPasswordResetEmail(
+    to: string,
+    otp: string,
+    lang: string = 'en',
+  ): Promise<void> {
+    const subject = this.i18n.t('message.email.passwordReset.subject', {
+      lang,
+    });
+    const greeting = this.i18n.t('message.email.passwordReset.greeting', {
+      lang,
+    });
     const body = this.i18n.t('message.email.passwordReset.body', { lang });
     const expiry = this.i18n.t('message.email.passwordReset.expiry', { lang });
     const ignore = this.i18n.t('message.email.passwordReset.ignore', { lang });

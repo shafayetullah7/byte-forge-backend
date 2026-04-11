@@ -1,8 +1,12 @@
 export const ShopStatusEnum = {
-  PENDING: 'PENDING',
+  DRAFT: 'DRAFT',
+  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  APPROVED: 'APPROVED',
   ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  REJECTED: 'REJECTED',
   SUSPENDED: 'SUSPENDED',
-  DEACTIVATED: 'DEACTIVATED',
+  DELETED: 'DELETED',
 } as const;
 
 export type TShopStatus = (typeof ShopStatusEnum)[keyof typeof ShopStatusEnum];

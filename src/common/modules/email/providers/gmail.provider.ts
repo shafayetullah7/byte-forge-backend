@@ -45,7 +45,10 @@ export class GmailProvider implements IEmailProvider {
     html?: string;
   }): Promise<void> {
     try {
-      console.log('[DEBUG] GmailProvider attempting to send email to:', options.to);
+      console.log(
+        '[DEBUG] GmailProvider attempting to send email to:',
+        options.to,
+      );
       const info = await this.transporter.sendMail({
         from: `"${this.fromName}" <${this.fromEmail}>`,
         to: options.to,

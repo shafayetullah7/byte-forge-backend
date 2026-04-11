@@ -29,26 +29,41 @@ export class PasswordResetService {
 
   // === Token Logic ===
 
-  async generateRequestToken(email: string): Promise<{ token: string; expiresAt: Date }> {
-    const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_REQUEST');
+  async generateRequestToken(
+    email: string,
+  ): Promise<{ token: string; expiresAt: Date }> {
+    const secret = this.configService.getOrThrow<string>(
+      'JWT_SECRET_RESET_REQUEST',
+    );
     const expiresIn = '10m';
-    
+
     const payload: ResetTokenPayload = { email, purpose: 'reset-request' };
-    const token = await this.jwtService.signAsync(payload, { secret, expiresIn });
+    const token = await this.jwtService.signAsync(payload, {
+      secret,
+      expiresIn,
+    });
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     return { token, expiresAt };
   }
 
-  async verifyRequestToken(token: string, lang: string = 'en'): Promise<string> {
-    const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_REQUEST');
+  async verifyRequestToken(
+    token: string,
+    lang: string = 'en',
+  ): Promise<string> {
+    const secret = this.configService.getOrThrow<string>(
+      'JWT_SECRET_RESET_REQUEST',
+    );
     try {
-      const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(token, { secret });
-      
+      const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(
+        token,
+        { secret },
+      );
+
       if (payload.purpose !== 'reset-request') {
         throw new Error('Invalid token purpose');
       }
-      
+
       return payload.email;
     } catch (error) {
       throw new CustomException({
@@ -59,21 +74,33 @@ export class PasswordResetService {
     }
   }
 
-  async generateAccessToken(email: string): Promise<{ token: string; expiresAt: Date }> {
-    const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_ACCESS');
+  async generateAccessToken(
+    email: string,
+  ): Promise<{ token: string; expiresAt: Date }> {
+    const secret = this.configService.getOrThrow<string>(
+      'JWT_SECRET_RESET_ACCESS',
+    );
     const expiresIn = '5m';
 
     const payload: ResetTokenPayload = { email, purpose: 'reset-access' };
-    const token = await this.jwtService.signAsync(payload, { secret, expiresIn });
+    const token = await this.jwtService.signAsync(payload, {
+      secret,
+      expiresIn,
+    });
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     return { token, expiresAt };
   }
 
   async verifyAccessToken(token: string, lang: string = 'en'): Promise<string> {
-    const secret = this.configService.getOrThrow<string>('JWT_SECRET_RESET_ACCESS');
+    const secret = this.configService.getOrThrow<string>(
+      'JWT_SECRET_RESET_ACCESS',
+    );
     try {
-      const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(token, { secret });
+      const payload = await this.jwtService.verifyAsync<ResetTokenPayload>(
+        token,
+        { secret },
+      );
 
       if (payload.purpose !== 'reset-access') {
         throw new Error('Invalid token purpose');
@@ -91,10 +118,13 @@ export class PasswordResetService {
 
   // === Business Logic ===
 
-  async forgotPassword(email: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
+  async forgotPassword(
+    email: string,
+    lang: string = 'en',
+  ): Promise<{ token: string; expiresAt: Date }> {
     // 1. Check if user exists
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
-    
+
     // 2. If user exists, generate OTP and send email
     if (userLocalAuth) {
       const { otp } = await this.otpService.createOtp(
@@ -103,7 +133,7 @@ export class PasswordResetService {
       );
 
       console.log('[DEBUG] Password Reset OTP:', otp);
-      await this.emailService.sendPasswordResetEmail(email, otp, lang); 
+      await this.emailService.sendPasswordResetEmail(email, otp, lang);
     } else {
       // Security: Simulate work to mitigate timing attacks (optional/advanced)
       // For now, we simply do not send the email but proceed to generate a token
@@ -114,19 +144,23 @@ export class PasswordResetService {
     return this.generateRequestToken(email);
   }
 
-  async verifyResetOtp(token: string, otp: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
+  async verifyResetOtp(
+    token: string,
+    otp: string,
+    lang: string = 'en',
+  ): Promise<{ token: string; expiresAt: Date }> {
     // 1. Verify Request Token
     const email = await this.verifyRequestToken(token, lang);
 
     // 2. Get User ID
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
     if (!userLocalAuth) {
-        // Security: Mask user existence. Throw same error as invalid OTP.
-        throw new CustomException({
-            message: this.i18n.t('message.error.invalidOtp', { lang }), 
-            statusCode: HttpStatus.BAD_REQUEST, // Match valid-user-wrong-otp status
-            errorCode: ErrorCode.INVALID_OTP,
-        });
+      // Security: Mask user existence. Throw same error as invalid OTP.
+      throw new CustomException({
+        message: this.i18n.t('message.error.invalidOtp', { lang }),
+        statusCode: HttpStatus.BAD_REQUEST, // Match valid-user-wrong-otp status
+        errorCode: ErrorCode.INVALID_OTP,
+      });
     }
 
     // 3. Verify OTP
@@ -140,30 +174,37 @@ export class PasswordResetService {
     return this.generateAccessToken(email);
   }
 
-  async resendResetOtp(token: string, lang: string = 'en'): Promise<{ token: string; expiresAt: Date }> {
+  async resendResetOtp(
+    token: string,
+    lang: string = 'en',
+  ): Promise<{ token: string; expiresAt: Date }> {
     // 1. Verify Request Token
     const email = await this.verifyRequestToken(token, lang);
 
-     // 2. Get User ID
-     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
-     
-     if (userLocalAuth) {
-         // 3. Generate NEW OTP
-         const { otp } = await this.otpService.createOtp(
-           userLocalAuth.userId,
-           OtpPurpose.PASSWORD_RESET,
-         );
-    
-         // 4. Send Email
-         console.log('[DEBUG] Resent Password Reset OTP:', otp);
-         await this.emailService.sendPasswordResetEmail(email, otp, lang);
-     }
+    // 2. Get User ID
+    const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
 
-     // 5. Generate NEW Request Token (Always return to keep flow alive)
-     return this.generateRequestToken(email);
+    if (userLocalAuth) {
+      // 3. Generate NEW OTP
+      const { otp } = await this.otpService.createOtp(
+        userLocalAuth.userId,
+        OtpPurpose.PASSWORD_RESET,
+      );
+
+      // 4. Send Email
+      console.log('[DEBUG] Resent Password Reset OTP:', otp);
+      await this.emailService.sendPasswordResetEmail(email, otp, lang);
+    }
+
+    // 5. Generate NEW Request Token (Always return to keep flow alive)
+    return this.generateRequestToken(email);
   }
 
-  async resetPassword(token: string, password: string, lang: string = 'en'): Promise<void> {
+  async resetPassword(
+    token: string,
+    password: string,
+    lang: string = 'en',
+  ): Promise<void> {
     // 1. Verify Access Token
     const email = await this.verifyAccessToken(token, lang);
 
@@ -173,16 +214,16 @@ export class PasswordResetService {
     // 3. Update User Password
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
     if (!userLocalAuth) {
-        throw new CustomException({
-            message: this.i18n.t('message.error.userNotFound', { lang }),
-            statusCode: HttpStatus.UNAUTHORIZED,
-            errorCode: ErrorCode.UNAUTHORIZED,
-        });
+      throw new CustomException({
+        message: this.i18n.t('message.error.userNotFound', { lang }),
+        statusCode: HttpStatus.UNAUTHORIZED,
+        errorCode: ErrorCode.UNAUTHORIZED,
+      });
     }
 
     await this.userLocalAuthRepository.update(
-        { password: hashedPassword },
-        { id: userLocalAuth.id }
+      { password: hashedPassword },
+      { id: userLocalAuth.id },
     );
   }
 }

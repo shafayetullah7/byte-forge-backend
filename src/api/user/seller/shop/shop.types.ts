@@ -40,10 +40,9 @@ export type LocalizedShopDetails = {
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  shopName: string;
-  about: string | null;
-  brandStory: string | null;
-  featuredHighlight: string | null;
+  name: string;
+  description: string | null;
+  businessHours: string | null;
   logo: {
     id: string;
     url: string;
@@ -62,10 +61,9 @@ export type LocalizedShopDetails = {
     id: string;
     shopId: string;
     locale: string;
-    shopName: string;
-    about: string | null;
-    brandStory: string | null;
-    featuredHighlight: string | null;
+    name: string;
+    description: string | null;
+    businessHours: string | null;
   }>;
 };
 

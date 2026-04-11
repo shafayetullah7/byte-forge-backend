@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PlantRepository } from '@/_repositories/business/plant.repository/plant.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { plantTable, TNewPlant, shopTable, plantTranslationsTable, TPlantTranslation } from '@/_db/drizzle/schema';
+import {
+  plantTable,
+  TNewPlant,
+  shopTable,
+  plantTranslationsTable,
+  TPlantTranslation,
+} from '@/_db/drizzle/schema';
 import { and, eq, sql, asc, desc, or, ilike, SQL, exists } from 'drizzle-orm';
 import {
   CreatePlantDto,
@@ -19,8 +25,7 @@ export class SellerPlantService {
   ) {}
 
   async createPlant(shopId: string, payload: CreatePlantDto, lang: string) {
-    const { care, seo, media, variants, translations, ...coreData } =
-      payload;
+    const { care, seo, media, variants, translations, ...coreData } = payload;
 
     return await this.drizzle.client.transaction(async (tx) => {
       // 1. Create Core Plant
@@ -50,7 +55,10 @@ export class SellerPlantService {
       // 6. Upsert Translations
       if (translations && translations.length > 0) {
         for (const t of translations) {
-          await this.repository.upsertTranslation({ ...t, plantId: plant.id }, tx);
+          await this.repository.upsertTranslation(
+            { ...t, plantId: plant.id },
+            tx,
+          );
         }
       }
 
@@ -70,7 +78,8 @@ export class SellerPlantService {
 
     const where: SQL[] = [eq(plantTable.shopId, shopId)];
 
-    if (filter?.categoryId) where.push(eq(plantTable.categoryId, filter.categoryId));
+    if (filter?.categoryId)
+      where.push(eq(plantTable.categoryId, filter.categoryId));
     if (filter?.status) where.push(eq(plantTable.status, filter.status));
     if (typeof filter?.isFeatured === 'boolean')
       where.push(eq(plantTable.isFeatured, filter.isFeatured));
@@ -80,27 +89,27 @@ export class SellerPlantService {
         or(
           ilike(plantTable.scientificName, `%${filter.searchKey}%`),
           exists(
-            this.drizzle.client.select({ id: plantTranslationsTable.id })
+            this.drizzle.client
+              .select({ id: plantTranslationsTable.id })
               .from(plantTranslationsTable)
-              .where(and(
-                eq(plantTranslationsTable.plantId, plantTable.id),
-                ilike(plantTranslationsTable.name, `%${filter.searchKey}%`)
-              ))
-          )
+              .where(
+                and(
+                  eq(plantTranslationsTable.plantId, plantTable.id),
+                  ilike(plantTranslationsTable.name, `%${filter.searchKey}%`),
+                ),
+              ),
+          ),
         )!,
       );
     }
 
     const [data, [{ count }]] = await Promise.all([
       this.drizzle.client.query.plantTable.findMany({
-        where: and(
-          eq(shopTable.status, 'ACTIVE'),
-          ...where,
-        ),
+        where: and(eq(shopTable.status, 'ACTIVE'), ...where),
         orderBy: [
-          sortBy === 'name' 
+          sortBy === 'name'
             ? sortFn(plantTable.createdAt) // Fallback sorting for now
-            : sortFn(plantTable[sortBy as keyof typeof plantTable] as any)
+            : sortFn(plantTable[sortBy as keyof typeof plantTable] as any),
         ],
         limit,
         offset,
@@ -119,7 +128,7 @@ export class SellerPlantService {
         .execute(),
     ]);
 
-    const localized = data.map(p => this.mapToLocalizedPlant(p, lang));
+    const localized = data.map((p) => this.mapToLocalizedPlant(p, lang));
     return paginate(localized, count, page, limit);
   }
 
@@ -133,7 +142,7 @@ export class SellerPlantService {
         media: true,
         care: true,
         seo: true,
-      }
+      },
     });
 
     if (!plant) throw new NotFoundException('Plant not found');
@@ -141,9 +150,13 @@ export class SellerPlantService {
     return this.mapToLocalizedPlant(plant, lang);
   }
 
-  async updatePlant(id: string, shopId: string, payload: UpdatePlantDto, lang: string) {
-    const { care, seo, media, variants, translations, ...coreData } =
-      payload;
+  async updatePlant(
+    id: string,
+    shopId: string,
+    payload: UpdatePlantDto,
+    lang: string,
+  ) {
+    const { care, seo, media, variants, translations, ...coreData } = payload;
 
     await this.getPlantById(id, shopId, lang);
 
@@ -180,13 +193,18 @@ export class SellerPlantService {
   }
 
   private mapToLocalizedPlant(plant: any, lang: string) {
-    const translation = resolveTranslation(plant.translations as TPlantTranslation[], lang);
-    
+    const translation = resolveTranslation(
+      plant.translations as TPlantTranslation[],
+      lang,
+    );
+
     // Map variants with their specific data
     const variants = (plant.variants || []).map((v: any) => {
       // Find media specifically linked to this variant
-      const variantMedia = (plant.media || []).filter((m: any) => m.variantId === v.id);
-      
+      const variantMedia = (plant.media || []).filter(
+        (m: any) => m.variantId === v.id,
+      );
+
       return {
         ...v,
         media: variantMedia,
