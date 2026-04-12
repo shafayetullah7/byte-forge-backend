@@ -36,7 +36,6 @@ import { AppEnvModule } from './_config/app-env/app-env.module';
 
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { JwtModule } from '@nestjs/jwt';
-import { CartModule } from './api/cart/cart.module';
 
 @Module({
   imports: [
@@ -78,7 +77,6 @@ import { CartModule } from './api/cart/cart.module';
     VerifiedUserAuthGuardModule,
     AdminAuthGuardModule,
     AppEnvModule,
-    CartModule,
   ],
   controllers: [],
   providers: [

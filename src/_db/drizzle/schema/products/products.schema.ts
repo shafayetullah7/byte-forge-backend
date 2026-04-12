@@ -3,8 +3,6 @@ import {
   uuid,
   varchar,
   timestamp,
-  boolean,
-  decimal,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -12,15 +10,17 @@ import { shopTable } from '../shop';
 import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media/media.schema';
 import { productTypeEnum } from '../../enum/product-type.enum';
+import { productStatusEnum } from '../../enum/product-status.enum';
 
 /**
- * Unified products table
- * Supports multiple product types: plant, pot, seed, fertilizer
+ * Unified Products Table
  * 
- * For plants: uses plant_care, plant_seo, plant_media, plant_variants, plant_translations
- * For pots: uses pot_details
- * For seeds: uses seed_details
- * For fertilizers: uses fertilizer_details
+ * Supports multiple product types: plant, pot, seed, fertilizer
+ * Every product must have at least one variant (tracked via baseVariantId)
+ * 
+ * @see product_variants - Cart/Orders reference this table
+ * @see product_translations - Bilingual content
+ * @see product_tags - Flexible filtering
  */
 export const productsTable = pgTable(
   'products',
@@ -34,13 +34,13 @@ export const productsTable = pgTable(
       onDelete: 'set null',
     }),
     slug: varchar('slug', { length: 255 }).notNull().unique(),
-    basePrice: decimal('base_price', { precision: 10, scale: 2 }),
+    // Base variant reference - price is taken from this variant
+    // FK added via migration (circular reference with product_variants)
+    baseVariantId: uuid('base_variant_id'),
     thumbnailId: uuid('thumbnail_id').references(() => mediaTable.id, {
       onDelete: 'set null',
     }),
-    isFeatured: boolean('is_featured').default(false).notNull(),
-    isActive: boolean('is_active').default(true).notNull(),
-    status: varchar('status', { length: 20 }).default('draft').notNull(),
+    status: productStatusEnum('status').default('DRAFT').notNull(),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -60,7 +60,7 @@ export const productsTable = pgTable(
 export type TProduct = typeof productsTable.$inferSelect;
 export type TNewProduct = typeof productsTable.$inferInsert;
 
-export const productsRelations = relations(productsTable, ({ one, many }) => ({
+export const productsRelations = relations(productsTable, ({ one }) => ({
   shop: one(shopTable, {
     fields: [productsTable.shopId],
     references: [shopTable.id],
