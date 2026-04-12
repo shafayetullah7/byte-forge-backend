@@ -5,16 +5,17 @@ import {
   text,
   boolean,
   index,
+  pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
 import { plantDetailsTranslationsTable } from './plant-details-translations.schema';
 import {
-  lightRequirementEnum,
-  wateringFrequencyEnum,
-  humidityLevelEnum,
-  careDifficultyEnum,
-  growthRateEnum,
+  CareDifficultyEnum,
+  GrowthRateEnum,
+  HumidityLevelEnum,
+  LightRequirementEnum,
+  WateringFrequencyEnum,
 } from '../../enum/plant-care.enum';
 
 /**
@@ -27,6 +28,39 @@ import {
  * 
  * One-to-one relationship with products (where product_type = 'plant')
  */
+
+export const careDifficultyEnum = pgEnum('care_difficulty_enum', [
+  CareDifficultyEnum.BEGINNER,
+  CareDifficultyEnum.INTERMEDIATE,
+  CareDifficultyEnum.EXPERT,
+]);
+
+export const humidityLevelEnum = pgEnum('humidity_level_enum', [
+  HumidityLevelEnum.LOW,
+  HumidityLevelEnum.MEDIUM,
+  HumidityLevelEnum.HIGH,
+]);
+
+export const growthRateEnum = pgEnum('growth_rate_enum', [
+  GrowthRateEnum.SLOW,
+  GrowthRateEnum.MODERATE,
+  GrowthRateEnum.FAST,
+]);
+
+export const lightRequirementEnum = pgEnum('light_requirement_enum', [
+  LightRequirementEnum.LOW,
+  LightRequirementEnum.MEDIUM,
+  LightRequirementEnum.BRIGHT_INDIRECT,
+  LightRequirementEnum.DIRECT,
+]);
+
+export const wateringFrequencyEnum = pgEnum('watering_frequency_enum', [
+  WateringFrequencyEnum.DAILY,
+  WateringFrequencyEnum.WEEKLY,
+  WateringFrequencyEnum.BI_WEEKLY,
+  WateringFrequencyEnum.MONTHLY,
+]);
+
 export const plantDetailsTable = pgTable(
   'plant_details',
   {

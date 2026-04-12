@@ -7,11 +7,6 @@ export const ProductTypeEnum = {
   FERTILIZER: 'fertilizer',
 } as const;
 
-export const productTypeEnum = pgEnum('product_type_enum', [
-  ProductTypeEnum.PLANT,
-  ProductTypeEnum.POT,
-  ProductTypeEnum.SEED,
-  ProductTypeEnum.FERTILIZER,
-]);
+
 
 export type TProductType = (typeof ProductTypeEnum)[keyof typeof ProductTypeEnum];

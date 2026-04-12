@@ -1,53 +1,56 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
-/**
- * Light Requirement ENUM
- * Used for filtering plants by light needs
- */
-export const lightRequirementEnum = pgEnum('light_requirement_enum', [
-  'low',
-  'medium',
-  'bright_indirect',
-  'direct',
-]);
+export const LightRequirementEnum = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  BRIGHT_INDIRECT: 'bright_indirect',
+  DIRECT: 'direct',
+} as const;
 
-/**
- * Watering Frequency ENUM
- * Used for filtering plants by watering needs
- */
-export const wateringFrequencyEnum = pgEnum('watering_frequency_enum', [
-  'daily',
-  'weekly',
-  'bi_weekly',
-  'monthly',
-]);
 
-/**
- * Humidity Level ENUM
- * Used for filtering plants by humidity needs
- */
-export const humidityLevelEnum = pgEnum('humidity_level_enum', [
-  'low',
-  'medium',
-  'high',
-]);
 
-/**
- * Care Difficulty ENUM
- * Used for filtering plants by care level
- */
-export const careDifficultyEnum = pgEnum('care_difficulty_enum', [
-  'beginner',
-  'intermediate',
-  'expert',
-]);
+export type TLightRequirement = (typeof LightRequirementEnum)[keyof typeof LightRequirementEnum];
 
-/**
- * Growth Rate ENUM
- * Used for filtering plants by growth speed
- */
-export const growthRateEnum = pgEnum('growth_rate_enum', [
-  'slow',
-  'moderate',
-  'fast',
-]);
+export const WateringFrequencyEnum = {
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  BI_WEEKLY: 'bi_weekly',
+  MONTHLY: 'monthly',
+} as const;
+
+
+
+export type TWateringFrequency = (typeof WateringFrequencyEnum)[keyof typeof WateringFrequencyEnum];
+
+export const HumidityLevelEnum = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+} as const;
+
+export const CareDifficultyEnum = {
+  BEGINNER: 'beginner',
+  INTERMEDIATE: 'intermediate',
+  EXPERT: 'expert',
+} as const;
+
+export const GrowthRateEnum = {
+  SLOW: 'slow',
+  MODERATE: 'moderate',
+  FAST: 'fast',
+} as const;
+
+
+
+export type THumidityLevel = (typeof HumidityLevelEnum)[keyof typeof HumidityLevelEnum];
+
+
+
+
+
+export type TCareDifficulty = (typeof CareDifficultyEnum)[keyof typeof CareDifficultyEnum];
+
+
+
+export type TGrowthRate = (typeof GrowthRateEnum)[keyof typeof GrowthRateEnum];
+

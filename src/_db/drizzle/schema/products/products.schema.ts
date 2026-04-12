@@ -4,13 +4,13 @@ import {
   varchar,
   timestamp,
   index,
+  pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopTable } from '../shop';
 import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media/media.schema';
-import { productTypeEnum } from '../../enum/product-type.enum';
-import { productStatusEnum } from '../../enum/product-status.enum';
+import { ProductStatusEnum, ProductTypeEnum } from '../../enum';
 
 /**
  * Unified Products Table
@@ -22,6 +22,21 @@ import { productStatusEnum } from '../../enum/product-status.enum';
  * @see product_translations - Bilingual content
  * @see product_tags - Flexible filtering
  */
+
+export const productTypeEnum = pgEnum('product_type_enum', [
+  ProductTypeEnum.PLANT,
+  ProductTypeEnum.POT,
+  ProductTypeEnum.SEED,
+  ProductTypeEnum.FERTILIZER,
+]);
+
+export const productStatusEnum = pgEnum('product_status_enum', [
+  ProductStatusEnum.DRAFT,
+  ProductStatusEnum.ACTIVE,
+  ProductStatusEnum.ARCHIVED,
+  ProductStatusEnum.OUT_OF_STOCK,
+]);
+
 export const productsTable = pgTable(
   'products',
   {

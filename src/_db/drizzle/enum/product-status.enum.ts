@@ -1,10 +1,12 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
-export const productStatusEnum = pgEnum('product_status_enum', [
-  'DRAFT',
-  'ACTIVE',
-  'ARCHIVED',
-  'OUT_OF_STOCK',
-]);
+export const ProductStatusEnum = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+} as const;
 
-export type TProductStatus = (typeof productStatusEnum)['enumValues'][number];
+
+
+export type TProductStatus = (typeof ProductStatusEnum)[keyof typeof ProductStatusEnum];
