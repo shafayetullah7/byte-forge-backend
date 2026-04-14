@@ -44,24 +44,6 @@ export const applySellerSchema = z.object({
   translations: z
     .array(shopTranslationSchema)
     .min(1, { message: 'message.validation.atLeastOne' }),
-
-  // Verification Details
-  tradeLicenseNumber: z
-    .string({ error: 'message.validation.required' })
-    .trim()
-    .min(1, { message: 'message.validation.notEmpty' }),
-  tradeLicenseDocumentId: z.uuid({
-    message: 'message.validation.invalidUuid',
-  }),
-  tinNumber: z.string().trim().optional(),
-  tinDocumentId: z
-    .uuid({ message: 'message.validation.invalidUuid' })
-    .optional(),
-  utilityBillDocumentId: z
-    .uuid({
-      message: 'message.validation.invalidUuid',
-    })
-    .optional(),
 });
 
 export class ApplySellerDto extends createZodDto(applySellerSchema) {}

@@ -82,11 +82,6 @@ export class ShopService {
       const mediaIds: string[] = [];
       if (payload.logoId) mediaIds.push(payload.logoId);
       if (payload.bannerId) mediaIds.push(payload.bannerId);
-      if (payload.tradeLicenseDocumentId)
-        mediaIds.push(payload.tradeLicenseDocumentId);
-      if (payload.tinDocumentId) mediaIds.push(payload.tinDocumentId);
-      if (payload.utilityBillDocumentId)
-        mediaIds.push(payload.utilityBillDocumentId);
 
       if (mediaIds.length > 0) {
         const medias = await this.mediaRepository.findMediaDetailsByIds(
@@ -149,19 +144,6 @@ export class ShopService {
         shopId: shop.id,
       }));
       await this.shopRepository.createShopTranslations(translationPayloads, tx);
-
-      // 6. Create Verification Record
-      const verificationPayload: TNewShopVerification = {
-        shopId: shop.id,
-        tradeLicenseNumber: payload.tradeLicenseNumber,
-        tradeLicenseDocument: payload.tradeLicenseDocumentId,
-        tinNumber: payload.tinNumber,
-        tinDocument: payload.tinDocumentId,
-        utilityBillDocument: payload.utilityBillDocumentId,
-        status: ShopVerificationStatusEnum.PENDING,
-      };
-
-      await this.shopRepository.createShopVerification(verificationPayload, tx);
 
       return shop;
     });
