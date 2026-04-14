@@ -29,7 +29,6 @@ export const shopTable = pgTable('shops', {
     .unique()
     .references(() => userTable.id, { onDelete: 'cascade' }),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
-  address: varchar('address', { length: 500 }),
   status: shopStatusEnum('status').default(ShopStatusEnum.DRAFT).notNull(),
 
   // First-Class Branding

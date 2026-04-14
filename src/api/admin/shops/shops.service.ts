@@ -23,55 +23,55 @@ export class ShopsService {
     const offset = (page - 1) * limit;
 
     const [shops, totalResult] = await Promise.all([
-      this.db.client
-        .select({
-          id: shopTable.id,
-          ownerId: shopTable.ownerId,
-          slug: shopTable.slug,
-          status: shopTable.status,
-          createdAt: shopTable.createdAt,
-          updatedAt: shopTable.updatedAt,
-          nameEn: shopTranslationsTable.name,
-          division: shopAddressTable.division,
-          city: shopAddressTable.district,
-        })
-        .from(shopTable)
-        .leftJoin(
-          shopTranslationsTable,
-          and(
-            eq(shopTranslationsTable.shopId, shopTable.id),
-            eq(shopTranslationsTable.locale, 'en'),
-          ),
-        )
-        .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
-        .where(
-          status
-            ? eq(shopTable.status, status)
-            : search
-              ? or(
-                  like(shopTable.slug, `%${search}%`),
-                  like(shopTable.address, `%${search}%`),
-                  like(shopAddressTable.division, `%${search}%`),
-                )
-              : undefined,
-        )
-        .orderBy(desc(shopTable.createdAt))
-        .limit(limit)
-        .offset(offset),
-      this.db.client
-        .select({ count: count() })
-        .from(shopTable)
-        .where(
-          status
-            ? eq(shopTable.status, status)
-            : search
-              ? or(
-                  like(shopTable.slug, `%${search}%`),
-                  like(shopTable.address, `%${search}%`),
-                  like(shopAddressTable.division, `%${search}%`),
-                )
-              : undefined,
-        ),
+       this.db.client
+         .select({
+           id: shopTable.id,
+           ownerId: shopTable.ownerId,
+           slug: shopTable.slug,
+           status: shopTable.status,
+           createdAt: shopTable.createdAt,
+           updatedAt: shopTable.updatedAt,
+           nameEn: shopTranslationsTable.name,
+           division: shopAddressTable.division,
+           city: shopAddressTable.district,
+         })
+         .from(shopTable)
+         .leftJoin(
+           shopTranslationsTable,
+           and(
+             eq(shopTranslationsTable.shopId, shopTable.id),
+             eq(shopTranslationsTable.locale, 'en'),
+           ),
+         )
+         .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
+         .where(
+           status
+             ? eq(shopTable.status, status)
+             : search
+               ? or(
+                   like(shopTable.slug, `%${search}%`),
+                   like(shopTranslationsTable.name, `%${search}%`),
+                   like(shopAddressTable.division, `%${search}%`),
+                 )
+               : undefined,
+         )
+         .orderBy(desc(shopTable.createdAt))
+         .limit(limit)
+         .offset(offset),
+       this.db.client
+         .select({ count: count() })
+         .from(shopTable)
+         .where(
+           status
+             ? eq(shopTable.status, status)
+             : search
+               ? or(
+                   like(shopTable.slug, `%${search}%`),
+                   like(shopTranslationsTable.name, `%${search}%`),
+                   like(shopAddressTable.division, `%${search}%`),
+                 )
+               : undefined,
+         ),
     ]);
 
     const total = totalResult[0]?.count || 0;

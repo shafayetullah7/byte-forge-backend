@@ -34,7 +34,6 @@ export type LocalizedShopDetails = {
   id: string;
   ownerId: string;
   slug: string;
-  address: string | null;
   logoId: string | null;
   bannerId: string | null;
   status: string;

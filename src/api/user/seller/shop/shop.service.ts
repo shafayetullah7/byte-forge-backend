@@ -131,7 +131,6 @@ export class ShopService {
       const shopPayload: TNewShop = {
         ownerId: userId,
         slug,
-        address: payload.address,
         logoId: payload.logoId,
         bannerId: payload.bannerId,
       };
@@ -197,12 +196,7 @@ export class ShopService {
         });
       }
 
-      // 2. Update address if provided
-      if (dto.address) {
-        await this.shopRepository.update(shop.id, { address: dto.address }, tx);
-      }
-
-      // 3. Upsert translations
+      // 2. Upsert translations
       if (dto.translations && dto.translations.length > 0) {
         for (const translation of dto.translations) {
           const payload = {
@@ -447,7 +441,6 @@ export class ShopService {
       id: shop.id,
       ownerId: shop.ownerId,
       slug: shop.slug,
-      address: shop.address,
       logoId: shop.logoId,
       bannerId: shop.bannerId,
       status: shop.status,
