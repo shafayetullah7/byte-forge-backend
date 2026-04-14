@@ -377,14 +377,10 @@ export class ShopService {
     lang: string,
   ) {
     return this.updateShopSection(shopId, lang, async (tx) => {
-      // 1. Upsert main address
+      // 1. Upsert main address (non-translatable fields)
       const address = await this.shopRepository.upsertShopAddress(
         shopId,
         {
-          ...(dto.country !== undefined && { country: dto.country }),
-          ...(dto.division !== undefined && { division: dto.division }),
-          ...(dto.district !== undefined && { district: dto.district }),
-          ...(dto.street !== undefined && { street: dto.street }),
           ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
           ...(dto.latitude !== undefined && {
             // Ensure consistent precision for GPS coordinates (10 decimal places)
@@ -401,7 +397,22 @@ export class ShopService {
         tx,
       );
 
-      // 2. Upsert address translations if provided (for 'bn' locale)
+      // 2. Upsert English translation (country, division, district, street at root level)
+      if (dto.country || dto.division || dto.district || dto.street) {
+        await this.shopRepository.upsertShopAddressTranslation(
+          address.id,
+          {
+            locale: 'en',
+            ...(dto.country !== undefined && { country: dto.country }),
+            ...(dto.division !== undefined && { division: dto.division }),
+            ...(dto.district !== undefined && { district: dto.district }),
+            ...(dto.street !== undefined && { street: dto.street }),
+          },
+          tx,
+        );
+      }
+
+      // 3. Upsert Bengali translation if provided
       if (dto.translations) {
         await this.shopRepository.upsertShopAddressTranslation(
           address.id,
