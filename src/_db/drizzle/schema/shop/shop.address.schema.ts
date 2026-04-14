@@ -19,10 +19,7 @@ export const shopAddressTable = pgTable('shop_address', {
     .unique() // one address per shop
     .references(() => shopTable.id, { onDelete: 'cascade' }),
 
-  country: varchar('country', { length: 100 }).notNull(),
-  division: varchar('division', { length: 100 }).notNull(),
-  district: varchar('district', { length: 100 }).notNull(),
-  street: varchar('street', { length: 255 }).notNull(),
+  // Non-translatable fields (remain in main table)
   postalCode: varchar('postal_code', { length: 20 }).notNull(),
 
   // Google Maps Location

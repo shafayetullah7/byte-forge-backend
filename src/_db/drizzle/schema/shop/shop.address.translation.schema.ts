@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopAddressTable } from './shop.address.schema';
 import { languagesTable } from '../i18n/language.schema';
@@ -6,12 +6,13 @@ import { languagesTable } from '../i18n/language.schema';
 /**
  * Shop Address Translations Table
  *
- * This table stores translated display labels for shop address fields.
- * Following the English-as-Default pattern:
- * - Main table (shop_address) stores English values
- * - This table stores non-English locale translations only
- *
+ * Stores bilingual content (country, division, district, street) for shop addresses.
+ * Each address has one row per locale (en, bn).
+ * 
+ * Pattern: Matches product_translations and shop_translations
+ * 
  * Translatable fields: country, division, district, street
+ * Non-translatable fields (in main table): postalCode, latitude, longitude, googleMapsLink
  */
 export const shopAddressTranslationsTable = pgTable(
   'shop_address_translations',
@@ -24,14 +25,11 @@ export const shopAddressTranslationsTable = pgTable(
       .notNull()
       .references(() => languagesTable.code),
 
-    // Translated address fields
-    // These override the English values from main table for specific locales
-    // Can be null for partial translations - missing fields will fall back to English values
-    // Currently supports 'bn' (Bengali) translations; English values are stored in main table
-    country: varchar('country', { length: 100 }),
-    division: varchar('division', { length: 100 }),
-    district: varchar('district', { length: 100 }),
-    street: varchar('street', { length: 255 }),
+    // ALL translatable fields (required for each locale)
+    country: varchar('country', { length: 100 }).notNull(),
+    division: varchar('division', { length: 100 }).notNull(),
+    district: varchar('district', { length: 100 }).notNull(),
+    street: varchar('street', { length: 255 }).notNull(),
   },
   (t) => [
     unique('shop_address_translations_address_locale_unique').on(

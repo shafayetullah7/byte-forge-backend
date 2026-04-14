@@ -3,7 +3,6 @@ import { DrizzleService } from '../../../_db/drizzle/drizzle.service';
 import {
   shopTable,
   shopTranslationsTable,
-  shopAddressTable,
   shopContactTable,
 } from '../../../_db/drizzle/schema/shop';
 import { shopVerificationHistoryTable } from '../../../_db/drizzle/schema/shop/shop.verification.history.schema';
@@ -19,7 +18,7 @@ export class ShopsService {
   constructor(private readonly db: DrizzleService) {}
 
   async findAll(query: ListShopsDto) {
-    const { status, division, search, page = 1, limit = 20 } = query;
+    const { status, search, page = 1, limit = 20 } = query;
     const offset = (page - 1) * limit;
 
     const [shops, totalResult] = await Promise.all([
@@ -32,8 +31,6 @@ export class ShopsService {
            createdAt: shopTable.createdAt,
            updatedAt: shopTable.updatedAt,
            nameEn: shopTranslationsTable.name,
-           division: shopAddressTable.division,
-           city: shopAddressTable.district,
          })
          .from(shopTable)
          .leftJoin(
@@ -43,7 +40,6 @@ export class ShopsService {
              eq(shopTranslationsTable.locale, 'en'),
            ),
          )
-         .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
          .where(
            status
              ? eq(shopTable.status, status)
@@ -51,7 +47,6 @@ export class ShopsService {
                ? or(
                    like(shopTable.slug, `%${search}%`),
                    like(shopTranslationsTable.name, `%${search}%`),
-                   like(shopAddressTable.division, `%${search}%`),
                  )
                : undefined,
          )
@@ -68,7 +63,6 @@ export class ShopsService {
                ? or(
                    like(shopTable.slug, `%${search}%`),
                    like(shopTranslationsTable.name, `%${search}%`),
-                   like(shopAddressTable.division, `%${search}%`),
                  )
                : undefined,
          ),
@@ -92,14 +86,12 @@ export class ShopsService {
       .select({
         shop: shopTable,
         translations: shopTranslationsTable,
-        address: shopAddressTable,
       })
       .from(shopTable)
       .leftJoin(
         shopTranslationsTable,
         eq(shopTranslationsTable.shopId, shopTable.id),
       )
-      .leftJoin(shopAddressTable, eq(shopAddressTable.shopId, shopTable.id))
       .where(eq(shopTable.id, id))
       .limit(1);
 

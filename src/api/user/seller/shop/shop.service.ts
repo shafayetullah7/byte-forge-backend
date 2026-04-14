@@ -18,6 +18,7 @@ import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
 import { shopContactTable } from '@/_db/drizzle/schema/shop/shop.contact.schema';
 import { shopAddressTable } from '@/_db/drizzle/schema/shop/shop.address.schema';
+import { shopAddressTranslationsTable } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import {
   LocalizedShopDetails,
@@ -405,6 +406,7 @@ export class ShopService {
         await this.shopRepository.upsertShopAddressTranslation(
           address.id,
           {
+            locale: 'bn',
             ...(dto.translations.country !== undefined && {
               country: dto.translations.country,
             }),
@@ -418,7 +420,6 @@ export class ShopService {
               street: dto.translations.street,
             }),
           },
-          'bn', // Always saving translations for Bengali
           tx,
         );
       }
@@ -432,7 +433,9 @@ export class ShopService {
   private mapToLocalizedShopDetails(
     shop: TShopWithBranding & {
       shopContactTable?: typeof shopContactTable.$inferSelect | null;
-      shopAddressTable?: typeof shopAddressTable.$inferSelect | null;
+      shopAddressTable?: (typeof shopAddressTable.$inferSelect & {
+        translations: typeof shopAddressTranslationsTable.$inferSelect[];
+      }) | null;
     },
     lang: string,
   ): LocalizedShopDetails {
@@ -487,15 +490,18 @@ export class ShopService {
         : null,
       address: shop.shopAddressTable
         ? {
-            country: shop.shopAddressTable.country,
-            division: shop.shopAddressTable.division,
-            district: shop.shopAddressTable.district,
-            street: shop.shopAddressTable.street,
             postalCode: shop.shopAddressTable.postalCode,
             latitude: shop.shopAddressTable.latitude,
             longitude: shop.shopAddressTable.longitude,
             googleMapsLink: shop.shopAddressTable.googleMapsLink,
             isVerified: shop.shopAddressTable.isVerified,
+            translations: shop.shopAddressTable.translations?.map((t) => ({
+              locale: t.locale,
+              country: t.country,
+              division: t.division,
+              district: t.district,
+              street: t.street,
+            })) || [],
           }
         : null,
     };

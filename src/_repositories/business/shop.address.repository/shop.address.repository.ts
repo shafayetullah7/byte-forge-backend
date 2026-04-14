@@ -11,9 +11,6 @@ import { DrizzleTx } from '@/_db/drizzle/types';
 export interface ShopAddressQuery {
   id?: string;
   shopId?: string;
-  country?: string;
-  district?: string;
-  division?: string;
   isVerified?: boolean;
 }
 
@@ -28,9 +25,6 @@ export class ShopAddressRepository {
 
     if (q.id) where.push(eq(shopAddressTable.id, q.id));
     if (q.shopId) where.push(eq(shopAddressTable.shopId, q.shopId));
-    if (q.country) where.push(eq(shopAddressTable.country, q.country));
-    if (q.division) where.push(eq(shopAddressTable.division, q.division));
-    if (q.district) where.push(eq(shopAddressTable.district, q.district));
     if (q.isVerified !== undefined)
       where.push(eq(shopAddressTable.isVerified, q.isVerified));
 

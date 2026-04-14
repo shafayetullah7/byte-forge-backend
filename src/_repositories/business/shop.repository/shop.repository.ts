@@ -244,7 +244,11 @@ export class ShopRepository {
         logo: true,
         banner: true,
         shopContactTable: true,
-        shopAddressTable: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
+          },
+        },
       },
     });
   }
@@ -358,10 +362,6 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopAddress,
-        | 'country'
-        | 'division'
-        | 'district'
-        | 'street'
         | 'postalCode'
         | 'latitude'
         | 'longitude'
@@ -375,10 +375,6 @@ export class ShopRepository {
       .insert(shopAddressTable)
       .values({
         shopId,
-        country: payload.country ?? '', // Required field
-        division: payload.division ?? '', // Required field
-        district: payload.district ?? '', // Required field
-        street: payload.street ?? '', // Required field
         postalCode: payload.postalCode ?? '', // Required field
         latitude: payload.latitude ?? null,
         longitude: payload.longitude ?? null,
@@ -387,10 +383,6 @@ export class ShopRepository {
       .onConflictDoUpdate({
         target: [shopAddressTable.shopId],
         set: {
-          ...(payload.country !== undefined && { country: payload.country }),
-          ...(payload.division !== undefined && { division: payload.division }),
-          ...(payload.district !== undefined && { district: payload.district }),
-          ...(payload.street !== undefined && { street: payload.street }),
           ...(payload.postalCode !== undefined && {
             postalCode: payload.postalCode,
           }),
@@ -420,10 +412,9 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopAddressTranslation,
-        'country' | 'division' | 'district' | 'street'
+        'country' | 'division' | 'district' | 'street' | 'locale'
       >
     >,
-    locale: string,
     tx?: DrizzleTx,
   ): Promise<TShopAddressTranslation> {
     const executor = this.db.getExecutor(tx);
@@ -431,11 +422,11 @@ export class ShopRepository {
       .insert(shopAddressTranslationsTable)
       .values({
         addressId,
-        locale,
-        country: payload.country ?? null,
-        division: payload.division ?? null,
-        district: payload.district ?? null,
-        street: payload.street ?? null,
+        locale: payload.locale || 'en',
+        country: payload.country ?? '',
+        division: payload.division ?? '',
+        district: payload.district ?? '',
+        street: payload.street ?? '',
       })
       .onConflictDoUpdate({
         target: [

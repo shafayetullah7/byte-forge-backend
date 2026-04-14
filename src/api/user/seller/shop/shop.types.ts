@@ -2,6 +2,7 @@ import { TMedia, TShop, TShopTranslation } from '@/_db/drizzle/schema';
 import { TShopVerification } from '@/_db/drizzle/schema/shop';
 import { TShopContact } from '@/_db/drizzle/schema/shop/shop.contact.schema';
 import { TShopAddress } from '@/_db/drizzle/schema/shop/shop.address.schema';
+import { TShopAddressTranslation } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
 
 /**
  * Shop with branding relations - matches the return type of getShopByOwnerBranding
@@ -20,7 +21,7 @@ export type TShopWithRelations = TShop & {
   logo: TMedia | null;
   banner: TMedia | null;
   contact: TShopContact | null;
-  address: TShopAddress | null;
+  address: (TShopAddress & { translations: TShopAddressTranslation[] }) | null;
 };
 
 /**
@@ -54,18 +55,26 @@ export type ShopContactDetails = {
 };
 
 /**
+ * Shop address translation
+ */
+export type ShopAddressTranslation = {
+  locale: string;
+  country: string;
+  division: string;
+  district: string;
+  street: string;
+};
+
+/**
  * Shop address with location
  */
 export type ShopAddressDetails = {
-  country: string | null;
-  division: string | null;
-  district: string | null;
-  street: string | null;
   postalCode: string | null;
   latitude: string | null;
   longitude: string | null;
   googleMapsLink: string | null;
   isVerified: boolean;
+  translations: ShopAddressTranslation[];
 };
 
 /**
