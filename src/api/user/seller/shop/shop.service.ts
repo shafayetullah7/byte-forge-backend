@@ -16,6 +16,8 @@ import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
+import { shopContactTable } from '@/_db/drizzle/schema/shop/shop.contact.schema';
+import { shopAddressTable } from '@/_db/drizzle/schema/shop/shop.address.schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import {
   LocalizedShopDetails,
@@ -356,7 +358,7 @@ export class ShopService {
     lang: string,
   ) {
     return this.updateShopSection(shopId, lang, async (tx) => {
-      await this.shopRepository.upsertShopSocialMedia(
+      await this.shopRepository.upsertShopContact(
         shopId,
         {
           ...(dto.facebook !== undefined && { facebook: dto.facebook }),
@@ -428,7 +430,10 @@ export class ShopService {
    * Returns simplified shop details with only translations, logo, and banner
    */
   private mapToLocalizedShopDetails(
-    shop: TShopWithBranding,
+    shop: TShopWithBranding & {
+      shopContactTable?: typeof shopContactTable.$inferSelect | null;
+      shopAddressTable?: typeof shopAddressTable.$inferSelect | null;
+    },
     lang: string,
   ): LocalizedShopDetails {
     const translation = resolveTranslation(shop.translations, lang) as {
@@ -468,6 +473,31 @@ export class ShopService {
           }
         : null,
       translations: shop.translations,
+      contact: shop.shopContactTable
+        ? {
+            businessEmail: shop.shopContactTable.businessEmail,
+            phone: shop.shopContactTable.phone,
+            alternativePhone: shop.shopContactTable.alternativePhone,
+            whatsapp: shop.shopContactTable.whatsapp,
+            telegram: shop.shopContactTable.telegram,
+            facebook: shop.shopContactTable.facebook,
+            instagram: shop.shopContactTable.instagram,
+            x: shop.shopContactTable.x,
+          }
+        : null,
+      address: shop.shopAddressTable
+        ? {
+            country: shop.shopAddressTable.country,
+            division: shop.shopAddressTable.division,
+            district: shop.shopAddressTable.district,
+            street: shop.shopAddressTable.street,
+            postalCode: shop.shopAddressTable.postalCode,
+            latitude: shop.shopAddressTable.latitude,
+            longitude: shop.shopAddressTable.longitude,
+            googleMapsLink: shop.shopAddressTable.googleMapsLink,
+            isVerified: shop.shopAddressTable.isVerified,
+          }
+        : null,
     };
   }
 

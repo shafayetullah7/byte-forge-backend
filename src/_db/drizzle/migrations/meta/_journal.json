@@ -337,6 +337,20 @@
       "when": 1776140174861,
       "tag": "0049_gorgeous_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1776147814697,
+      "tag": "0050_pink_nuke",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1776148922601,
+      "tag": "0051_needy_millenium_guard",
+      "breakpoints": true
     }
   ]
 }

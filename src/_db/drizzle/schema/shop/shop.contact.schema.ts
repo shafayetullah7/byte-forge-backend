@@ -10,11 +10,19 @@ export const shopContactTable = pgTable('shop_contact', {
     .unique() // one contact per shop
     .references(() => shopTable.id, { onDelete: 'cascade' }),
 
+  // Contact Information
   businessEmail: varchar('business_email', { length: 255 }).notNull(),
   phone: varchar('phone', { length: 20 }).notNull(),
   alternativePhone: varchar('alternative_phone', { length: 20 }),
+  
+  // Messaging Apps
   whatsapp: varchar('whatsapp', { length: 20 }),
   telegram: varchar('telegram', { length: 50 }),
+  
+  // Social Media
+  facebook: varchar('facebook', { length: 255 }),
+  instagram: varchar('instagram', { length: 255 }),
+  x: varchar('x', { length: 255 }), // Twitter/X handle
 
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
     .defaultNow()

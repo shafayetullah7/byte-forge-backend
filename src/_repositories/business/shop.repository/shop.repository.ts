@@ -8,7 +8,6 @@ import {
   shopBusinessTable,
   shopContactTable,
   shopManagerTable,
-  shopSocialMediaTable,
   shopTable,
   shopTranslationsTable,
   shopVerificationTable,
@@ -18,7 +17,6 @@ import {
   TNewShopBusiness,
   TNewShopContact,
   TNewShopManager,
-  TNewShopSocialMedia,
   TNewShopTranslation,
   TNewShopVerification,
   TShop,
@@ -27,8 +25,8 @@ import {
   TShopBusiness,
   TShopContact,
   TShopManager,
-  TShopSocialMedia,
   TShopTranslation,
+  TShopVerification,
 } from '@/_db/drizzle/schema/shop';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
@@ -48,7 +46,6 @@ export class ShopRepository {
           banner: true,
           shopAddressTable: true,
           shopContactTable: true,
-          shopSocialMediaTable: true,
         },
       })
       .execute();
@@ -130,21 +127,6 @@ export class ShopRepository {
       .execute();
 
     return shopManager;
-  }
-
-  async createShopSocialMedia(
-    payload: TNewShopSocialMedia,
-    tx?: DrizzleTx,
-  ): Promise<TShopSocialMedia> {
-    const executor = this.db.getExecutor(tx);
-
-    const [shopSocialMedia] = await executor
-      .insert(shopSocialMediaTable)
-      .values(payload)
-      .returning()
-      .execute();
-
-    return shopSocialMedia;
   }
 
   async createShopTranslation(
@@ -248,7 +230,6 @@ export class ShopRepository {
           },
         },
         shopContactTable: true,
-        shopSocialMediaTable: true,
         shopBusinessTable: true,
         shopVerificationTable: true,
       },
@@ -262,6 +243,8 @@ export class ShopRepository {
         translations: true,
         logo: true,
         banner: true,
+        shopContactTable: true,
+        shopAddressTable: true,
       },
     });
   }
@@ -288,7 +271,6 @@ export class ShopRepository {
           },
         },
         shopContactTable: true,
-        shopSocialMediaTable: true,
         shopBusinessTable: true,
         shopVerificationTable: true,
       },
@@ -321,7 +303,14 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopContact,
-        'businessEmail' | 'phone' | 'alternativePhone' | 'whatsapp' | 'telegram'
+        | 'businessEmail'
+        | 'phone'
+        | 'alternativePhone'
+        | 'whatsapp'
+        | 'telegram'
+        | 'facebook'
+        | 'instagram'
+        | 'x'
       >
     >,
     tx?: DrizzleTx,
@@ -336,6 +325,9 @@ export class ShopRepository {
         alternativePhone: payload.alternativePhone ?? null,
         whatsapp: payload.whatsapp ?? null,
         telegram: payload.telegram ?? null,
+        facebook: payload.facebook ?? null,
+        instagram: payload.instagram ?? null,
+        x: payload.x ?? null,
       })
       .onConflictDoUpdate({
         target: [shopContactTable.shopId],
@@ -349,30 +341,6 @@ export class ShopRepository {
           }),
           ...(payload.whatsapp !== undefined && { whatsapp: payload.whatsapp }),
           ...(payload.telegram !== undefined && { telegram: payload.telegram }),
-        },
-      })
-      .returning()
-      .execute();
-    return contact;
-  }
-
-  async upsertShopSocialMedia(
-    shopId: string,
-    payload: Partial<Pick<TNewShopSocialMedia, 'facebook' | 'instagram' | 'x'>>,
-    tx?: DrizzleTx,
-  ): Promise<TShopSocialMedia> {
-    const executor = this.db.getExecutor(tx);
-    const [socialMedia] = await executor
-      .insert(shopSocialMediaTable)
-      .values({
-        shopId,
-        facebook: payload.facebook ?? null,
-        instagram: payload.instagram ?? null,
-        x: payload.x ?? null,
-      })
-      .onConflictDoUpdate({
-        target: [shopSocialMediaTable.shopId],
-        set: {
           ...(payload.facebook !== undefined && { facebook: payload.facebook }),
           ...(payload.instagram !== undefined && {
             instagram: payload.instagram,
@@ -382,7 +350,7 @@ export class ShopRepository {
       })
       .returning()
       .execute();
-    return socialMedia;
+    return contact;
   }
 
   async upsertShopAddress(

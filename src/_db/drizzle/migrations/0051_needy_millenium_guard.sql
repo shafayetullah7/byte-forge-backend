@@ -1,0 +1,1 @@
+DROP TABLE "shop_social_media" CASCADE;
