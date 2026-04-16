@@ -258,6 +258,7 @@ export class ShopRepository {
       where: eq(shopTable.ownerId, ownerId),
       with: {
         translations: true,
+        shopVerificationTable: true,
       },
     });
   }

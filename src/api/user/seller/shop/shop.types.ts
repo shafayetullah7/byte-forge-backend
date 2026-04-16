@@ -128,4 +128,5 @@ export type ShopStatus = {
   slug: string;
   status: string;
   hasTranslations: boolean;
+  rejectionReason: string | null;
 };

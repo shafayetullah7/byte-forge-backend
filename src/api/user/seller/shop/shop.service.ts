@@ -180,6 +180,7 @@ export class ShopService {
       slug: data.slug,
       status: data.status,
       hasTranslations: data.translations?.length > 0,
+      rejectionReason: data.shopVerificationTable?.rejectionReason ?? null,
     };
   }
 
@@ -378,58 +379,61 @@ export class ShopService {
   ) {
     return this.updateShopSection(shopId, lang, async (tx) => {
       // 1. Upsert main address (non-translatable fields)
+      const addressPayload: Partial<typeof shopAddressTable.$inferInsert> = {};
+      
+      if (dto.postalCode !== undefined) {
+        addressPayload.postalCode = dto.postalCode;
+      }
+      
+      if (dto.latitude !== undefined && dto.latitude !== '') {
+        // Convert string to decimal with 10 decimal places precision
+        const lat = parseFloat(dto.latitude);
+        if (!isNaN(lat)) {
+          addressPayload.latitude = lat.toFixed(10);
+        }
+      }
+      
+      if (dto.longitude !== undefined && dto.longitude !== '') {
+        const lng = parseFloat(dto.longitude);
+        if (!isNaN(lng)) {
+          addressPayload.longitude = lng.toFixed(10);
+        }
+      }
+      
+      if (dto.googleMapsLink !== undefined) {
+        addressPayload.googleMapsLink = dto.googleMapsLink;
+      }
+
       const address = await this.shopRepository.upsertShopAddress(
         shopId,
-        {
-          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
-          ...(dto.latitude !== undefined && {
-            // Ensure consistent precision for GPS coordinates (10 decimal places)
-            latitude: dto.latitude.toFixed(10),
-          }),
-          ...(dto.longitude !== undefined && {
-            // Ensure consistent precision for GPS coordinates (10 decimal places)
-            longitude: dto.longitude.toFixed(10),
-          }),
-          ...(dto.googleMapsLink !== undefined && {
-            googleMapsLink: dto.googleMapsLink,
-          }),
-        },
+        addressPayload,
         tx,
       );
 
-      // 2. Upsert English translation (country, division, district, street at root level)
-      if (dto.country || dto.division || dto.district || dto.street) {
+      // 2. Upsert translations (both languages)
+      if (dto.translations) {
+        // Upsert English translation
         await this.shopRepository.upsertShopAddressTranslation(
           address.id,
           {
             locale: 'en',
-            ...(dto.country !== undefined && { country: dto.country }),
-            ...(dto.division !== undefined && { division: dto.division }),
-            ...(dto.district !== undefined && { district: dto.district }),
-            ...(dto.street !== undefined && { street: dto.street }),
+            country: dto.translations.en.country,
+            division: dto.translations.en.division,
+            district: dto.translations.en.district,
+            street: dto.translations.en.street,
           },
           tx,
         );
-      }
 
-      // 3. Upsert Bengali translation if provided
-      if (dto.translations) {
+        // Upsert Bengali translation
         await this.shopRepository.upsertShopAddressTranslation(
           address.id,
           {
             locale: 'bn',
-            ...(dto.translations.country !== undefined && {
-              country: dto.translations.country,
-            }),
-            ...(dto.translations.division !== undefined && {
-              division: dto.translations.division,
-            }),
-            ...(dto.translations.district !== undefined && {
-              district: dto.translations.district,
-            }),
-            ...(dto.translations.street !== undefined && {
-              street: dto.translations.street,
-            }),
+            country: dto.translations.bn.country,
+            division: dto.translations.bn.division,
+            district: dto.translations.bn.district,
+            street: dto.translations.bn.street,
           },
           tx,
         );
