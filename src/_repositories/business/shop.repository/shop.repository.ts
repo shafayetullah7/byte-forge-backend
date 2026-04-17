@@ -325,8 +325,8 @@ export class ShopRepository {
       .insert(shopContactTable)
       .values({
         shopId,
-        businessEmail: payload.businessEmail ?? '', // Default to empty string for required field
-        phone: payload.phone ?? '', // Default to empty string for required field
+        businessEmail: payload.businessEmail ?? null,
+        phone: payload.phone ?? null,
         alternativePhone: payload.alternativePhone ?? null,
         whatsapp: payload.whatsapp ?? null,
         telegram: payload.telegram ?? null,

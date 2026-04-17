@@ -11,8 +11,8 @@ export const shopContactTable = pgTable('shop_contact', {
     .references(() => shopTable.id, { onDelete: 'cascade' }),
 
   // Contact Information
-  businessEmail: varchar('business_email', { length: 255 }).notNull(),
-  phone: varchar('phone', { length: 20 }).notNull(),
+  businessEmail: varchar('business_email', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
   alternativePhone: varchar('alternative_phone', { length: 20 }),
   
   // Messaging Apps
