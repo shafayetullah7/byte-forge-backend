@@ -24,6 +24,7 @@ import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { UpdateShopInfoDto } from './dto/update-shop-info.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
@@ -191,6 +192,32 @@ export class ShopController {
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.brandingUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ 
+    summary: 'Update shop info (branding + translations)',
+    description: 'Updates shop branding (logo, banner, colors) and bilingual translations (name, description, business hours). Handles media usage counting automatically.'
+  })
+  @ApiResponse({ status: 200, description: 'Shop info updated' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @Put('my-shop')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async upsertMyShopInfo(
+    @Body() dto: UpdateShopInfoDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.upsertMyShopInfo(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopUpdated', { lang }),
       data: updatedShop,
     });
   }

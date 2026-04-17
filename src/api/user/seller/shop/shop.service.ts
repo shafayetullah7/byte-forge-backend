@@ -12,9 +12,9 @@ import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
-import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { UpdateShopInfoDto } from './dto/update-shop-info.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
 import { shopContactTable } from '@/_db/drizzle/schema/shop/shop.contact.schema';
 import { shopAddressTable } from '@/_db/drizzle/schema/shop/shop.address.schema';
@@ -428,6 +428,167 @@ export class ShopService {
           tx,
         );
       }
+    });
+  }
+
+  /**
+   * Update shop info (branding + translations) with media counting
+   * Handles logo/banner upload count increment/decrement
+   */
+  async upsertMyShopInfo(
+    shopId: string,
+    dto: UpdateShopInfoDto,
+    lang: string,
+  ) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and lock shop data
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Collect all media IDs to validate (new logo + new banner)
+      const newMediaIds: string[] = [];
+      if (dto.branding?.logoId) newMediaIds.push(dto.branding.logoId);
+      if (dto.branding?.bannerId) newMediaIds.push(dto.branding.bannerId);
+
+      // 3. Validate media existence and ownership (if new media provided)
+      if (newMediaIds.length > 0) {
+        // Check media exists
+        const existenceCheck = await this.mediaRepository.checkMediaExistence(
+          newMediaIds,
+          tx,
+        );
+        if (!existenceCheck.valid) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotFound', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.VALIDATION_ERROR,
+            validationErrors: existenceCheck.invalidIds.map((id) => ({
+              field: 'logoId/bannerId',
+              message: `Media ID ${id} does not exist`,
+              code: 'invalid_media',
+            })),
+          });
+        }
+
+        // Check media ownership
+        const isOwner = await this.mediaRepository.verifyMediaOwnership(
+          newMediaIds,
+          shop.ownerId,
+          tx,
+        );
+        if (!isOwner) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotOwned', { lang }),
+            statusCode: HttpStatus.FORBIDDEN,
+            errorCode: ErrorCode.FORBIDDEN,
+          });
+        }
+      }
+
+      // 4. Check slug uniqueness (if changed)
+      if (dto.slug && dto.slug !== shop.slug) {
+        const existingShop = await this.shopRepository.getShopBySlug(dto.slug);
+        if (existingShop && existingShop.id !== shop.id) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.shopNameTaken', { lang }),
+            statusCode: HttpStatus.CONFLICT,
+            errorCode: ErrorCode.CONFLICT,
+          });
+        }
+      }
+
+      // 5. Handle media counting for logo (including removal)
+      if (dto.branding) {
+        const newLogoId = dto.branding.logoId ?? null;
+        
+        if (newLogoId !== shop.logoId) {
+          // Decrement old logo count
+          if (shop.logoId) {
+            await this.mediaRepository.decrementMediaUsage([shop.logoId], tx);
+          }
+          // Increment new logo count (if provided)
+          if (newLogoId) {
+            await this.mediaRepository.incrementMediaUsage([newLogoId], tx);
+          }
+        }
+      }
+
+      // 6. Handle media counting for banner (including removal)
+      if (dto.branding) {
+        const newBannerId = dto.branding.bannerId ?? null;
+        
+        if (newBannerId !== shop.bannerId) {
+          // Decrement old banner count
+          if (shop.bannerId) {
+            await this.mediaRepository.decrementMediaUsage([shop.bannerId], tx);
+          }
+          // Increment new banner count (if provided)
+          if (newBannerId) {
+            await this.mediaRepository.incrementMediaUsage([newBannerId], tx);
+          }
+        }
+      }
+
+      // 7. Update shop table (branding + slug)
+      if (dto.branding || dto.slug) {
+        await this.shopRepository.update(
+          shopId,
+          {
+            ...(dto.slug && { slug: dto.slug }),
+            ...(dto.branding && { 
+              logoId: dto.branding.logoId ?? null,
+              bannerId: dto.branding.bannerId ?? null,
+              primaryColor: dto.branding.primaryColor,
+              secondaryColor: dto.branding.secondaryColor,
+              accentColor: dto.branding.accentColor,
+            }),
+          },
+          tx,
+        );
+      }
+
+      // 8. Upsert translations (both languages)
+      if (dto.translations) {
+        // Upsert English translation
+        await this.shopRepository.upsertShopTranslation(
+          {
+            shopId,
+            locale: 'en',
+            name: dto.translations.en.name,
+            description: dto.translations.en.description || null,
+            businessHours: dto.translations.en.businessHours || null,
+          },
+          tx,
+        );
+
+        // Upsert Bengali translation
+        await this.shopRepository.upsertShopTranslation(
+          {
+            shopId,
+            locale: 'bn',
+            name: dto.translations.bn.name,
+            description: dto.translations.bn.description || null,
+            businessHours: dto.translations.bn.businessHours || null,
+          },
+          tx,
+        );
+      }
+
+      // 9. Return updated shop with full data
+      const updatedShop = await this.shopRepository.getShopByOwnerWithRelations(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
     });
   }
 
