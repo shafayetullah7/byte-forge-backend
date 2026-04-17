@@ -404,9 +404,11 @@ export class ShopService {
         addressPayload.googleMapsLink = dto.googleMapsLink;
       }
 
+      // If only translations are provided (no non-translatable fields),
+      // we still need to upsert the address record with minimal data
       const address = await this.shopRepository.upsertShopAddress(
         shopId,
-        addressPayload,
+        Object.keys(addressPayload).length > 0 ? addressPayload : { postalCode: '' },
         tx,
       );
 
