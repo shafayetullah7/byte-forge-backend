@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -21,7 +22,6 @@ import { ApplySellerDto } from './dto/apply.seller.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
-import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
@@ -196,47 +196,27 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ summary: 'Update shop contact information' })
-  @ApiResponse({ status: 200, description: 'Contact info updated' })
+  @ApiOperation({ 
+    summary: 'Upsert shop contact information (contact + social media)',
+    description: 'Updates or inserts shop contact information including email, phone, messaging apps, and social media links. Partial updates supported - only provided fields will be updated.'
+  })
+  @ApiResponse({ status: 200, description: 'Contact info upserted' })
   @ApiBadRequestResponse()
   @ApiUnauthorizedResponse()
-  @Patch('my-shop/contact')
+  @Put('my-shop/contact')
   @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
-  async updateMyShopContact(
+  async upsertMyShopContact(
     @Body() dto: UpdateShopContactDto,
     @AuthenticShop() shop: TAuthorizedShop,
     @I18nLang() lang: string,
   ): Promise<SuccessResponse<any>> {
-    const updatedShop = await this.shopService.updateMyShopContact(
+    const updatedShop = await this.shopService.upsertMyShopContact(
       shop.id,
       dto,
       lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.contactUpdated', { lang }),
-      data: updatedShop,
-    });
-  }
-
-  @ApiAuth()
-  @ApiOperation({ summary: 'Update shop social media links' })
-  @ApiResponse({ status: 200, description: 'Social media links updated' })
-  @ApiBadRequestResponse()
-  @ApiUnauthorizedResponse()
-  @Patch('my-shop/social-media')
-  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
-  async updateMyShopSocialMedia(
-    @Body() dto: UpdateShopSocialMediaDto,
-    @AuthenticShop() shop: TAuthorizedShop,
-    @I18nLang() lang: string,
-  ): Promise<SuccessResponse<any>> {
-    const updatedShop = await this.shopService.updateMyShopSocialMedia(
-      shop.id,
-      dto,
-      lang,
-    );
-    return this.responseService.success({
-      message: this.i18n.t('message.success.socialMediaUpdated', { lang }),
       data: updatedShop,
     });
   }

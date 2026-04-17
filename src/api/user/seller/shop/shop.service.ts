@@ -330,7 +330,7 @@ export class ShopService {
     });
   }
 
-  async updateMyShopContact(
+  async upsertMyShopContact(
     shopId: string,
     dto: UpdateShopContactDto,
     lang: string,
@@ -339,6 +339,7 @@ export class ShopService {
       await this.shopRepository.upsertShopContact(
         shopId,
         {
+          // Contact Information
           ...(dto.businessEmail !== undefined && {
             businessEmail: dto.businessEmail,
           }),
@@ -348,21 +349,8 @@ export class ShopService {
           }),
           ...(dto.whatsapp !== undefined && { whatsapp: dto.whatsapp }),
           ...(dto.telegram !== undefined && { telegram: dto.telegram }),
-        },
-        tx,
-      );
-    });
-  }
-
-  async updateMyShopSocialMedia(
-    shopId: string,
-    dto: UpdateShopSocialMediaDto,
-    lang: string,
-  ) {
-    return this.updateShopSection(shopId, lang, async (tx) => {
-      await this.shopRepository.upsertShopContact(
-        shopId,
-        {
+          
+          // Social Media
           ...(dto.facebook !== undefined && { facebook: dto.facebook }),
           ...(dto.instagram !== undefined && { instagram: dto.instagram }),
           ...(dto.x !== undefined && { x: dto.x }),

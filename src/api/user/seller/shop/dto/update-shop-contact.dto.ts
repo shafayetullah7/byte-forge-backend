@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 export const updateShopContactSchema = z
   .object({
+    // Contact Information
     businessEmail: z
       .email({ message: 'message.validation.invalidEmail' })
       .max(255, { message: 'message.validation.maxLength' })
@@ -24,6 +25,23 @@ export const updateShopContactSchema = z
     telegram: z
       .string()
       .max(50, { message: 'message.validation.maxLength' })
+      .optional(),
+    
+    // Social Media
+    facebook: z
+      .string()
+      .url({ message: 'message.validation.invalidUrl' })
+      .max(255, { message: 'message.validation.maxLength' })
+      .optional(),
+    instagram: z
+      .string()
+      .url({ message: 'message.validation.invalidUrl' })
+      .max(255, { message: 'message.validation.maxLength' })
+      .optional(),
+    x: z
+      .string()
+      .url({ message: 'message.validation.invalidUrl' })
+      .max(255, { message: 'message.validation.maxLength' })
       .optional(),
   })
   .refine((data) => Object.values(data).some((val) => val !== undefined), {
