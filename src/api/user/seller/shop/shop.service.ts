@@ -507,8 +507,8 @@ export class ShopService {
         }
       }
 
-      // 5. Handle media counting for logo (including removal)
-      if (dto.branding) {
+      // 5. Handle media counting for logo (only if logoId is explicitly provided)
+      if (dto.branding && dto.branding.logoId !== undefined) {
         const newLogoId = dto.branding.logoId ?? null;
         
         if (newLogoId !== shop.logoId) {
@@ -523,8 +523,8 @@ export class ShopService {
         }
       }
 
-      // 6. Handle media counting for banner (including removal)
-      if (dto.branding) {
+      // 6. Handle media counting for banner (only if bannerId is explicitly provided)
+      if (dto.branding && dto.branding.bannerId !== undefined) {
         const newBannerId = dto.branding.bannerId ?? null;
         
         if (newBannerId !== shop.bannerId) {
@@ -539,22 +539,32 @@ export class ShopService {
         }
       }
 
-      // 7. Update shop table (branding + slug)
+      // 7. Update shop table (branding + slug) - only update fields that are provided
       if (dto.branding || dto.slug) {
-        await this.shopRepository.update(
-          shopId,
-          {
-            ...(dto.slug && { slug: dto.slug }),
-            ...(dto.branding && { 
-              logoId: dto.branding.logoId ?? null,
-              bannerId: dto.branding.bannerId ?? null,
-              primaryColor: dto.branding.primaryColor,
-              secondaryColor: dto.branding.secondaryColor,
-              accentColor: dto.branding.accentColor,
-            }),
-          },
-          tx,
-        );
+        const updatePayload: any = {
+          ...(dto.slug && { slug: dto.slug }),
+        };
+        
+        // Only update branding fields that are explicitly provided
+        if (dto.branding) {
+          if (dto.branding.logoId !== undefined) {
+            updatePayload.logoId = dto.branding.logoId ?? null;
+          }
+          if (dto.branding.bannerId !== undefined) {
+            updatePayload.bannerId = dto.branding.bannerId ?? null;
+          }
+          if (dto.branding.primaryColor !== undefined) {
+            updatePayload.primaryColor = dto.branding.primaryColor;
+          }
+          if (dto.branding.secondaryColor !== undefined) {
+            updatePayload.secondaryColor = dto.branding.secondaryColor;
+          }
+          if (dto.branding.accentColor !== undefined) {
+            updatePayload.accentColor = dto.branding.accentColor;
+          }
+        }
+        
+        await this.shopRepository.update(shopId, updatePayload, tx);
       }
 
       // 8. Upsert translations (both languages)
