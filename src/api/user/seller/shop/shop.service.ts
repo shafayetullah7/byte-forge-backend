@@ -147,6 +147,15 @@ export class ShopService {
       }));
       await this.shopRepository.createShopTranslations(translationPayloads, tx);
 
+      // 6. Create Verification Record (auto-created with PENDING status)
+      await this.shopVerificationRepository.create(
+        {
+          shopId: shop.id,
+          status: ShopVerificationStatusEnum.PENDING,
+        },
+        tx,
+      );
+
       return shop;
     });
   }
@@ -783,16 +792,19 @@ export class ShopService {
         await this.mediaRepository.incrementMediaUsage(mediaIds, tx);
       }
 
-      // 3. Get existing verification record
-      const existingVerification =
+      // 3. Get or create verification record
+      let existingVerification =
         await this.shopVerificationRepository.findOne({ shopId });
 
+      // If verification record doesn't exist, create it (safety net for existing shops)
       if (!existingVerification) {
-        throw new CustomException({
-          message: this.i18n.t('message.error.verificationNotFound', { lang }),
-          statusCode: HttpStatus.NOT_FOUND,
-          errorCode: ErrorCode.NOT_FOUND,
-        });
+        existingVerification = await this.shopVerificationRepository.create(
+          {
+            shopId,
+            status: ShopVerificationStatusEnum.PENDING,
+          },
+          tx,
+        );
       }
 
       // 4. Update verification record

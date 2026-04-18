@@ -7,9 +7,14 @@ import type { Request } from 'express';
  */
 export function getClientIp(req: Request): string {
   const xForwardedFor = req.headers['x-forwarded-for'];
-  const ipFromHeader = Array.isArray(xForwardedFor)
-    ? xForwardedFor[0]
-    : xForwardedFor?.split(',')[0];
+  
+  // Handle different types of x-forwarded-for header
+  let ipFromHeader: string | undefined;
+  if (Array.isArray(xForwardedFor)) {
+    ipFromHeader = xForwardedFor[0];
+  } else if (typeof xForwardedFor === 'string') {
+    ipFromHeader = xForwardedFor.split(',')[0];
+  }
 
   const ip =
     ipFromHeader?.trim() ||

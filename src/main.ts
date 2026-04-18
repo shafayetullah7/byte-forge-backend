@@ -23,11 +23,17 @@ async function bootstrap() {
   process.on('unhandledRejection', (reason, promise) => {
     const logger = app.get(AppLoggerService);
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    if (reason instanceof Error) {
+      logger.error('Stack trace:', reason.stack);
+    }
   });
 
   process.on('uncaughtException', (error) => {
     const logger = app.get(AppLoggerService);
     logger.error('Uncaught Exception thrown:', error);
+    if (error instanceof Error) {
+      logger.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   });
 

@@ -33,9 +33,8 @@ import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-
 import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
-
-import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { JwtModule } from '@nestjs/jwt';
+import * as morgan from 'morgan';
 
 @Module({
   imports: [
@@ -104,6 +103,19 @@ import { JwtModule } from '@nestjs/jwt';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*path');
+    // Use morgan for HTTP request logging (only errors)
+    consumer.apply((req, res, next) => {
+      // Only log error responses (4xx, 5xx)
+      const originalSend = res.send;
+      const originalJson = res.json;
+      
+      res.on('finish', () => {
+        if (res.statusCode >= 400) {
+          console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode}`);
+        }
+      });
+      
+      next();
+    }).forRoutes('*path');
   }
 }
