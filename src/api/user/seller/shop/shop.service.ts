@@ -12,10 +12,13 @@ import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
-import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { UpdateShopInfoDto } from './dto/update-shop-info.dto';
 import { TNewShopTranslation } from '@/_db/drizzle/schema/shop';
+import { shopContactTable } from '@/_db/drizzle/schema/shop/shop.contact.schema';
+import { shopAddressTable } from '@/_db/drizzle/schema/shop/shop.address.schema';
+import { shopAddressTranslationsTable } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import {
   LocalizedShopDetails,
@@ -66,7 +69,7 @@ export class ShopService {
 
       const shopWithName =
         await this.shopRepository.findShopByNameInTranslations(
-          englishTranslation.shopName,
+          englishTranslation.name,
           { tx, lock: true },
         );
 
@@ -82,11 +85,6 @@ export class ShopService {
       const mediaIds: string[] = [];
       if (payload.logoId) mediaIds.push(payload.logoId);
       if (payload.bannerId) mediaIds.push(payload.bannerId);
-      if (payload.tradeLicenseDocumentId)
-        mediaIds.push(payload.tradeLicenseDocumentId);
-      if (payload.tinDocumentId) mediaIds.push(payload.tinDocumentId);
-      if (payload.utilityBillDocumentId)
-        mediaIds.push(payload.utilityBillDocumentId);
 
       if (mediaIds.length > 0) {
         const medias = await this.mediaRepository.findMediaDetailsByIds(
@@ -116,8 +114,7 @@ export class ShopService {
 
       // 4. Create Shop
       // Use provided slug or generate from English shop name
-      const slug =
-        payload.slug || this.generateSlug(englishTranslation.shopName);
+      const slug = payload.slug || this.generateSlug(englishTranslation.name);
 
       // Validate slug uniqueness if provided
       if (payload.slug) {
@@ -137,7 +134,6 @@ export class ShopService {
       const shopPayload: TNewShop = {
         ownerId: userId,
         slug,
-        address: payload.address,
         logoId: payload.logoId,
         bannerId: payload.bannerId,
       };
@@ -150,19 +146,6 @@ export class ShopService {
         shopId: shop.id,
       }));
       await this.shopRepository.createShopTranslations(translationPayloads, tx);
-
-      // 6. Create Verification Record
-      const verificationPayload: TNewShopVerification = {
-        shopId: shop.id,
-        tradeLicenseNumber: payload.tradeLicenseNumber,
-        tradeLicenseDocument: payload.tradeLicenseDocumentId,
-        tinNumber: payload.tinNumber,
-        tinDocument: payload.tinDocumentId,
-        utilityBillDocument: payload.utilityBillDocumentId,
-        status: ShopVerificationStatusEnum.PENDING,
-      };
-
-      await this.shopRepository.createShopVerification(verificationPayload, tx);
 
       return shop;
     });
@@ -197,6 +180,7 @@ export class ShopService {
       slug: data.slug,
       status: data.status,
       hasTranslations: data.translations?.length > 0,
+      rejectionReason: data.shopVerificationTable?.rejectionReason ?? null,
     };
   }
 
@@ -216,12 +200,7 @@ export class ShopService {
         });
       }
 
-      // 2. Update address if provided
-      if (dto.address) {
-        await this.shopRepository.update(shop.id, { address: dto.address }, tx);
-      }
-
-      // 3. Upsert translations
+      // 2. Upsert translations
       if (dto.translations && dto.translations.length > 0) {
         for (const translation of dto.translations) {
           const payload = {
@@ -351,7 +330,7 @@ export class ShopService {
     });
   }
 
-  async updateMyShopContact(
+  async upsertMyShopContact(
     shopId: string,
     dto: UpdateShopContactDto,
     lang: string,
@@ -360,6 +339,7 @@ export class ShopService {
       await this.shopRepository.upsertShopContact(
         shopId,
         {
+          // Contact Information
           ...(dto.businessEmail !== undefined && {
             businessEmail: dto.businessEmail,
           }),
@@ -369,21 +349,8 @@ export class ShopService {
           }),
           ...(dto.whatsapp !== undefined && { whatsapp: dto.whatsapp }),
           ...(dto.telegram !== undefined && { telegram: dto.telegram }),
-        },
-        tx,
-      );
-    });
-  }
-
-  async updateMyShopSocialMedia(
-    shopId: string,
-    dto: UpdateShopSocialMediaDto,
-    lang: string,
-  ) {
-    return this.updateShopSection(shopId, lang, async (tx) => {
-      await this.shopRepository.upsertShopSocialMedia(
-        shopId,
-        {
+          
+          // Social Media
           ...(dto.facebook !== undefined && { facebook: dto.facebook }),
           ...(dto.instagram !== undefined && { instagram: dto.instagram }),
           ...(dto.x !== undefined && { x: dto.x }),
@@ -399,52 +366,239 @@ export class ShopService {
     lang: string,
   ) {
     return this.updateShopSection(shopId, lang, async (tx) => {
-      // 1. Upsert main address
+      // 1. Upsert main address (non-translatable fields)
+      const addressPayload: Partial<typeof shopAddressTable.$inferInsert> = {};
+      
+      if (dto.postalCode !== undefined) {
+        addressPayload.postalCode = dto.postalCode;
+      }
+      
+      if (dto.latitude !== undefined && dto.latitude !== '') {
+        // Convert string to decimal with 10 decimal places precision
+        const lat = parseFloat(dto.latitude);
+        if (!isNaN(lat)) {
+          addressPayload.latitude = lat.toFixed(10);
+        }
+      }
+      
+      if (dto.longitude !== undefined && dto.longitude !== '') {
+        const lng = parseFloat(dto.longitude);
+        if (!isNaN(lng)) {
+          addressPayload.longitude = lng.toFixed(10);
+        }
+      }
+      
+      if (dto.googleMapsLink !== undefined) {
+        addressPayload.googleMapsLink = dto.googleMapsLink;
+      }
+
+      // If only translations are provided (no non-translatable fields),
+      // we still need to upsert the address record with minimal data
       const address = await this.shopRepository.upsertShopAddress(
         shopId,
-        {
-          ...(dto.country !== undefined && { country: dto.country }),
-          ...(dto.division !== undefined && { division: dto.division }),
-          ...(dto.district !== undefined && { district: dto.district }),
-          ...(dto.street !== undefined && { street: dto.street }),
-          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
-          ...(dto.latitude !== undefined && {
-            // Ensure consistent precision for GPS coordinates (10 decimal places)
-            latitude: dto.latitude.toFixed(10),
-          }),
-          ...(dto.longitude !== undefined && {
-            // Ensure consistent precision for GPS coordinates (10 decimal places)
-            longitude: dto.longitude.toFixed(10),
-          }),
-          ...(dto.googleMapsLink !== undefined && {
-            googleMapsLink: dto.googleMapsLink,
-          }),
-        },
+        Object.keys(addressPayload).length > 0 ? addressPayload : { postalCode: '' },
         tx,
       );
 
-      // 2. Upsert address translations if provided (for 'bn' locale)
+      // 2. Upsert translations (both languages)
       if (dto.translations) {
+        // Upsert English translation
         await this.shopRepository.upsertShopAddressTranslation(
           address.id,
           {
-            ...(dto.translations.country !== undefined && {
-              country: dto.translations.country,
-            }),
-            ...(dto.translations.division !== undefined && {
-              division: dto.translations.division,
-            }),
-            ...(dto.translations.district !== undefined && {
-              district: dto.translations.district,
-            }),
-            ...(dto.translations.street !== undefined && {
-              street: dto.translations.street,
-            }),
+            locale: 'en',
+            country: dto.translations.en.country,
+            division: dto.translations.en.division,
+            district: dto.translations.en.district,
+            street: dto.translations.en.street,
           },
-          'bn', // Always saving translations for Bengali
+          tx,
+        );
+
+        // Upsert Bengali translation
+        await this.shopRepository.upsertShopAddressTranslation(
+          address.id,
+          {
+            locale: 'bn',
+            country: dto.translations.bn.country,
+            division: dto.translations.bn.division,
+            district: dto.translations.bn.district,
+            street: dto.translations.bn.street,
+          },
           tx,
         );
       }
+    });
+  }
+
+  /**
+   * Update shop info (branding + translations) with media counting
+   * Handles logo/banner upload count increment/decrement
+   */
+  async upsertMyShopInfo(
+    shopId: string,
+    dto: UpdateShopInfoDto,
+    lang: string,
+  ) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and lock shop data
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Collect all media IDs to validate (new logo + new banner)
+      const newMediaIds: string[] = [];
+      if (dto.branding?.logoId) newMediaIds.push(dto.branding.logoId);
+      if (dto.branding?.bannerId) newMediaIds.push(dto.branding.bannerId);
+
+      // 3. Validate media existence and ownership (if new media provided)
+      if (newMediaIds.length > 0) {
+        // Check media exists
+        const existenceCheck = await this.mediaRepository.checkMediaExistence(
+          newMediaIds,
+          tx,
+        );
+        if (!existenceCheck.valid) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotFound', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.VALIDATION_ERROR,
+            validationErrors: existenceCheck.invalidIds.map((id) => ({
+              field: 'logoId/bannerId',
+              message: `Media ID ${id} does not exist`,
+              code: 'invalid_media',
+            })),
+          });
+        }
+
+        // Check media ownership
+        const isOwner = await this.mediaRepository.verifyMediaOwnership(
+          newMediaIds,
+          shop.ownerId,
+          tx,
+        );
+        if (!isOwner) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.mediaNotOwned', { lang }),
+            statusCode: HttpStatus.FORBIDDEN,
+            errorCode: ErrorCode.FORBIDDEN,
+          });
+        }
+      }
+
+      // 4. Check slug uniqueness (if changed)
+      if (dto.slug && dto.slug !== shop.slug) {
+        const existingShop = await this.shopRepository.getShopBySlug(dto.slug);
+        if (existingShop && existingShop.id !== shop.id) {
+          throw new CustomException({
+            message: this.i18n.t('message.error.shopNameTaken', { lang }),
+            statusCode: HttpStatus.CONFLICT,
+            errorCode: ErrorCode.CONFLICT,
+          });
+        }
+      }
+
+      // 5. Handle media counting for logo (only if logoId is explicitly provided)
+      if (dto.branding && dto.branding.logoId !== undefined) {
+        const newLogoId = dto.branding.logoId ?? null;
+        
+        if (newLogoId !== shop.logoId) {
+          // Decrement old logo count
+          if (shop.logoId) {
+            await this.mediaRepository.decrementMediaUsage([shop.logoId], tx);
+          }
+          // Increment new logo count (if provided)
+          if (newLogoId) {
+            await this.mediaRepository.incrementMediaUsage([newLogoId], tx);
+          }
+        }
+      }
+
+      // 6. Handle media counting for banner (only if bannerId is explicitly provided)
+      if (dto.branding && dto.branding.bannerId !== undefined) {
+        const newBannerId = dto.branding.bannerId ?? null;
+        
+        if (newBannerId !== shop.bannerId) {
+          // Decrement old banner count
+          if (shop.bannerId) {
+            await this.mediaRepository.decrementMediaUsage([shop.bannerId], tx);
+          }
+          // Increment new banner count (if provided)
+          if (newBannerId) {
+            await this.mediaRepository.incrementMediaUsage([newBannerId], tx);
+          }
+        }
+      }
+
+      // 7. Update shop table (branding + slug) - only update fields that are provided
+      if (dto.branding || dto.slug) {
+        const updatePayload: any = {
+          ...(dto.slug && { slug: dto.slug }),
+        };
+        
+        // Only update branding fields that are explicitly provided
+        if (dto.branding) {
+          if (dto.branding.logoId !== undefined) {
+            updatePayload.logoId = dto.branding.logoId ?? null;
+          }
+          if (dto.branding.bannerId !== undefined) {
+            updatePayload.bannerId = dto.branding.bannerId ?? null;
+          }
+          if (dto.branding.primaryColor !== undefined) {
+            updatePayload.primaryColor = dto.branding.primaryColor;
+          }
+          if (dto.branding.secondaryColor !== undefined) {
+            updatePayload.secondaryColor = dto.branding.secondaryColor;
+          }
+          if (dto.branding.accentColor !== undefined) {
+            updatePayload.accentColor = dto.branding.accentColor;
+          }
+        }
+        
+        await this.shopRepository.update(shopId, updatePayload, tx);
+      }
+
+      // 8. Upsert translations (both languages)
+      if (dto.translations) {
+        // Upsert English translation
+        await this.shopRepository.upsertShopTranslation(
+          {
+            shopId,
+            locale: 'en',
+            name: dto.translations.en.name,
+            description: dto.translations.en.description || null,
+            businessHours: dto.translations.en.businessHours || null,
+          },
+          tx,
+        );
+
+        // Upsert Bengali translation
+        await this.shopRepository.upsertShopTranslation(
+          {
+            shopId,
+            locale: 'bn',
+            name: dto.translations.bn.name,
+            description: dto.translations.bn.description || null,
+            businessHours: dto.translations.bn.businessHours || null,
+          },
+          tx,
+        );
+      }
+
+      // 9. Return updated shop with full data
+      const updatedShop = await this.shopRepository.getShopByOwnerWithRelations(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
     });
   }
 
@@ -453,30 +607,32 @@ export class ShopService {
    * Returns simplified shop details with only translations, logo, and banner
    */
   private mapToLocalizedShopDetails(
-    shop: TShopWithBranding,
+    shop: TShopWithBranding & {
+      shopContactTable?: typeof shopContactTable.$inferSelect | null;
+      shopAddressTable?: (typeof shopAddressTable.$inferSelect & {
+        translations: typeof shopAddressTranslationsTable.$inferSelect[];
+      }) | null;
+    },
     lang: string,
   ): LocalizedShopDetails {
     const translation = resolveTranslation(shop.translations, lang) as {
-      shopName: string;
-      about: string | null;
-      brandStory: string | null;
-      featuredHighlight: string | null;
+      name: string;
+      description: string | null;
+      businessHours: string | null;
     } | null;
 
     return {
       id: shop.id,
       ownerId: shop.ownerId,
       slug: shop.slug,
-      address: shop.address,
       logoId: shop.logoId,
       bannerId: shop.bannerId,
       status: shop.status,
       createdAt: shop.createdAt,
       updatedAt: shop.updatedAt,
-      shopName: translation?.shopName ?? '',
-      about: translation?.about ?? null,
-      brandStory: translation?.brandStory ?? null,
-      featuredHighlight: translation?.featuredHighlight ?? null,
+      name: translation?.name ?? '',
+      description: translation?.description ?? null,
+      businessHours: translation?.businessHours ?? null,
       logo: shop.logo
         ? {
             id: shop.logo.id,
@@ -496,6 +652,34 @@ export class ShopService {
           }
         : null,
       translations: shop.translations,
+      contact: shop.shopContactTable
+        ? {
+            businessEmail: shop.shopContactTable.businessEmail,
+            phone: shop.shopContactTable.phone,
+            alternativePhone: shop.shopContactTable.alternativePhone,
+            whatsapp: shop.shopContactTable.whatsapp,
+            telegram: shop.shopContactTable.telegram,
+            facebook: shop.shopContactTable.facebook,
+            instagram: shop.shopContactTable.instagram,
+            x: shop.shopContactTable.x,
+          }
+        : null,
+      address: shop.shopAddressTable
+        ? {
+            postalCode: shop.shopAddressTable.postalCode,
+            latitude: shop.shopAddressTable.latitude,
+            longitude: shop.shopAddressTable.longitude,
+            googleMapsLink: shop.shopAddressTable.googleMapsLink,
+            isVerified: shop.shopAddressTable.isVerified,
+            translations: shop.shopAddressTable.translations?.map((t) => ({
+              locale: t.locale,
+              country: t.country,
+              division: t.division,
+              district: t.district,
+              street: t.street,
+            })) || [],
+          }
+        : null,
     };
   }
 
@@ -534,6 +718,9 @@ export class ShopService {
       status: verification.status,
       tradeLicenseNumber: verification.tradeLicenseNumber,
       tinNumber: verification.tinNumber,
+      tradeLicenseDocumentId: verification.tradeLicenseDocument,
+      tinDocumentId: verification.tinDocument,
+      utilityBillDocumentId: verification.utilityBillDocument,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,
       createdAt: verification.createdAt,
@@ -646,5 +833,31 @@ export class ShopService {
       // 5. Return updated verification status
       return this.getVerificationStatus(shop.ownerId);
     });
+  }
+
+  async submitForReview(shopId: string, dto: UpdateShopDto, lang: string) {
+    // Update shop with major changes
+    // Note: This is a simplified implementation
+    // Full implementation would update translations and log to history
+    console.log('Submit for review:', shopId, dto);
+  }
+
+  async uploadImages(
+    shopId: string,
+    files: { logo?: Express.Multer.File; banner?: Express.Multer.File },
+  ) {
+    const result: { logoId?: string; bannerId?: string } = {};
+    // Placeholder for image upload logic
+    return result;
+  }
+
+  async deleteShop(shopId: string, lang: string) {
+    // Placeholder - full implementation needs orders module
+    console.log('Delete shop:', shopId);
+  }
+
+  async getVerificationHistory(shopId: string, lang: string) {
+    // Placeholder - returns empty array for now
+    return [];
   }
 }

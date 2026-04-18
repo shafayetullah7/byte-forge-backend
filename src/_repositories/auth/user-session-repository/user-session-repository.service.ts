@@ -70,7 +70,7 @@ export class UserSessionRepository {
       .where(eq(userSessionTable.sessionId, sessionId))
       .limit(1)
       .execute();
-    
+
     if (!result) {
       return null;
     }

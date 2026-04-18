@@ -6,4 +6,6 @@ export const categoryTranslationParamSchema = z.object({
   locale: z.string().min(2).max(10),
 });
 
-export class CategoryTranslationParamDto extends createZodDto(categoryTranslationParamSchema) {}
+export class CategoryTranslationParamDto extends createZodDto(
+  categoryTranslationParamSchema,
+) {}

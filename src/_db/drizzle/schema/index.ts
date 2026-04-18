@@ -4,6 +4,6 @@ export * from './session';
 export * from './auth';
 export * from './shop';
 export * from './media';
-export * from './plant';
+export * from './products';
 export * from './taxonomy';
 export * from './i18n/language.schema';

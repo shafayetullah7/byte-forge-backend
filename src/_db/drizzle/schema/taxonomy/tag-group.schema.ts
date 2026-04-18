@@ -1,4 +1,11 @@
-import { pgTable, uuid, timestamp, boolean, varchar, integer } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  timestamp,
+  boolean,
+  varchar,
+  integer,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tagsTable } from './tag.schema';
 import { tagGroupTranslationsTable } from './tag-group-translation.schema';

@@ -14,7 +14,13 @@
     "passwordUppercase": "Must contain at least one uppercase letter",
     "passwordLowercase": "Must contain at least one lowercase letter",
     "passwordNumber": "Must contain at least one number",
-    "passwordSpecial": "Must contain at least one special character"
+    "passwordSpecial": "Must contain at least one special character",
+    "invalidHexColor": "Must be a valid hex color (e.g., #FF5733)",
+    "shop": {
+      "slugMin": "Slug must be at least 3 characters",
+      "slugFormat": "Slug can only contain lowercase letters, numbers, and hyphens",
+      "descriptionMin": "Description must be at least 10 characters"
+    }
   },
   "error": {
     "conflict": "Entry already exists",

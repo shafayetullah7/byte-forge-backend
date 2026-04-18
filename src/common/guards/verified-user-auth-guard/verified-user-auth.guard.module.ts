@@ -6,8 +6,16 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
 
 @Global()
 @Module({
-  imports: [UserAuthGuardModule, EmailVerifiedGuardModule, ShopRepositoryModule],
+  imports: [
+    UserAuthGuardModule,
+    EmailVerifiedGuardModule,
+    ShopRepositoryModule,
+  ],
   providers: [VerifiedUserAuthGuard],
-  exports: [VerifiedUserAuthGuard, EmailVerifiedGuardModule, ShopRepositoryModule],
+  exports: [
+    VerifiedUserAuthGuard,
+    EmailVerifiedGuardModule,
+    ShopRepositoryModule,
+  ],
 })
 export class VerifiedUserAuthGuardModule {}

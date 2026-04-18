@@ -1,5 +1,8 @@
 import { TMedia, TShop, TShopTranslation } from '@/_db/drizzle/schema';
 import { TShopVerification } from '@/_db/drizzle/schema/shop';
+import { TShopContact } from '@/_db/drizzle/schema/shop/shop.contact.schema';
+import { TShopAddress } from '@/_db/drizzle/schema/shop/shop.address.schema';
+import { TShopAddressTranslation } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
 
 /**
  * Shop with branding relations - matches the return type of getShopByOwnerBranding
@@ -8,6 +11,17 @@ export type TShopWithBranding = TShop & {
   translations: TShopTranslation[];
   logo: TMedia | null;
   banner: TMedia | null;
+};
+
+/**
+ * Shop with all relations (branding + contact + address)
+ */
+export type TShopWithRelations = TShop & {
+  translations: TShopTranslation[];
+  logo: TMedia | null;
+  banner: TMedia | null;
+  contact: TShopContact | null;
+  address: (TShopAddress & { translations: TShopAddressTranslation[] }) | null;
 };
 
 /**
@@ -20,10 +34,50 @@ export type VerificationStatus = {
   status: string;
   tradeLicenseNumber: string | null;
   tinNumber: string | null;
+  tradeLicenseDocumentId: string | null;
+  tinDocumentId: string | null;
+  utilityBillDocumentId: string | null;
   rejectionReason: string | null;
   verifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+/**
+ * Shop contact information (includes social media)
+ */
+export type ShopContactDetails = {
+  businessEmail: string | null;
+  phone: string | null;
+  alternativePhone: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  facebook: string | null;
+  instagram: string | null;
+  x: string | null;
+};
+
+/**
+ * Shop address translation
+ */
+export type ShopAddressTranslation = {
+  locale: string;
+  country: string;
+  division: string;
+  district: string;
+  street: string;
+};
+
+/**
+ * Shop address with location
+ */
+export type ShopAddressDetails = {
+  postalCode: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  googleMapsLink: string | null;
+  isVerified: boolean;
+  translations: ShopAddressTranslation[];
 };
 
 /**
@@ -34,16 +88,14 @@ export type LocalizedShopDetails = {
   id: string;
   ownerId: string;
   slug: string;
-  address: string | null;
   logoId: string | null;
   bannerId: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  shopName: string;
-  about: string | null;
-  brandStory: string | null;
-  featuredHighlight: string | null;
+  name: string;
+  description: string | null;
+  businessHours: string | null;
   logo: {
     id: string;
     url: string;
@@ -62,11 +114,12 @@ export type LocalizedShopDetails = {
     id: string;
     shopId: string;
     locale: string;
-    shopName: string;
-    about: string | null;
-    brandStory: string | null;
-    featuredHighlight: string | null;
+    name: string;
+    description: string | null;
+    businessHours: string | null;
   }>;
+  contact: ShopContactDetails | null;
+  address: ShopAddressDetails | null;
 };
 
 /**
@@ -78,4 +131,5 @@ export type ShopStatus = {
   slug: string;
   status: string;
   hasTranslations: boolean;
+  rejectionReason: string | null;
 };

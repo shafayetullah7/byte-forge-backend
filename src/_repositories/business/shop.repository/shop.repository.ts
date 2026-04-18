@@ -8,7 +8,6 @@ import {
   shopBusinessTable,
   shopContactTable,
   shopManagerTable,
-  shopSocialMediaTable,
   shopTable,
   shopTranslationsTable,
   shopVerificationTable,
@@ -18,7 +17,6 @@ import {
   TNewShopBusiness,
   TNewShopContact,
   TNewShopManager,
-  TNewShopSocialMedia,
   TNewShopTranslation,
   TNewShopVerification,
   TShop,
@@ -27,8 +25,8 @@ import {
   TShopBusiness,
   TShopContact,
   TShopManager,
-  TShopSocialMedia,
   TShopTranslation,
+  TShopVerification,
 } from '@/_db/drizzle/schema/shop';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
@@ -48,7 +46,6 @@ export class ShopRepository {
           banner: true,
           shopAddressTable: true,
           shopContactTable: true,
-          shopSocialMediaTable: true,
         },
       })
       .execute();
@@ -132,21 +129,6 @@ export class ShopRepository {
     return shopManager;
   }
 
-  async createShopSocialMedia(
-    payload: TNewShopSocialMedia,
-    tx?: DrizzleTx,
-  ): Promise<TShopSocialMedia> {
-    const executor = this.db.getExecutor(tx);
-
-    const [shopSocialMedia] = await executor
-      .insert(shopSocialMediaTable)
-      .values(payload)
-      .returning()
-      .execute();
-
-    return shopSocialMedia;
-  }
-
   async createShopTranslation(
     payload: TNewShopTranslation,
     tx?: DrizzleTx,
@@ -217,7 +199,7 @@ export class ShopRepository {
     const baseQuery = executor
       .select()
       .from(shopTranslationsTable)
-      .where(eq(shopTranslationsTable.shopName, shopName));
+      .where(eq(shopTranslationsTable.name, shopName));
 
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
     const [translation] = await lockQuery.execute();
@@ -248,7 +230,6 @@ export class ShopRepository {
           },
         },
         shopContactTable: true,
-        shopSocialMediaTable: true,
         shopBusinessTable: true,
         shopVerificationTable: true,
       },
@@ -262,6 +243,12 @@ export class ShopRepository {
         translations: true,
         logo: true,
         banner: true,
+        shopContactTable: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
+          },
+        },
       },
     });
   }
@@ -271,6 +258,7 @@ export class ShopRepository {
       where: eq(shopTable.ownerId, ownerId),
       with: {
         translations: true,
+        shopVerificationTable: true,
       },
     });
   }
@@ -288,7 +276,6 @@ export class ShopRepository {
           },
         },
         shopContactTable: true,
-        shopSocialMediaTable: true,
         shopBusinessTable: true,
         shopVerificationTable: true,
       },
@@ -306,10 +293,9 @@ export class ShopRepository {
       .onConflictDoUpdate({
         target: [shopTranslationsTable.shopId, shopTranslationsTable.locale],
         set: {
-          shopName: payload.shopName,
-          about: payload.about,
-          brandStory: payload.brandStory,
-          featuredHighlight: payload.featuredHighlight,
+          name: payload.name,
+          description: payload.description,
+          businessHours: payload.businessHours,
         },
       })
       .returning()
@@ -322,7 +308,14 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopContact,
-        'businessEmail' | 'phone' | 'alternativePhone' | 'whatsapp' | 'telegram'
+        | 'businessEmail'
+        | 'phone'
+        | 'alternativePhone'
+        | 'whatsapp'
+        | 'telegram'
+        | 'facebook'
+        | 'instagram'
+        | 'x'
       >
     >,
     tx?: DrizzleTx,
@@ -332,11 +325,14 @@ export class ShopRepository {
       .insert(shopContactTable)
       .values({
         shopId,
-        businessEmail: payload.businessEmail ?? '', // Default to empty string for required field
-        phone: payload.phone ?? '', // Default to empty string for required field
+        businessEmail: payload.businessEmail ?? null,
+        phone: payload.phone ?? null,
         alternativePhone: payload.alternativePhone ?? null,
         whatsapp: payload.whatsapp ?? null,
         telegram: payload.telegram ?? null,
+        facebook: payload.facebook ?? null,
+        instagram: payload.instagram ?? null,
+        x: payload.x ?? null,
       })
       .onConflictDoUpdate({
         target: [shopContactTable.shopId],
@@ -350,30 +346,6 @@ export class ShopRepository {
           }),
           ...(payload.whatsapp !== undefined && { whatsapp: payload.whatsapp }),
           ...(payload.telegram !== undefined && { telegram: payload.telegram }),
-        },
-      })
-      .returning()
-      .execute();
-    return contact;
-  }
-
-  async upsertShopSocialMedia(
-    shopId: string,
-    payload: Partial<Pick<TNewShopSocialMedia, 'facebook' | 'instagram' | 'x'>>,
-    tx?: DrizzleTx,
-  ): Promise<TShopSocialMedia> {
-    const executor = this.db.getExecutor(tx);
-    const [socialMedia] = await executor
-      .insert(shopSocialMediaTable)
-      .values({
-        shopId,
-        facebook: payload.facebook ?? null,
-        instagram: payload.instagram ?? null,
-        x: payload.x ?? null,
-      })
-      .onConflictDoUpdate({
-        target: [shopSocialMediaTable.shopId],
-        set: {
           ...(payload.facebook !== undefined && { facebook: payload.facebook }),
           ...(payload.instagram !== undefined && {
             instagram: payload.instagram,
@@ -383,7 +355,7 @@ export class ShopRepository {
       })
       .returning()
       .execute();
-    return socialMedia;
+    return contact;
   }
 
   async upsertShopAddress(
@@ -391,10 +363,6 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopAddress,
-        | 'country'
-        | 'division'
-        | 'district'
-        | 'street'
         | 'postalCode'
         | 'latitude'
         | 'longitude'
@@ -408,10 +376,6 @@ export class ShopRepository {
       .insert(shopAddressTable)
       .values({
         shopId,
-        country: payload.country ?? '', // Required field
-        division: payload.division ?? '', // Required field
-        district: payload.district ?? '', // Required field
-        street: payload.street ?? '', // Required field
         postalCode: payload.postalCode ?? '', // Required field
         latitude: payload.latitude ?? null,
         longitude: payload.longitude ?? null,
@@ -420,10 +384,6 @@ export class ShopRepository {
       .onConflictDoUpdate({
         target: [shopAddressTable.shopId],
         set: {
-          ...(payload.country !== undefined && { country: payload.country }),
-          ...(payload.division !== undefined && { division: payload.division }),
-          ...(payload.district !== undefined && { district: payload.district }),
-          ...(payload.street !== undefined && { street: payload.street }),
           ...(payload.postalCode !== undefined && {
             postalCode: payload.postalCode,
           }),
@@ -453,10 +413,9 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopAddressTranslation,
-        'country' | 'division' | 'district' | 'street'
+        'country' | 'division' | 'district' | 'street' | 'locale'
       >
     >,
-    locale: string,
     tx?: DrizzleTx,
   ): Promise<TShopAddressTranslation> {
     const executor = this.db.getExecutor(tx);
@@ -464,11 +423,11 @@ export class ShopRepository {
       .insert(shopAddressTranslationsTable)
       .values({
         addressId,
-        locale,
-        country: payload.country ?? null,
-        division: payload.division ?? null,
-        district: payload.district ?? null,
-        street: payload.street ?? null,
+        locale: payload.locale || 'en',
+        country: payload.country ?? '',
+        division: payload.division ?? '',
+        district: payload.district ?? '',
+        street: payload.street ?? '',
       })
       .onConflictDoUpdate({
         target: [

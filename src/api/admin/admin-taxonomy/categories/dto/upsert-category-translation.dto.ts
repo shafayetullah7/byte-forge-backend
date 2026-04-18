@@ -7,4 +7,6 @@ export const upsertCategoryTranslationSchema = z.object({
   description: z.string().optional().nullable(),
 });
 
-export class UpsertCategoryTranslationDto extends createZodDto(upsertCategoryTranslationSchema) {}
+export class UpsertCategoryTranslationDto extends createZodDto(
+  upsertCategoryTranslationSchema,
+) {}

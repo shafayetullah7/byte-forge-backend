@@ -9,13 +9,16 @@ import { shopAddressTable } from './shop.address.schema';
 import { shopBusinessTable } from './shop.business.schema';
 import { shopTranslationsTable } from './shop.translation.schema';
 import { shopContactTable } from './shop.contact.schema';
-import { shopSocialMediaTable } from './shop.social.media.schema';
 
 export const shopStatusEnum = pgEnum('shop_status_enum', [
-  ShopStatusEnum.PENDING,
+  ShopStatusEnum.DRAFT,
+  ShopStatusEnum.PENDING_VERIFICATION,
+  ShopStatusEnum.APPROVED,
   ShopStatusEnum.ACTIVE,
+  ShopStatusEnum.INACTIVE,
+  ShopStatusEnum.REJECTED,
   ShopStatusEnum.SUSPENDED,
-  ShopStatusEnum.DEACTIVATED,
+  ShopStatusEnum.DELETED,
 ]);
 
 export const shopTable = pgTable('shops', {
@@ -25,8 +28,7 @@ export const shopTable = pgTable('shops', {
     .unique()
     .references(() => userTable.id, { onDelete: 'cascade' }),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
-  address: varchar('address', { length: 500 }),
-  status: shopStatusEnum('status').default(ShopStatusEnum.PENDING).notNull(),
+  status: shopStatusEnum('status').default(ShopStatusEnum.DRAFT).notNull(),
 
   // First-Class Branding
   primaryColor: varchar('primary_color', { length: 7 }), // hex code
@@ -73,10 +75,6 @@ export const shopRelations = relations(shopTable, ({ one, many }) => ({
   shopContactTable: one(shopContactTable, {
     fields: [shopTable.id],
     references: [shopContactTable.shopId],
-  }),
-  shopSocialMediaTable: one(shopSocialMediaTable, {
-    fields: [shopTable.id],
-    references: [shopSocialMediaTable.shopId],
   }),
 }));
 

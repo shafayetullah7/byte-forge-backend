@@ -7,15 +7,21 @@ export const updateBrandingSchema = z.object({
 
   primaryColor: z
     .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'message.validation.invalidHexColor' })
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: 'message.validation.invalidHexColor',
+    })
     .optional(),
   secondaryColor: z
     .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'message.validation.invalidHexColor' })
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: 'message.validation.invalidHexColor',
+    })
     .optional(),
   accentColor: z
     .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'message.validation.invalidHexColor' })
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: 'message.validation.invalidHexColor',
+    })
     .optional(),
 });
 

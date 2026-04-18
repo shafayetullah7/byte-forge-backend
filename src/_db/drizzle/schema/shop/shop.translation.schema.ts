@@ -13,10 +13,9 @@ export const shopTranslationsTable = pgTable(
     locale: varchar('locale', { length: 10 })
       .notNull()
       .references(() => languagesTable.code),
-    shopName: varchar('shop_name', { length: 255 }).notNull(),
-    about: text('about'),
-    brandStory: text('brand_story'),
-    featuredHighlight: text('featured_highlight'),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    businessHours: text('business_hours'),
   },
   (t) => [unique().on(t.shopId, t.locale)],
 );

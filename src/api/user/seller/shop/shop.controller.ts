@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -20,9 +22,9 @@ import { ApplySellerDto } from './dto/apply.seller.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
-import { UpdateShopSocialMediaDto } from './dto/update-shop-social-media.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { UpdateShopInfoDto } from './dto/update-shop-info.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AuthenticShop } from '@/common/decorators/authentic-shop.decorator';
@@ -39,6 +41,7 @@ import {
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import { ApiConsumes } from '@nestjs/swagger';
 import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
@@ -194,47 +197,53 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ summary: 'Update shop contact information' })
-  @ApiResponse({ status: 200, description: 'Contact info updated' })
+  @ApiOperation({ 
+    summary: 'Update shop info (branding + translations)',
+    description: 'Updates shop branding (logo, banner, colors) and bilingual translations (name, description, business hours). Handles media usage counting automatically.'
+  })
+  @ApiResponse({ status: 200, description: 'Shop info updated' })
   @ApiBadRequestResponse()
   @ApiUnauthorizedResponse()
-  @Patch('my-shop/contact')
+  @Put('my-shop')
   @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
-  async updateMyShopContact(
+  async upsertMyShopInfo(
+    @Body() dto: UpdateShopInfoDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    const updatedShop = await this.shopService.upsertMyShopInfo(
+      shop.id,
+      dto,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopUpdated', { lang }),
+      data: updatedShop,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ 
+    summary: 'Upsert shop contact information (contact + social media)',
+    description: 'Updates or inserts shop contact information including email, phone, messaging apps, and social media links. Partial updates supported - only provided fields will be updated.'
+  })
+  @ApiResponse({ status: 200, description: 'Contact info upserted' })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @Put('my-shop/contact')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async upsertMyShopContact(
     @Body() dto: UpdateShopContactDto,
     @AuthenticShop() shop: TAuthorizedShop,
     @I18nLang() lang: string,
   ): Promise<SuccessResponse<any>> {
-    const updatedShop = await this.shopService.updateMyShopContact(
+    const updatedShop = await this.shopService.upsertMyShopContact(
       shop.id,
       dto,
       lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.contactUpdated', { lang }),
-      data: updatedShop,
-    });
-  }
-
-  @ApiAuth()
-  @ApiOperation({ summary: 'Update shop social media links' })
-  @ApiResponse({ status: 200, description: 'Social media links updated' })
-  @ApiBadRequestResponse()
-  @ApiUnauthorizedResponse()
-  @Patch('my-shop/social-media')
-  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
-  async updateMyShopSocialMedia(
-    @Body() dto: UpdateShopSocialMediaDto,
-    @AuthenticShop() shop: TAuthorizedShop,
-    @I18nLang() lang: string,
-  ): Promise<SuccessResponse<any>> {
-    const updatedShop = await this.shopService.updateMyShopSocialMedia(
-      shop.id,
-      dto,
-      lang,
-    );
-    return this.responseService.success({
-      message: this.i18n.t('message.success.socialMediaUpdated', { lang }),
       data: updatedShop,
     });
   }
@@ -332,6 +341,81 @@ export class ShopController {
     return this.responseService.success({
       message: this.i18n.t('message.success.verificationUpdated', { lang }),
       data: verification,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Submit shop for review (major changes)',
+    description:
+      'Submits major changes (name, address) for admin re-verification',
+  })
+  @ApiResponse({ status: 200, description: 'Shop submitted for review' })
+  @Patch('my-shop/submit-for-review')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async submitForReview(
+    @Body() dto: UpdateShopDto,
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    await this.shopService.submitForReview(shop.id, dto, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopSubmittedForReview', { lang }),
+      data: {},
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Upload shop images (logo, banner)' })
+  @ApiResponse({ status: 200, description: 'Images uploaded successfully' })
+  @ApiConsumes('multipart/form-data')
+  @Post('my-shop/images')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async uploadImages(
+    @Body() files: { logo?: Express.Multer.File; banner?: Express.Multer.File },
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<{ logoId?: string; bannerId?: string }>> {
+    const result = await this.shopService.uploadImages(shop.id, files);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.imagesUploaded', { lang }),
+      data: result,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Delete shop' })
+  @ApiResponse({ status: 200, description: 'Shop deleted successfully' })
+  @ApiConflictResponse('Shop has pending orders')
+  @Delete('my-shop')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async deleteShop(
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any>> {
+    await this.shopService.deleteShop(shop.id, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.shopDeleted', { lang }),
+      data: {},
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Get shop verification history' })
+  @ApiResponse({ status: 200, description: 'Verification history retrieved' })
+  @Get('my-shop/history')
+  @UseGuards(VerifiedUserAuthGuard, SellerShopGuard)
+  async getVerificationHistory(
+    @AuthenticShop() shop: TAuthorizedShop,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<any[]>> {
+    const history = await this.shopService.getVerificationHistory(
+      shop.id,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.historyRetrieved', { lang }),
+      data: history,
     });
   }
 }

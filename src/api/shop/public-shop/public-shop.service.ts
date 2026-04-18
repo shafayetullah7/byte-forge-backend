@@ -24,10 +24,9 @@ export class PublicShopService {
     return {
       id: shop.id,
       slug: shop.slug,
-      shopName: translation?.shopName ?? '',
-      about: translation?.about ?? '',
-      brandStory: translation?.brandStory ?? '',
-      featuredHighlight: translation?.featuredHighlight ?? '',
+      name: translation?.name ?? '',
+      description: translation?.description ?? '',
+      businessHours: translation?.businessHours ?? '',
       primaryColor: shop.primaryColor,
       secondaryColor: shop.secondaryColor,
       accentColor: shop.accentColor,

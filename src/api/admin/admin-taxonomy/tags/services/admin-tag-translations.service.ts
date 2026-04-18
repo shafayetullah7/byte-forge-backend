@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UpsertTagTranslationDto } from '../dto/upsert-tag-translation.dto';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagTranslationsTable, tagsTable } from '@/_db/drizzle/schema/taxonomy';
@@ -34,7 +38,9 @@ export class AdminTagTranslationsService {
       where: eq(languagesTable.code, dto.locale),
     });
     if (!language) {
-      throw new BadRequestException(`Language locale '${dto.locale}' is not supported`);
+      throw new BadRequestException(
+        `Language locale '${dto.locale}' is not supported`,
+      );
     }
 
     const [translation] = await this.db.client
@@ -56,19 +62,25 @@ export class AdminTagTranslationsService {
 
   async remove(tagId: string, locale: string) {
     if (locale === 'en' || locale === 'bn') {
-      throw new BadRequestException(`Deleting the mandatory '${locale}' locale is not permitted.`);
+      throw new BadRequestException(
+        `Deleting the mandatory '${locale}' locale is not permitted.`,
+      );
     }
 
     const result = await this.db.client
       .delete(tagTranslationsTable)
-      .where(and(
-        eq(tagTranslationsTable.tagId, tagId),
-        eq(tagTranslationsTable.locale, locale)
-      ))
+      .where(
+        and(
+          eq(tagTranslationsTable.tagId, tagId),
+          eq(tagTranslationsTable.locale, locale),
+        ),
+      )
       .returning();
 
     if (result.length === 0) {
-      throw new NotFoundException(`Translation for locale '${locale}' on tag '${tagId}' not found`);
+      throw new NotFoundException(
+        `Translation for locale '${locale}' on tag '${tagId}' not found`,
+      );
     }
   }
 }

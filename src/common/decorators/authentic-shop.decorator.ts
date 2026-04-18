@@ -13,7 +13,7 @@ import { AccessUserAuth, TAuthorizedShop } from '../types';
  */
 export const AuthenticShop = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): TAuthorizedShop => {
-    const req = ctx.switchToHttp().getRequest() as any;
+    const req = ctx.switchToHttp().getRequest();
     const auth = req.user as AccessUserAuth | undefined;
 
     if (!auth?.shop) {

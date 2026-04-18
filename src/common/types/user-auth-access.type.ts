@@ -1,8 +1,4 @@
-import {
-  TSession,
-  TUser,
-  TShop,
-} from '@/_db/drizzle/schema';
+import { TSession, TUser, TShop } from '@/_db/drizzle/schema';
 
 export type TAuthorizedShop = TShop;
 

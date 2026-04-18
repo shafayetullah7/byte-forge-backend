@@ -8,5 +8,4 @@ const updateTagSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-
 export class UpdateTagDto extends createZodDto(updateTagSchema) {}
