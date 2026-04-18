@@ -34,6 +34,9 @@ export type VerificationStatus = {
   status: string;
   tradeLicenseNumber: string | null;
   tinNumber: string | null;
+  tradeLicenseDocumentId: string | null;
+  tinDocumentId: string | null;
+  utilityBillDocumentId: string | null;
   rejectionReason: string | null;
   verifiedAt: Date | null;
   createdAt: Date;
