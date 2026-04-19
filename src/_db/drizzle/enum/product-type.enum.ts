@@ -7,6 +7,5 @@ export const ProductTypeEnum = {
   FERTILIZER: 'fertilizer',
 } as const;
 
-
-
-export type TProductType = (typeof ProductTypeEnum)[keyof typeof ProductTypeEnum];
+export type TProductType =
+  (typeof ProductTypeEnum)[keyof typeof ProductTypeEnum];

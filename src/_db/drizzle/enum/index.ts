@@ -6,4 +6,5 @@ export * from './product-type.enum';
 export * from './product-status.enum';
 export * from './shop.status.enum';
 export * from './shop.verification.status.enum';
+export * from './shop.verification.action.enum';
 export * from './plant-care.enum';

@@ -7,7 +7,7 @@ import type { Request } from 'express';
  */
 export function getClientIp(req: Request): string {
   const xForwardedFor = req.headers['x-forwarded-for'];
-  
+
   // Handle different types of x-forwarded-for header
   let ipFromHeader: string | undefined;
   if (Array.isArray(xForwardedFor)) {

@@ -7,9 +7,8 @@ export const LightRequirementEnum = {
   DIRECT: 'direct',
 } as const;
 
-
-
-export type TLightRequirement = (typeof LightRequirementEnum)[keyof typeof LightRequirementEnum];
+export type TLightRequirement =
+  (typeof LightRequirementEnum)[keyof typeof LightRequirementEnum];
 
 export const WateringFrequencyEnum = {
   DAILY: 'daily',
@@ -18,9 +17,8 @@ export const WateringFrequencyEnum = {
   MONTHLY: 'monthly',
 } as const;
 
-
-
-export type TWateringFrequency = (typeof WateringFrequencyEnum)[keyof typeof WateringFrequencyEnum];
+export type TWateringFrequency =
+  (typeof WateringFrequencyEnum)[keyof typeof WateringFrequencyEnum];
 
 export const HumidityLevelEnum = {
   LOW: 'low',
@@ -40,17 +38,10 @@ export const GrowthRateEnum = {
   FAST: 'fast',
 } as const;
 
+export type THumidityLevel =
+  (typeof HumidityLevelEnum)[keyof typeof HumidityLevelEnum];
 
-
-export type THumidityLevel = (typeof HumidityLevelEnum)[keyof typeof HumidityLevelEnum];
-
-
-
-
-
-export type TCareDifficulty = (typeof CareDifficultyEnum)[keyof typeof CareDifficultyEnum];
-
-
+export type TCareDifficulty =
+  (typeof CareDifficultyEnum)[keyof typeof CareDifficultyEnum];
 
 export type TGrowthRate = (typeof GrowthRateEnum)[keyof typeof GrowthRateEnum];
-

@@ -14,10 +14,10 @@ import { ProductStatusEnum, ProductTypeEnum } from '../../enum';
 
 /**
  * Unified Products Table
- * 
+ *
  * Supports multiple product types: plant, pot, seed, fertilizer
  * Every product must have at least one variant (tracked via baseVariantId)
- * 
+ *
  * @see product_variants - Cart/Orders reference this table
  * @see product_translations - Bilingual content
  * @see product_tags - Flexible filtering

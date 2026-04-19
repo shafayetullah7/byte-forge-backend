@@ -32,9 +32,12 @@ export const fertilizerDetailsTable = pgTable('fertilizer_details', {
 export type TFertilizerDetails = typeof fertilizerDetailsTable.$inferSelect;
 export type TNewFertilizerDetails = typeof fertilizerDetailsTable.$inferInsert;
 
-export const fertilizerDetailsRelations = relations(fertilizerDetailsTable, ({ one }) => ({
-  product: one(productsTable, {
-    fields: [fertilizerDetailsTable.productId],
-    references: [productsTable.id],
+export const fertilizerDetailsRelations = relations(
+  fertilizerDetailsTable,
+  ({ one }) => ({
+    product: one(productsTable, {
+      fields: [fertilizerDetailsTable.productId],
+      references: [productsTable.id],
+    }),
   }),
-}));
+);

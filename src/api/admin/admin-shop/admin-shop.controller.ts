@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AdminShopService } from './admin-shop.service';
 import { VerifyShopDto } from './dto/verify-shop.dto';
+import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { DeactivateShopDto } from './dto/deactivate-shop.dto';
@@ -74,6 +75,39 @@ export class AdminShopController {
     const verification = await this.adminShopService.verifyShop(id, dto);
     return this.responseService.success({
       message: 'Shop verification updated successfully',
+      data: verification,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Approve a shop verification' })
+  @ApiResponse({ status: 200, description: 'Shop approved' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Shop')
+  @Post(':id/approve')
+  @UseGuards(AdminAuthGuard)
+  async approveShop(@Param('id', ParseUUIDPipe) id: string) {
+    const verification = await this.adminShopService.approveShop(id);
+    return this.responseService.success({
+      message: 'Shop approved successfully',
+      data: verification,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({ summary: 'Reject a shop verification' })
+  @ApiResponse({ status: 200, description: 'Shop rejected' })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse('Shop')
+  @Post(':id/reject')
+  @UseGuards(AdminAuthGuard)
+  async rejectShop(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RejectShopDto,
+  ) {
+    const verification = await this.adminShopService.rejectShop(id, dto);
+    return this.responseService.success({
+      message: 'Shop rejected successfully',
       data: verification,
     });
   }

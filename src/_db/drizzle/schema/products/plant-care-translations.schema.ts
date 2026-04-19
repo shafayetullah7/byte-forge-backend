@@ -5,7 +5,7 @@ import { languagesTable } from '../i18n/language.schema';
 
 /**
  * Plant Care Translations Table
- * 
+ *
  * Stores bilingual care instructions.
  * Each care instruction has one row per locale (en, bn).
  */
@@ -19,7 +19,7 @@ export const plantCareTranslationsTable = pgTable(
     locale: varchar('locale', { length: 2 })
       .notNull()
       .references(() => languagesTable.code),
-    
+
     // Translated care instructions
     lightInstructions: text('light_instructions'),
     wateringInstructions: text('watering_instructions'),
@@ -33,8 +33,10 @@ export const plantCareTranslationsTable = pgTable(
   (t) => [unique().on(t.careId, t.locale)],
 );
 
-export type TPlantCareTranslation = typeof plantCareTranslationsTable.$inferSelect;
-export type TNewPlantCareTranslation = typeof plantCareTranslationsTable.$inferInsert;
+export type TPlantCareTranslation =
+  typeof plantCareTranslationsTable.$inferSelect;
+export type TNewPlantCareTranslation =
+  typeof plantCareTranslationsTable.$inferInsert;
 
 export const plantCareTranslationsRelations = relations(
   plantCareTranslationsTable,

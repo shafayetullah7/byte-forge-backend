@@ -70,6 +70,18 @@ export const shopVerificationRelations = relations(
       fields: [shopVerificationTable.shopId],
       references: [shopTable.id],
     }),
+    tradeLicenseMedia: one(mediaTable, {
+      fields: [shopVerificationTable.tradeLicenseDocument],
+      references: [mediaTable.id],
+    }),
+    tinMedia: one(mediaTable, {
+      fields: [shopVerificationTable.tinDocument],
+      references: [mediaTable.id],
+    }),
+    utilityBillMedia: one(mediaTable, {
+      fields: [shopVerificationTable.utilityBillDocument],
+      references: [mediaTable.id],
+    }),
   }),
 );
 

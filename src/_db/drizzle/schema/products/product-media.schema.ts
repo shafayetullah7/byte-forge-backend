@@ -1,4 +1,11 @@
-import { pgTable, uuid, integer, varchar, boolean, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  integer,
+  varchar,
+  boolean,
+  index,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
 import { productVariantsTable } from './product-variants.schema';
@@ -6,7 +13,7 @@ import { mediaTable } from '../media/media.schema';
 
 /**
  * Product Media Table
- * 
+ *
  * Links products to media (images/videos)
  * Can be linked to a specific variant or to the product in general
  */
@@ -37,17 +44,20 @@ export const productMediaTable = pgTable(
 export type TProductMedia = typeof productMediaTable.$inferSelect;
 export type TNewProductMedia = typeof productMediaTable.$inferInsert;
 
-export const productMediaRelations = relations(productMediaTable, ({ one }) => ({
-  product: one(productsTable, {
-    fields: [productMediaTable.productId],
-    references: [productsTable.id],
+export const productMediaRelations = relations(
+  productMediaTable,
+  ({ one }) => ({
+    product: one(productsTable, {
+      fields: [productMediaTable.productId],
+      references: [productsTable.id],
+    }),
+    variant: one(productVariantsTable, {
+      fields: [productMediaTable.variantId],
+      references: [productVariantsTable.id],
+    }),
+    media: one(mediaTable, {
+      fields: [productMediaTable.mediaId],
+      references: [mediaTable.id],
+    }),
   }),
-  variant: one(productVariantsTable, {
-    fields: [productMediaTable.variantId],
-    references: [productVariantsTable.id],
-  }),
-  media: one(mediaTable, {
-    fields: [productMediaTable.mediaId],
-    references: [mediaTable.id],
-  }),
-}));
+);

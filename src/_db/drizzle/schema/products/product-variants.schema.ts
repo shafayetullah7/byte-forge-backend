@@ -13,12 +13,12 @@ import { productsTable } from './products.schema';
 
 /**
  * Product Variants Table
- * 
+ *
  * EVERY product must have at least ONE variant.
  * Cart and Orders reference this table ONLY.
- * 
+ *
  * The base/default variant is tracked in products.baseVariantId
- * 
+ *
  * Type-specific attributes are stored in:
  * - plant_variant_attributes
  * - pot_variant_attributes

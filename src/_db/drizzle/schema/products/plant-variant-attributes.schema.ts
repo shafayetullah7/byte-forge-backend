@@ -1,10 +1,18 @@
-import { pgTable, uuid, varchar, integer, boolean, decimal, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  integer,
+  boolean,
+  decimal,
+  index,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productVariantsTable } from './product-variants.schema';
 
 /**
  * Plant Variant Attributes Table
- * 
+ *
  * Stores plant-specific variant attributes (pot size, growth stage, etc.)
  * One-to-one relationship with product_variants
  */
@@ -42,8 +50,10 @@ export const plantVariantAttributesTable = pgTable(
   ],
 );
 
-export type TPlantVariantAttributes = typeof plantVariantAttributesTable.$inferSelect;
-export type TNewPlantVariantAttributes = typeof plantVariantAttributesTable.$inferInsert;
+export type TPlantVariantAttributes =
+  typeof plantVariantAttributesTable.$inferSelect;
+export type TNewPlantVariantAttributes =
+  typeof plantVariantAttributesTable.$inferInsert;
 
 export const plantVariantAttributesRelations = relations(
   plantVariantAttributesTable,

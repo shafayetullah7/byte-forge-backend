@@ -5,7 +5,7 @@ import { tagsTable } from '../taxonomy/tag.schema';
 
 /**
  * Product-Tag Linking Table
- * 
+ *
  * CRITICAL: This table enables filtering products by tags
  * Many-to-Many relationship:
  * - One product can have many tags

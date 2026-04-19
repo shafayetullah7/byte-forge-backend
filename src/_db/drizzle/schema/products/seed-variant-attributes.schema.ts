@@ -1,4 +1,11 @@
-import { pgTable, uuid, varchar, integer, decimal, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  integer,
+  decimal,
+  index,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productVariantsTable } from './product-variants.schema';
 
@@ -12,7 +19,10 @@ export const seedVariantAttributesTable = pgTable(
       .references(() => productVariantsTable.id, { onDelete: 'cascade' }),
     packetSizeLabel: varchar('packet_size_label', { length: 100 }),
     seedsPerPacket: integer('seeds_per_packet'),
-    packetWeightGrams: decimal('packet_weight_grams', { precision: 10, scale: 2 }),
+    packetWeightGrams: decimal('packet_weight_grams', {
+      precision: 10,
+      scale: 2,
+    }),
     treatment: varchar('treatment', { length: 50 }),
     grade: varchar('grade', { length: 50 }),
     displayOrder: integer('display_order').default(0),
@@ -24,8 +34,10 @@ export const seedVariantAttributesTable = pgTable(
   ],
 );
 
-export type TSeedVariantAttributes = typeof seedVariantAttributesTable.$inferSelect;
-export type TNewSeedVariantAttributes = typeof seedVariantAttributesTable.$inferInsert;
+export type TSeedVariantAttributes =
+  typeof seedVariantAttributesTable.$inferSelect;
+export type TNewSeedVariantAttributes =
+  typeof seedVariantAttributesTable.$inferInsert;
 
 export const seedVariantAttributesRelations = relations(
   seedVariantAttributesTable,

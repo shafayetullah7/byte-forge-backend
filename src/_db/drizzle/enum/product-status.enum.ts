@@ -7,6 +7,5 @@ export const ProductStatusEnum = {
   OUT_OF_STOCK: 'OUT_OF_STOCK',
 } as const;
 
-
-
-export type TProductStatus = (typeof ProductStatusEnum)[keyof typeof ProductStatusEnum];
+export type TProductStatus =
+  (typeof ProductStatusEnum)[keyof typeof ProductStatusEnum];

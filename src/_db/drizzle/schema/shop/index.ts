@@ -6,4 +6,5 @@ export * from './shop.contact.schema';
 export * from './shop.manager.schema';
 export * from './shop.schema';
 export * from './shop.verification.schema';
+export * from './shop.verification.history.schema';
 export * from './shop.translation.schema';

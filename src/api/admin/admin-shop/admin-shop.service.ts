@@ -1,20 +1,27 @@
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { ShopVerificationRepository } from '@/_repositories/business/shop.verification.repository/shop.verification.repository';
+import { ShopVerificationHistoryRepository } from '@/_repositories/business/shop.verification.history.repository/shop.verification.history.repository';
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { VerifyShopDto } from './dto/verify-shop.dto';
-import { ShopStatusEnum, ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
+import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { DeactivateShopDto } from './dto/deactivate-shop.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { paginate } from '@/common/utils/pagination.util';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
-import { and, eq, sql, asc, desc, ilike, or, count } from 'drizzle-orm';
+import { and, eq, sql, asc, desc, ilike, count } from 'drizzle-orm';
 import { shopTable, shopVerificationTable } from '@/_db/drizzle/schema';
+import {
+  ShopStatusEnum,
+  TShopStatus,
+  ShopVerificationStatusEnum,
+  ShopVerificationActionEnum,
+} from '@/_db/drizzle/enum';
 
 @Injectable()
 export class AdminShopService {
@@ -22,6 +29,7 @@ export class AdminShopService {
     private readonly db: DrizzleService,
     private readonly shopRepository: ShopRepository,
     private readonly shopVerificationRepository: ShopVerificationRepository,
+    private readonly shopVerificationHistoryRepository: ShopVerificationHistoryRepository,
   ) {}
 
   async getPendingVerifications(query: PaginationParams) {
@@ -59,6 +67,11 @@ export class AdminShopService {
 
   async verifyShop(shopId: string, dto: VerifyShopDto) {
     return this.db.transaction(async (tx) => {
+      const currentVerification = await this.shopVerificationRepository.findOne(
+        { shopId },
+        tx,
+      );
+
       // 1. Update Verification Status
       const verifications = await this.shopVerificationRepository.update(
         {
@@ -92,6 +105,113 @@ export class AdminShopService {
         );
       }
 
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action:
+            dto.status === ShopVerificationStatusEnum.APPROVED
+              ? ShopVerificationActionEnum.APPROVED
+              : ShopVerificationActionEnum.REJECTED,
+          previousStatus: currentVerification?.status,
+          newStatus: dto.status,
+          reason:
+            dto.status === ShopVerificationStatusEnum.REJECTED
+              ? dto.reason
+              : undefined,
+          changes: dto.adminNotes ? { adminNotes: dto.adminNotes } : undefined,
+        },
+        tx,
+      );
+
+      return verification;
+    });
+  }
+
+  async approveShop(shopId: string) {
+    return this.db.transaction(async (tx) => {
+      // 1. Get current verification record
+      const currentVerification = await this.shopVerificationRepository.findOne(
+        { shopId },
+        tx,
+      );
+
+      // 2. Update verification record to APPROVED
+      const verifications = await this.shopVerificationRepository.update(
+        {
+          status: ShopVerificationStatusEnum.APPROVED,
+          verifiedAt: new Date(),
+          rejectionReason: null,
+          adminNotes: null,
+        },
+        { shopId },
+        tx,
+      );
+
+      const verification = verifications[0];
+
+      if (!verification) {
+        throw new NotFoundException('Verification record not found');
+      }
+
+      // 3. Set Shop Status to ACTIVE
+      await this.shopRepository.update(
+        shopId,
+        { status: ShopStatusEnum.ACTIVE },
+        tx,
+      );
+
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.APPROVED,
+          previousStatus: currentVerification?.status,
+          newStatus: ShopVerificationStatusEnum.APPROVED,
+        },
+        tx,
+      );
+
+      return verification;
+    });
+  }
+
+  async rejectShop(shopId: string, dto: RejectShopDto) {
+    return this.db.transaction(async (tx) => {
+      // 1. Get current verification record
+      const currentVerification = await this.shopVerificationRepository.findOne(
+        { shopId },
+        tx,
+      );
+
+      // 2. Update verification record to REJECTED
+      const verifications = await this.shopVerificationRepository.update(
+        {
+          status: ShopVerificationStatusEnum.REJECTED,
+          verifiedAt: null,
+          rejectionReason: dto.reason,
+          adminNotes: dto.adminNotes || null,
+        },
+        { shopId },
+        tx,
+      );
+
+      const verification = verifications[0];
+
+      if (!verification) {
+        throw new NotFoundException('Verification record not found');
+      }
+
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.REJECTED,
+          previousStatus: currentVerification?.status,
+          newStatus: ShopVerificationStatusEnum.REJECTED,
+          reason: dto.reason,
+          changes: dto.adminNotes ? { adminNotes: dto.adminNotes } : undefined,
+        },
+        tx,
+      );
+
       return verification;
     });
   }
@@ -105,7 +225,7 @@ export class AdminShopService {
       sortBy === 'updatedAt' ? shopTable.updatedAt : shopTable.createdAt;
 
     const where = and(
-      status ? eq(shopTable.status, status as any) : undefined,
+      status ? eq(shopTable.status, status as TShopStatus) : undefined,
       search ? ilike(shopTable.slug, `%${search}%`) : undefined,
     );
 
@@ -132,6 +252,21 @@ export class AdminShopService {
       with: {
         logo: true,
         banner: true,
+        translations: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
+          },
+        },
+        shopContactTable: true,
+        shopBusinessTable: true,
+        shopVerificationTable: {
+          with: {
+            tradeLicenseMedia: true,
+            tinMedia: true,
+            utilityBillMedia: true,
+          },
+        },
       },
     });
 
@@ -139,7 +274,12 @@ export class AdminShopService {
       throw new NotFoundException('Shop not found');
     }
 
-    return shop;
+    const { shopVerificationTable, ...rest } = shop;
+
+    return {
+      ...rest,
+      verification: shopVerificationTable,
+    };
   }
 
   async getShopStats() {
@@ -203,10 +343,23 @@ export class AdminShopService {
         tx,
       );
 
+      await this.shopVerificationRepository.findOne({ shopId }, tx);
+
       // Update verification record with suspension info
       await this.shopVerificationRepository.update(
         { status: ShopVerificationStatusEnum.REJECTED },
         { shopId },
+        tx,
+      );
+
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.SUSPENDED,
+          previousStatus: shop.status,
+          newStatus: ShopStatusEnum.SUSPENDED,
+          reason: dto.reason,
+        },
         tx,
       );
     });
@@ -225,8 +378,23 @@ export class AdminShopService {
       throw new BadRequestException('Shop is already deactivated');
     }
 
-    await this.shopRepository.update(shopId, {
-      status: ShopStatusEnum.INACTIVE,
+    await this.db.transaction(async (tx) => {
+      await this.shopRepository.update(
+        shopId,
+        { status: ShopStatusEnum.INACTIVE },
+        tx,
+      );
+
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.DEACTIVATED,
+          previousStatus: shop.status,
+          newStatus: ShopStatusEnum.INACTIVE,
+          reason: dto.reason,
+        },
+        tx,
+      );
     });
 
     return { message: 'Shop deactivated successfully' };
@@ -248,8 +416,22 @@ export class AdminShopService {
       );
     }
 
-    await this.shopRepository.update(shopId, {
-      status: ShopStatusEnum.ACTIVE,
+    await this.db.transaction(async (tx) => {
+      await this.shopRepository.update(
+        shopId,
+        { status: ShopStatusEnum.ACTIVE },
+        tx,
+      );
+
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.REACTIVATED,
+          previousStatus: shop.status,
+          newStatus: ShopStatusEnum.ACTIVE,
+        },
+        tx,
+      );
     });
 
     return { message: 'Shop reactivated successfully' };

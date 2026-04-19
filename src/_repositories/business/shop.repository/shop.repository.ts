@@ -363,10 +363,7 @@ export class ShopRepository {
     payload: Partial<
       Pick<
         TNewShopAddress,
-        | 'postalCode'
-        | 'latitude'
-        | 'longitude'
-        | 'googleMapsLink'
+        'postalCode' | 'latitude' | 'longitude' | 'googleMapsLink'
       >
     >,
     tx?: DrizzleTx,

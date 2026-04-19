@@ -14,11 +14,11 @@ export const shopContactTable = pgTable('shop_contact', {
   businessEmail: varchar('business_email', { length: 255 }),
   phone: varchar('phone', { length: 20 }),
   alternativePhone: varchar('alternative_phone', { length: 20 }),
-  
+
   // Messaging Apps
   whatsapp: varchar('whatsapp', { length: 20 }),
   telegram: varchar('telegram', { length: 50 }),
-  
+
   // Social Media
   facebook: varchar('facebook', { length: 255 }),
   instagram: varchar('instagram', { length: 255 }),
