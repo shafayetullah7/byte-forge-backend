@@ -124,11 +124,12 @@ export class AdminShopController {
   @UseGuards(AdminAuthGuard)
   async getAllShops(@Query() query: ShopQueryDto) {
     const result = await this.adminShopService.getAllShops(query);
-    return this.responseService.paginated({
+    const response =  this.responseService.paginated({
       message: 'Shops retrieved successfully',
       data: result.data,
       meta: result.meta,
     });
+    return response;
   }
 
   @ApiAuth()

@@ -235,6 +235,15 @@ export class AdminShopService {
         orderBy: [sortFn(sortByField)],
         limit,
         offset,
+        with: {
+          logo: true,
+          translations: true,
+          shopAddressTable: {
+            with: {
+              translations: true,
+            },
+          },
+        },
       }),
       this.db.client
         .select({ total: sql`count(*)`.mapWith(Number) })
@@ -243,7 +252,25 @@ export class AdminShopService {
         .execute(),
     ]);
 
-    return paginate(data, total, page, limit);
+    // Transform data to include logo URLs and translations
+    const transformedData = data.map((shop) => {
+      const englishTranslation = shop.translations?.find(
+        (t) => t.locale === 'en',
+      );
+      const addressEnglishTranslation =
+        shop.shopAddressTable?.translations?.find(
+          (t) => t.locale === 'en',
+        );
+      return {
+        ...shop,
+        nameEn: englishTranslation?.name || shop.slug,
+        division: addressEnglishTranslation?.division || null,
+        city: addressEnglishTranslation?.district || null, // Using district as city
+        logoUrl: shop.logo?.url || null,
+      };
+    });
+
+    return paginate(transformedData, total, page, limit);
   }
 
   async getShopById(shopId: string) {
