@@ -51,6 +51,10 @@ export const shopTable = pgTable('shops', {
 });
 
 export const shopRelations = relations(shopTable, ({ one, many }) => ({
+  owner: one(userTable, {
+    fields: [shopTable.ownerId],
+    references: [userTable.id],
+  }),
   translations: many(shopTranslationsTable),
   shopVerificationTable: one(shopVerificationTable, {
     fields: [shopTable.id],

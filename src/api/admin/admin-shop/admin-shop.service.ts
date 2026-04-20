@@ -14,7 +14,7 @@ import { DeactivateShopDto } from './dto/deactivate-shop.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { paginate } from '@/common/utils/pagination.util';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
-import { and, eq, sql, asc, desc, ilike, count } from 'drizzle-orm';
+import { and, eq, sql, asc, desc, ilike, count, inArray } from 'drizzle-orm';
 import { shopTable, shopVerificationTable } from '@/_db/drizzle/schema';
 import {
   ShopStatusEnum,
@@ -217,17 +217,31 @@ export class AdminShopService {
   }
 
   async getAllShops(query: ShopQueryDto) {
-    const { status, search, limit = 20, page = 1, sortBy, sortOrder } = query;
+    const { status, verificationStatus, search, limit = 20, page = 1, sortBy, sortOrder } = query;
     const offset = (page - 1) * limit;
 
     const sortFn = sortOrder === 'asc' ? asc : desc;
     const sortByField =
       sortBy === 'updatedAt' ? shopTable.updatedAt : shopTable.createdAt;
 
-    const where = and(
+    // Build where conditions (common for both queries)
+    const baseConditions = [
       status ? eq(shopTable.status, status as TShopStatus) : undefined,
       search ? ilike(shopTable.slug, `%${search}%`) : undefined,
-    );
+    ];
+
+    // Create inArray subquery for verification status (returns shopIds with matching status)
+    const verificationFilter = verificationStatus
+      ? inArray(
+          shopTable.id,
+          this.db.client
+            .select({ shopId: shopVerificationTable.shopId })
+            .from(shopVerificationTable)
+            .where(eq(shopVerificationTable.status, verificationStatus)),
+        )
+      : undefined;
+
+    const where = and(...baseConditions, verificationFilter);
 
     const [data, [{ total }]] = await Promise.all([
       this.db.client.query.shopTable.findMany({
@@ -236,11 +250,29 @@ export class AdminShopService {
         limit,
         offset,
         with: {
+          owner: {
+            columns: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              userName: true,
+              avatar: true,
+            },
+          },
           logo: true,
           translations: true,
           shopAddressTable: {
             with: {
               translations: true,
+            },
+          },
+          shopVerificationTable: {
+            columns: {
+              id: true,
+              shopId: true,
+              status: true,
+              verifiedAt: true,
+              rejectionReason: true,
             },
           },
         },
@@ -252,7 +284,7 @@ export class AdminShopService {
         .execute(),
     ]);
 
-    // Transform data to include logo URLs and translations
+    // Transform data to include logo URLs, translations, owner, and verification
     const transformedData = data.map((shop) => {
       const englishTranslation = shop.translations?.find(
         (t) => t.locale === 'en',
@@ -262,11 +294,32 @@ export class AdminShopService {
           (t) => t.locale === 'en',
         );
       return {
-        ...shop,
+        id: shop.id,
+        ownerId: shop.ownerId,
+        slug: shop.slug,
+        status: shop.status,
         nameEn: englishTranslation?.name || shop.slug,
         division: addressEnglishTranslation?.division || null,
-        city: addressEnglishTranslation?.district || null, // Using district as city
+        city: addressEnglishTranslation?.district || null,
+        logoId: shop.logoId,
         logoUrl: shop.logo?.url || null,
+        owner: shop.owner
+          ? {
+              firstName: shop.owner.firstName,
+              lastName: shop.owner.lastName,
+              userName: shop.owner.userName,
+              avatar: shop.owner.avatar || null,
+            }
+          : null,
+        verification: shop.shopVerificationTable
+          ? {
+              status: shop.shopVerificationTable.status,
+              verifiedAt: shop.shopVerificationTable.verifiedAt || null,
+              rejectionReason: shop.shopVerificationTable.rejectionReason || null,
+            }
+          : null,
+        createdAt: shop.createdAt,
+        updatedAt: shop.updatedAt,
       };
     });
 
