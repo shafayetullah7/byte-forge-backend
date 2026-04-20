@@ -103,23 +103,19 @@ import * as morgan from 'morgan';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Use morgan for HTTP request logging (only errors)
+    // Use morgan for HTTP request logging (all requests)
     consumer
-      .apply((req, res, next) => {
-        // Only log error responses (4xx, 5xx)
-        const originalSend = res.send;
-        const originalJson = res.json;
-
-        res.on('finish', () => {
-          if (res.statusCode >= 400) {
-            console.log(
-              `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode}`,
-            );
-          }
-        });
-
-        next();
-      })
+      .apply(
+        morgan(':date[iso] :method :url :status :response-time ms - :res[content-length]', {
+          // Skip logging successful responses in production to reduce noise
+          skip: (req, res) => {
+            if (process.env.NODE_ENV === 'production') {
+              return res.statusCode < 400; // Only log errors in production
+            }
+            return false; // Log everything in development
+          },
+        }),
+      )
       .forRoutes('*path');
   }
 }
