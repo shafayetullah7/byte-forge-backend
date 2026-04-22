@@ -15,7 +15,7 @@ import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { paginate } from '@/common/utils/pagination.util';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
 import { and, eq, sql, asc, desc, ilike, count, inArray } from 'drizzle-orm';
-import { shopTable, shopVerificationTable } from '@/_db/drizzle/schema';
+import { shopTable, shopVerificationTable, mediaTable } from '@/_db/drizzle/schema';
 import {
   ShopStatusEnum,
   TShopStatus,
@@ -72,7 +72,6 @@ export class AdminShopService {
         tx,
       );
 
-      // 1. Update Verification Status
       const verifications = await this.shopVerificationRepository.update(
         {
           status: dto.status,
@@ -96,7 +95,6 @@ export class AdminShopService {
         throw new NotFoundException('Verification record not found');
       }
 
-      // 2. If Approved, set Shop Status to ACTIVE
       if (dto.status === ShopVerificationStatusEnum.APPROVED) {
         await this.shopRepository.update(
           shopId,
@@ -129,13 +127,11 @@ export class AdminShopService {
 
   async approveShop(shopId: string) {
     return this.db.transaction(async (tx) => {
-      // 1. Get current verification record
       const currentVerification = await this.shopVerificationRepository.findOne(
         { shopId },
         tx,
       );
 
-      // 2. Update verification record to APPROVED
       const verifications = await this.shopVerificationRepository.update(
         {
           status: ShopVerificationStatusEnum.APPROVED,
@@ -153,7 +149,6 @@ export class AdminShopService {
         throw new NotFoundException('Verification record not found');
       }
 
-      // 3. Set Shop Status to ACTIVE
       await this.shopRepository.update(
         shopId,
         { status: ShopStatusEnum.ACTIVE },
@@ -176,13 +171,11 @@ export class AdminShopService {
 
   async rejectShop(shopId: string, dto: RejectShopDto) {
     return this.db.transaction(async (tx) => {
-      // 1. Get current verification record
       const currentVerification = await this.shopVerificationRepository.findOne(
         { shopId },
         tx,
       );
 
-      // 2. Update verification record to REJECTED
       const verifications = await this.shopVerificationRepository.update(
         {
           status: ShopVerificationStatusEnum.REJECTED,
@@ -224,13 +217,11 @@ export class AdminShopService {
     const sortByField =
       sortBy === 'updatedAt' ? shopTable.updatedAt : shopTable.createdAt;
 
-    // Build where conditions (common for both queries)
     const baseConditions = [
       status ? eq(shopTable.status, status as TShopStatus) : undefined,
       search ? ilike(shopTable.slug, `%${search}%`) : undefined,
     ];
 
-    // Create inArray subquery for verification status (returns shopIds with matching status)
     const verificationFilter = verificationStatus
       ? inArray(
           shopTable.id,
@@ -284,7 +275,6 @@ export class AdminShopService {
         .execute(),
     ]);
 
-    // Transform data to include logo URLs, translations, owner, and verification
     const transformedData = data.map((shop) => {
       const englishTranslation = shop.translations?.find(
         (t) => t.locale === 'en',
@@ -330,21 +320,25 @@ export class AdminShopService {
     const shop = await this.db.client.query.shopTable.findFirst({
       where: eq(shopTable.id, shopId),
       with: {
-        logo: true,
-        banner: true,
-        translations: true,
-        shopAddressTable: {
-          with: {
-            translations: true,
+        owner: {
+          columns: {
+            firstName: true,
+            lastName: true,
+            userName: true,
+            avatar: true,
           },
         },
-        shopContactTable: true,
-        shopBusinessTable: true,
+        logo: true,
+        banner: true,
+        translations: {
+          columns: {
+            locale: true,
+            name: true,
+          },
+        },
         shopVerificationTable: {
-          with: {
-            tradeLicenseMedia: true,
-            tinMedia: true,
-            utilityBillMedia: true,
+          columns: {
+            status: true,
           },
         },
       },
@@ -354,11 +348,27 @@ export class AdminShopService {
       throw new NotFoundException('Shop not found');
     }
 
-    const { shopVerificationTable, ...rest } = shop;
+    const englishTranslation = shop.translations?.find(
+      (t) => t.locale === 'en',
+    );
 
     return {
-      ...rest,
-      verification: shopVerificationTable,
+      id: shop.id,
+      name: englishTranslation?.name || shop.slug,
+      slug: shop.slug,
+      logo: shop.logo?.url || null,
+      banner: shop.banner?.url || null,
+      status: shop.status,
+      verificationStatus: shop.shopVerificationTable?.status || null,
+      owner: shop.owner
+        ? {
+            firstName: shop.owner.firstName,
+            lastName: shop.owner.lastName,
+            userName: shop.owner.userName,
+            avatar: shop.owner.avatar || null,
+          }
+        : null,
+      createdAt: shop.createdAt,
     };
   }
 
@@ -425,7 +435,6 @@ export class AdminShopService {
 
       await this.shopVerificationRepository.findOne({ shopId }, tx);
 
-      // Update verification record with suspension info
       await this.shopVerificationRepository.update(
         { status: ShopVerificationStatusEnum.REJECTED },
         { shopId },
