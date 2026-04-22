@@ -372,6 +372,20 @@
       "when": 1776820918716,
       "tag": "0054_spotty_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1776823926390,
+      "tag": "0055_glamorous_shotgun",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1776824202967,
+      "tag": "0056_puzzling_baron_zemo",
+      "breakpoints": true
     }
   ]
 }

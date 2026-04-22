@@ -1,4 +1,4 @@
-import { varchar, pgEnum } from 'drizzle-orm/pg-core';
+import { varchar, pgEnum, boolean } from 'drizzle-orm/pg-core';
 import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user';
@@ -29,6 +29,7 @@ export const shopTable = pgTable('shops', {
     .references(() => userTable.id, { onDelete: 'cascade' }),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   status: shopStatusEnum('status').default(ShopStatusEnum.DRAFT).notNull(),
+  isVerified: boolean('is_verified').default(false).notNull(),
 
   // First-Class Branding
   primaryColor: varchar('primary_color', { length: 7 }), // hex code

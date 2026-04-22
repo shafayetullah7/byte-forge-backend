@@ -7,7 +7,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { VerifyShopDto } from './dto/verify-shop.dto';
 import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { DeactivateShopDto } from './dto/deactivate-shop.dto';
@@ -63,66 +62,6 @@ export class AdminShopService {
     ]);
 
     return paginate(data, total, page, limit);
-  }
-
-  async verifyShop(shopId: string, dto: VerifyShopDto) {
-    return this.db.transaction(async (tx) => {
-      const currentVerification = await this.shopVerificationRepository.findOne(
-        { shopId },
-        tx,
-      );
-
-      const verifications = await this.shopVerificationRepository.update(
-        {
-          status: dto.status,
-          verifiedAt:
-            dto.status === ShopVerificationStatusEnum.APPROVED
-              ? new Date()
-              : null,
-          rejectionReason:
-            dto.status === ShopVerificationStatusEnum.REJECTED
-              ? dto.reason
-              : null,
-          adminNotes: dto.adminNotes || null,
-        },
-        { shopId },
-        tx,
-      );
-
-      const verification = verifications[0];
-
-      if (!verification) {
-        throw new NotFoundException('Verification record not found');
-      }
-
-      if (dto.status === ShopVerificationStatusEnum.APPROVED) {
-        await this.shopRepository.update(
-          shopId,
-          { status: ShopStatusEnum.ACTIVE },
-          tx,
-        );
-      }
-
-      await this.shopVerificationHistoryRepository.create(
-        {
-          shopId,
-          action:
-            dto.status === ShopVerificationStatusEnum.APPROVED
-              ? ShopVerificationActionEnum.APPROVED
-              : ShopVerificationActionEnum.REJECTED,
-          previousStatus: currentVerification?.status,
-          newStatus: dto.status,
-          reason:
-            dto.status === ShopVerificationStatusEnum.REJECTED
-              ? dto.reason
-              : undefined,
-          changes: dto.adminNotes ? { adminNotes: dto.adminNotes } : undefined,
-        },
-        tx,
-      );
-
-      return verification;
-    });
   }
 
   async approveShop(shopId: string) {
@@ -288,6 +227,7 @@ export class AdminShopService {
         ownerId: shop.ownerId,
         slug: shop.slug,
         status: shop.status,
+        isVerified: shop.isVerified,
         nameEn: englishTranslation?.name || shop.slug,
         division: addressEnglishTranslation?.division || null,
         city: addressEnglishTranslation?.district || null,
@@ -359,6 +299,7 @@ export class AdminShopService {
       logo: shop.logo?.url || null,
       banner: shop.banner?.url || null,
       status: shop.status,
+      isVerified: shop.isVerified,
       verificationStatus: shop.shopVerificationTable?.status || null,
       owner: shop.owner
         ? {
@@ -514,7 +455,10 @@ export class AdminShopService {
     await this.db.transaction(async (tx) => {
       await this.shopRepository.update(
         shopId,
-        { status: ShopStatusEnum.SUSPENDED },
+        { 
+          status: ShopStatusEnum.ACTIVE,
+          isVerified: true,
+        },
         tx,
       );
 
@@ -555,7 +499,10 @@ export class AdminShopService {
     await this.db.transaction(async (tx) => {
       await this.shopRepository.update(
         shopId,
-        { status: ShopStatusEnum.INACTIVE },
+        { 
+          status: ShopStatusEnum.ACTIVE,
+          isVerified: true,
+        },
         tx,
       );
 

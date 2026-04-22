@@ -10,7 +10,6 @@ import {
   Patch,
 } from '@nestjs/common';
 import { AdminShopService } from './admin-shop.service';
-import { VerifyShopDto } from './dto/verify-shop.dto';
 import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
@@ -55,27 +54,6 @@ export class AdminShopController {
       message: 'Pending verifications retrieved successfully',
       data: verifications.data,
       meta: verifications.meta,
-    });
-  }
-
-  @ApiAuth()
-  @ApiOperation({
-    summary: 'Verify/Approve a shop',
-    description: 'Approves or rejects a shop verification.',
-  })
-  @ApiResponse({ status: 200, description: 'Shop verification updated' })
-  @ApiBadRequestResponse()
-  @ApiNotFoundResponse('Shop')
-  @Post(':id/verify')
-  @UseGuards(AdminAuthGuard)
-  async verifyShop(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: VerifyShopDto,
-  ) {
-    const verification = await this.adminShopService.verifyShop(id, dto);
-    return this.responseService.success({
-      message: 'Shop verification updated successfully',
-      data: verification,
     });
   }
 

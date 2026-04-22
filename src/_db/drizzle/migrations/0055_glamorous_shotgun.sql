@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "is_verified" text DEFAULT 'false' NOT NULL;
