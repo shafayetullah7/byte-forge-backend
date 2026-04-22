@@ -365,6 +365,13 @@
       "when": 1776438189777,
       "tag": "0053_familiar_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1776820918716,
+      "tag": "0054_spotty_mac_gargan",
+      "breakpoints": true
     }
   ]
 }
