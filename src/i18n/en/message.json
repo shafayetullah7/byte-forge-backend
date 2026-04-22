@@ -52,6 +52,9 @@
     "shopNotFound": "Shop not found",
     "shopAlreadyExists": "You already have a shop",
     "shopNameTaken": "Shop name is already taken",
+    "shopAlreadyVerified": "Shop is already verified. Contact admin if you need to update verification documents",
+    "verificationAlreadyPending": "Verification is already pending. Please wait for admin review",
+    "noChangesInResubmission": "No changes detected. Please update at least one document or information before resubmitting",
     "englishTranslationRequired": "English translation is required",
     "invalidCredentials": "Invalid credentials"
   },

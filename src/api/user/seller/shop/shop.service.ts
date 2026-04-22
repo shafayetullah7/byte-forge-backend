@@ -805,6 +805,62 @@ export class ShopService {
           tx,
         );
       } else {
+        // EDGE CASE: Prevent resubmission if already PENDING (spam prevention)
+        if (
+          verification.status === ShopVerificationStatusEnum.PENDING ||
+          verification.status === ShopVerificationStatusEnum.REVIEWING
+        ) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.verificationAlreadyPending', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
+        // EDGE CASE: Prevent resubmission if APPROVED (should use different flow)
+        if (verification.status === ShopVerificationStatusEnum.APPROVED) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.shopAlreadyVerified', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
+        // EDGE CASE: Prevent identical resubmissions (no changes made)
+        const hasDocumentChanges =
+          (dto.tradeLicenseDocumentId &&
+            dto.tradeLicenseDocumentId !== verification.tradeLicenseDocument) ||
+          (dto.tinDocumentId &&
+            dto.tinDocumentId !== verification.tinDocument) ||
+          (dto.utilityBillDocumentId &&
+            dto.utilityBillDocumentId !== verification.utilityBillDocument);
+
+        const hasNumberChanges =
+          (dto.tradeLicenseNumber !== undefined &&
+            dto.tradeLicenseNumber !== verification.tradeLicenseNumber) ||
+          (dto.tinNumber !== undefined &&
+            dto.tinNumber !== verification.tinNumber);
+
+        if (!hasDocumentChanges && !hasNumberChanges) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.noChangesInResubmission', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
         // 3.5 Decrement old media if replaced
         const oldMediaIdsToDecrement: string[] = [];
         if (
