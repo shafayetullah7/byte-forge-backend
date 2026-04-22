@@ -719,6 +719,19 @@ export class ShopService {
       return null;
     }
 
+    // Fetch media details for all documents in one query
+    const mediaIds = [
+      verification.tradeLicenseDocument,
+      verification.tinDocument,
+      verification.utilityBillDocument,
+    ].filter(Boolean) as string[];
+
+    let mediaMap: Map<string, any> = new Map();
+    if (mediaIds.length > 0) {
+      const medias = await this.mediaRepository.findMediaDetailsByIds(mediaIds);
+      medias.forEach(media => mediaMap.set(media.media.id, media.media));
+    }
+
     return {
       id: verification.id,
       shopId: verification.shopId,
@@ -728,6 +741,15 @@ export class ShopService {
       tradeLicenseDocumentId: verification.tradeLicenseDocument,
       tinDocumentId: verification.tinDocument,
       utilityBillDocumentId: verification.utilityBillDocument,
+      tradeLicenseDocument: verification.tradeLicenseDocument 
+        ? mediaMap.get(verification.tradeLicenseDocument) 
+        : null,
+      tinDocument: verification.tinDocument 
+        ? mediaMap.get(verification.tinDocument) 
+        : null,
+      utilityBillDocument: verification.utilityBillDocument 
+        ? mediaMap.get(verification.utilityBillDocument) 
+        : null,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,
       createdAt: verification.createdAt,
