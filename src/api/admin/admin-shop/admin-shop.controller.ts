@@ -161,6 +161,23 @@ export class AdminShopController {
   }
 
   @ApiAuth()
+  @ApiOperation({ 
+    summary: 'Get shop verification details',
+    description: 'Retrieves complete verification information including documents, admin notes, and history.',
+  })
+  @ApiResponse({ status: 200, description: 'Verification details retrieved' })
+  @ApiNotFoundResponse('Shop verification')
+  @Get(':id/verification')
+  @UseGuards(AdminAuthGuard)
+  async getShopVerification(@Param('id', ParseUUIDPipe) id: string) {
+    const verification = await this.adminShopService.getShopVerification(id);
+    return this.responseService.success({
+      message: 'Verification details retrieved successfully',
+      data: verification,
+    });
+  }
+
+  @ApiAuth()
   @ApiOperation({ summary: 'Suspend an active shop' })
   @ApiResponse({ status: 200, description: 'Shop suspended' })
   @ApiBadRequestResponse()
