@@ -721,9 +721,9 @@ export class ShopService {
 
     // Fetch media details for all documents in one query
     const mediaIds = [
-      verification.tradeLicenseDocument,
-      verification.tinDocument,
-      verification.utilityBillDocument,
+      verification.tradeLicenseDocumentId,
+      verification.tinDocumentId,
+      verification.utilityBillDocumentId,
     ].filter(Boolean) as string[];
 
     let mediaMap: Map<string, any> = new Map();
@@ -738,17 +738,17 @@ export class ShopService {
       status: verification.status,
       tradeLicenseNumber: verification.tradeLicenseNumber,
       tinNumber: verification.tinNumber,
-      tradeLicenseDocumentId: verification.tradeLicenseDocument,
-      tinDocumentId: verification.tinDocument,
-      utilityBillDocumentId: verification.utilityBillDocument,
-      tradeLicenseDocument: verification.tradeLicenseDocument 
-        ? mediaMap.get(verification.tradeLicenseDocument) 
+      tradeLicenseDocumentId: verification.tradeLicenseDocumentId,
+      tinDocumentId: verification.tinDocumentId,
+      utilityBillDocumentId: verification.utilityBillDocumentId,
+      tradeLicenseDocument: verification.tradeLicenseDocumentId 
+        ? mediaMap.get(verification.tradeLicenseDocumentId) 
         : null,
-      tinDocument: verification.tinDocument 
-        ? mediaMap.get(verification.tinDocument) 
+      tinDocument: verification.tinDocumentId 
+        ? mediaMap.get(verification.tinDocumentId) 
         : null,
-      utilityBillDocument: verification.utilityBillDocument 
-        ? mediaMap.get(verification.utilityBillDocument) 
+      utilityBillDocument: verification.utilityBillDocumentId 
+        ? mediaMap.get(verification.utilityBillDocumentId) 
         : null,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,
@@ -859,11 +859,11 @@ export class ShopService {
         // EDGE CASE: Prevent identical resubmissions (no changes made)
         const hasDocumentChanges =
           (dto.tradeLicenseDocumentId &&
-            dto.tradeLicenseDocumentId !== verification.tradeLicenseDocument) ||
+            dto.tradeLicenseDocumentId !== verification.tradeLicenseDocumentId) ||
           (dto.tinDocumentId &&
-            dto.tinDocumentId !== verification.tinDocument) ||
+            dto.tinDocumentId !== verification.tinDocumentId) ||
           (dto.utilityBillDocumentId &&
-            dto.utilityBillDocumentId !== verification.utilityBillDocument);
+            dto.utilityBillDocumentId !== verification.utilityBillDocumentId);
 
         const hasNumberChanges =
           (dto.tradeLicenseNumber !== undefined &&
@@ -887,24 +887,24 @@ export class ShopService {
         const oldMediaIdsToDecrement: string[] = [];
         if (
           dto.tradeLicenseDocumentId &&
-          verification.tradeLicenseDocument &&
-          dto.tradeLicenseDocumentId !== verification.tradeLicenseDocument
+          verification.tradeLicenseDocumentId &&
+          dto.tradeLicenseDocumentId !== verification.tradeLicenseDocumentId
         ) {
-          oldMediaIdsToDecrement.push(verification.tradeLicenseDocument);
+          oldMediaIdsToDecrement.push(verification.tradeLicenseDocumentId);
         }
         if (
           dto.tinDocumentId &&
-          verification.tinDocument &&
-          dto.tinDocumentId !== verification.tinDocument
+          verification.tinDocumentId &&
+          dto.tinDocumentId !== verification.tinDocumentId
         ) {
-          oldMediaIdsToDecrement.push(verification.tinDocument);
+          oldMediaIdsToDecrement.push(verification.tinDocumentId);
         }
         if (
           dto.utilityBillDocumentId &&
-          verification.utilityBillDocument &&
-          dto.utilityBillDocumentId !== verification.utilityBillDocument
+          verification.utilityBillDocumentId &&
+          dto.utilityBillDocumentId !== verification.utilityBillDocumentId
         ) {
-          oldMediaIdsToDecrement.push(verification.utilityBillDocument);
+          oldMediaIdsToDecrement.push(verification.utilityBillDocumentId);
         }
         if (oldMediaIdsToDecrement.length > 0) {
           await this.mediaRepository.decrementMediaUsage(
@@ -921,16 +921,16 @@ export class ShopService {
         updatePayload.tradeLicenseNumber = dto.tradeLicenseNumber;
       }
       if (dto.tradeLicenseDocumentId !== undefined) {
-        updatePayload.tradeLicenseDocument = dto.tradeLicenseDocumentId;
+        updatePayload.tradeLicenseDocumentId = dto.tradeLicenseDocumentId;
       }
       if (dto.tinNumber !== undefined) {
         updatePayload.tinNumber = dto.tinNumber;
       }
       if (dto.tinDocumentId !== undefined) {
-        updatePayload.tinDocument = dto.tinDocumentId;
+        updatePayload.tinDocumentId = dto.tinDocumentId;
       }
       if (dto.utilityBillDocumentId !== undefined) {
-        updatePayload.utilityBillDocument = dto.utilityBillDocumentId;
+        updatePayload.utilityBillDocumentId = dto.utilityBillDocumentId;
       }
 
       // Reset status to PENDING if any document is updated
@@ -941,6 +941,14 @@ export class ShopService {
       ) {
         updatePayload.status = ShopVerificationStatusEnum.PENDING;
         updatePayload.rejectionReason = null;
+        
+        // CRITICAL: Also update shop status to PENDING_VERIFICATION
+        // This ensures consistency between shop status and verification status
+        await this.shopRepository.update(
+          shopId,
+          { status: 'PENDING_VERIFICATION' },
+          tx,
+        );
       }
 
       await this.shopVerificationRepository.update(

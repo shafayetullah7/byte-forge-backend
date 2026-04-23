@@ -357,7 +357,12 @@ export class AdminShopService {
       submittedAt: verification.createdAt,
       verifiedAt: verification.verifiedAt,
       
-      // Documents
+      // Documents - IDs
+      tradeLicenseDocumentId: verification.tradeLicenseDocumentId,
+      tinDocumentId: verification.tinDocumentId,
+      utilityBillDocumentId: verification.utilityBillDocumentId,
+      
+      // Documents - Full media objects for preview
       tradeLicenseNumber: verification.tradeLicenseNumber,
       tradeLicenseDocument: verification.tradeLicenseMedia
         ? {
