@@ -56,7 +56,9 @@
     "verificationAlreadyPending": "Verification is already pending. Please wait for admin review",
     "noChangesInResubmission": "No changes detected. Please update at least one document or information before resubmitting",
     "englishTranslationRequired": "English translation is required",
-    "invalidCredentials": "Invalid credentials"
+    "invalidCredentials": "Invalid credentials",
+    "duplicateSkuInVariants": "Duplicate SKU in variants",
+    "duplicateMediaIds": "Duplicate media IDs"
   },
   "success": {
     "userCreated": "New user created",

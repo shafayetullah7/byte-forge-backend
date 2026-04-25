@@ -10,7 +10,14 @@ import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { CreatePlantDto } from '../dto/create-plant.dto';
 import { TLockTransaction } from '@/_repositories/_types/lock.transaction';
-import { ShopStatusEnum, ProductStatusEnum } from '@/_db/drizzle/enum';
+import { ShopStatusEnum, ProductStatusEnum, TProductStatus } from '@/_db/drizzle/enum';
+import {
+  TLightRequirement,
+  TWateringFrequency,
+  THumidityLevel,
+  TCareDifficulty,
+  TGrowthRate,
+} from '@/_db/drizzle/enum/plant-care.enum';
 import {
   productsTable,
   productTranslationsTable,
@@ -32,7 +39,7 @@ import {
   TNewPlantVariantAttributes,
   TNewProductMedia,
 } from '@/_db/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, like } from 'drizzle-orm';
 
 @Injectable()
 export class CreatePlantService {
@@ -50,31 +57,34 @@ export class CreatePlantService {
       // === 1. Get and validate shop ===
       const shop = await this.getShopByUserId(userId, tx, lang);
 
-      // === 2. Validate category ===
-      await this.validateCategory(dto.categoryId, tx, lang);
+      // === 2. Validate media duplicates FIRST (fail fast) ===
+      this.validateMediaDuplicates(dto, lang);
 
-      // === 3. Validate tags ===
-      if (dto.tagIds && dto.tagIds.length > 0) {
-        await this.validateTags(dto.tagIds, tx, lang);
-      }
-
-      // === 4. Validate slug uniqueness ===
-      await this.validateSlug(dto.slug, shop.id, tx, lang);
-
-      // === 5. Validate media duplicates FIRST (fail fast) ===
-      this.validateMediaDuplicates(dto);
-
-      // === 6. Collect and validate ALL media IDs ===
+      // === 3. Collect and validate ALL media IDs ===
       const allMediaIds = this.collectAllMediaIds(dto);
       await this.validateMediaOwnership(allMediaIds, userId, tx, lang);
 
-      // === 5b. Validate variant SKUs ===
-      this.validateVariantSkus(dto.variants);
+      // === 4. Validate variant SKUs ===
+      this.validateVariantSkus(dto.variants, lang);
 
-      // === 5c. Validate slug exists or generate unique one ===
-      const slug = dto.slug || await this.generateUniqueSlug(dto.translations.find((t) => t.locale === 'en')?.name || 'plant', shop.id, tx);
+      // === 5. Run independent validations in parallel ===
+      await Promise.all([
+        this.validateCategory(dto.categoryId, tx, lang),
+        dto.tagIds && dto.tagIds.length > 0
+          ? this.validateTags(dto.tagIds, tx, lang)
+          : Promise.resolve(),
+      ]);
 
-      // === 6. Create product ===
+      // === 6. Resolve slug (validate or generate) ===
+      const slug = dto.slug
+        ? await this.validateAndReturnSlug(dto.slug, shop.id, tx, lang)
+        : await this.generateUniqueSlug(
+            dto.translations.find((t) => t.locale === 'en')?.name || 'plant',
+            shop.id,
+            tx,
+          );
+
+      // === 7. Create product ===
       const product = await this.createProductRecord(
         {
           shopId: shop.id,
@@ -82,63 +92,54 @@ export class CreatePlantService {
           categoryId: dto.categoryId,
           slug,
           thumbnailId: dto.thumbnailId,
-          status: (dto.status || ProductStatusEnum.DRAFT) as any,
+          status: (dto.status || ProductStatusEnum.DRAFT) as TProductStatus,
         },
         tx,
       );
 
-      // === 7. Create product translations (BATCH) ===
+      // === 8. Create product translations (BATCH) ===
       if (dto.translations && dto.translations.length > 0) {
         await this.createProductTranslations(product.id, dto.translations, tx);
       }
 
-      // === 8. Create plant details (EN + Shared) ===
-      await this.createPlantDetails(
-        product.id,
-        dto.plantDetails,
-        dto.enDetails,
-        tx,
-      );
+      // === 9. Create plant details (EN + Shared) ===
+      await this.createPlantDetails(product.id, dto.plantDetails, dto.enDetails, tx);
 
-      // === 9. Create plant details translations (BN) ===
-      await this.createPlantDetailsTranslations(
-        product.id,
-        dto.bnDetails,
-        tx,
-      );
+      // === 10. Create plant details translations ===
+      await this.createPlantDetailsTranslations(product.id, dto.bnDetails, tx);
 
-      // === 9. Create care instructions ===
+      // === 11. Create care instructions ===
       if (dto.careInstructions) {
-        await this.createCareInstructions(product.id, dto.careInstructions, tx);
+        const care = await this.createCareInstructions(product.id, dto.careInstructions, tx);
 
         if (dto.careTranslations && dto.careTranslations.length > 0) {
-          await this.createCareTranslations(product.id, dto.careTranslations, tx);
+          await this.createCareTranslations(care.id, dto.careTranslations, tx);
         }
       }
 
-      // === 10. Create variants (BATCH) ===
+      // === 12. Create variants (BATCH) ===
       const variants = await this.createVariants(product.id, dto.variants, tx);
 
-      // === 11. Create product media (BATCH - single insert) ===
+      // === 13. Create product media (BATCH - single insert) ===
       await this.createProductMedia(product.id, variants, dto, tx);
 
-      // === 12. Create product tags (BATCH) ===
+      // === 14. Create product tags (BATCH) ===
       if (dto.tagIds && dto.tagIds.length > 0) {
         await this.createProductTags(product.id, dto.tagIds, tx);
       }
 
-      // === 13. Increment media usage counts (BATCH - single update) ===
+      // === 15. Increment media usage counts (BATCH - single update) ===
       await this.mediaRepository.incrementMediaUsage(allMediaIds, tx);
 
-      // === 14. Increment category usage count ===
+      // === 16. Increment category usage count ===
       await this.categoryRepository.incrementUsageCount(dto.categoryId, 1, tx);
 
-      // === 15. Increment tag usage counts (BATCH) ===
+      // === 17. Increment tag usage counts (BATCH) ===
       if (dto.tagIds && dto.tagIds.length > 0) {
         await this.tagRepository.incrementUsageCountBatch(dto.tagIds, 1, tx);
       }
 
-      // === 16. Return product ID (controller can fetch complete data if needed) ===
+      // === 18. Return product ID (controller can fetch complete data if needed) ===
       return { id: product.id };
     });
   }
@@ -161,7 +162,6 @@ export class CreatePlantService {
       });
     }
 
-    // Check shop status - only ACTIVE or PENDING_VERIFICATION shops can create plants
     if (shop.status !== ShopStatusEnum.ACTIVE && shop.status !== ShopStatusEnum.PENDING_VERIFICATION) {
       throw new CustomException({
         message: this.i18n.t('message.error.shopNotActive', { lang }),
@@ -174,7 +174,7 @@ export class CreatePlantService {
   }
 
   private async validateCategory(categoryId: string, tx: DrizzleTx, lang: string) {
-    const category = await this.categoryRepository.findOne(categoryId);
+    const category = await this.categoryRepository.findOne(categoryId, { tx, lock: false });
 
     if (!category) {
       throw new CustomException({
@@ -220,14 +220,12 @@ export class CreatePlantService {
     }
   }
 
-  private async validateSlug(
-    slug: string | undefined,
+  private async validateAndReturnSlug(
+    slug: string,
     shopId: string,
     tx: DrizzleTx,
     lang: string,
-  ) {
-    if (!slug) return;
-
+  ): Promise<string> {
     const existing = await tx.query.productsTable.findFirst({
       where: and(
         eq(productsTable.slug, slug),
@@ -242,59 +240,57 @@ export class CreatePlantService {
         errorCode: ErrorCode.DUPLICATE_ENTRY,
       });
     }
+
+    return slug;
   }
 
-  private validateVariantSkus(variants: any[]) {
+  private validateVariantSkus(variants: CreatePlantDto['variants'], lang: string) {
     const skus = variants.map((v) => v.sku).filter(Boolean);
     const uniqueSkus = new Set(skus);
 
     if (skus.length !== uniqueSkus.size) {
       throw new CustomException({
-        message: 'Duplicate SKU in variants',
+        message: this.i18n.t('message.error.duplicateSkuInVariants', { lang }),
         statusCode: HttpStatus.BAD_REQUEST,
         errorCode: ErrorCode.VALIDATION_ERROR,
         validationErrors: [
           {
             field: 'variants.sku',
-            message: 'Each variant must have a unique SKU',
+            message: this.i18n.t('message.error.duplicateSkuInVariants', { lang }),
           },
         ],
       });
     }
   }
 
-  private validateMediaDuplicates(dto: CreatePlantDto) {
-    const allMediaIds = [dto.thumbnailId];
-    dto.variants.forEach((v) => {
-      if (v.mediaIds) allMediaIds.push(...v.mediaIds);
-    });
+  private validateMediaDuplicates(dto: CreatePlantDto, lang: string) {
+    const allMediaIds = this.extractMediaIds(dto);
 
     const uniqueMediaIds = new Set(allMediaIds);
     if (allMediaIds.length !== uniqueMediaIds.size) {
       throw new CustomException({
-        message: 'Duplicate media IDs',
+        message: this.i18n.t('message.error.duplicateMediaIds', { lang }),
         statusCode: HttpStatus.BAD_REQUEST,
         errorCode: ErrorCode.VALIDATION_ERROR,
         validationErrors: [
           {
             field: 'mediaIds',
-            message: 'Same media cannot be used multiple times',
+            message: this.i18n.t('message.error.duplicateMediaIds', { lang }),
           },
         ],
       });
     }
   }
 
+  private extractMediaIds(dto: CreatePlantDto): string[] {
+    return [
+      dto.thumbnailId,
+      ...dto.variants.flatMap((v) => v.mediaIds ?? []),
+    ].filter(Boolean);
+  }
+
   private collectAllMediaIds(dto: CreatePlantDto): string[] {
-    const mediaIds = [dto.thumbnailId];
-
-    dto.variants.forEach((variant) => {
-      if (variant.mediaIds && variant.mediaIds.length > 0) {
-        mediaIds.push(...variant.mediaIds);
-      }
-    });
-
-    return mediaIds.filter(Boolean);
+    return this.extractMediaIds(dto);
   }
 
   private async validateMediaOwnership(
@@ -340,35 +336,24 @@ export class CreatePlantService {
     shopId: string,
     tx: DrizzleTx,
   ): Promise<string> {
-    let slug = this.generateSlug(baseName);
-    let counter = 1;
-    let originalSlug = slug;
+    const base = this.generateSlug(baseName);
 
-    while (true) {
-      const existing = await tx.query.productsTable.findFirst({
-        where: and(
-          eq(productsTable.slug, slug),
-          eq(productsTable.shopId, shopId),
-        ),
-      });
+    const existing = await tx.query.productsTable.findMany({
+      where: and(
+        eq(productsTable.shopId, shopId),
+        like(productsTable.slug, `${base}%`),
+      ),
+      columns: { slug: true },
+    });
 
-      if (!existing) {
-        return slug;
-      }
+    if (existing.length === 0) return base;
 
-      // Slug exists, try with counter
-      counter++;
-      slug = `${originalSlug}-${counter}`;
+    const existingSlugs = new Set(existing.map((r) => r.slug));
+    if (!existingSlugs.has(base)) return base;
 
-      // Prevent infinite loop
-      if (counter > 1000) {
-        throw new CustomException({
-          message: 'Unable to generate unique slug',
-          statusCode: HttpStatus.BAD_REQUEST,
-          errorCode: ErrorCode.VALIDATION_ERROR,
-        });
-      }
-    }
+    let counter = 2;
+    while (existingSlugs.has(`${base}-${counter}`)) counter++;
+    return `${base}-${counter}`;
   }
 
   // === Creation Methods (BATCH Operations) ===
@@ -386,12 +371,7 @@ export class CreatePlantService {
 
   private async createProductTranslations(
     productId: string,
-    translations: Array<{
-      locale: string;
-      name: string;
-      description: string;
-      shortDescription?: string;
-    }>,
+    translations: CreatePlantDto['translations'],
     tx: DrizzleTx,
   ) {
     const payloads: TNewProductTranslation[] = translations.map((t) => ({
@@ -407,8 +387,8 @@ export class CreatePlantService {
 
   private async createPlantDetails(
     productId: string,
-    details: any,
-    enDetails: any,
+    details: CreatePlantDto['plantDetails'],
+    enDetails: CreatePlantDto['enDetails'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantDetails = {
@@ -416,13 +396,13 @@ export class CreatePlantService {
       scientificName: details.scientificName || null,
       commonNames: enDetails.commonNames || null,
       origin: enDetails.origin || null,
-      lightRequirement: details.lightRequirement || null,
-      wateringFrequency: details.wateringFrequency || null,
-      humidityLevel: details.humidityLevel || null,
+      lightRequirement: details.lightRequirement as TLightRequirement,
+      wateringFrequency: details.wateringFrequency as TWateringFrequency,
+      humidityLevel: details.humidityLevel as THumidityLevel,
       temperatureRange: details.temperatureRange || null,
       soilType: enDetails.soilType || null,
-      careDifficulty: details.careDifficulty || null,
-      growthRate: details.growthRate || null,
+      careDifficulty: details.careDifficulty as TCareDifficulty,
+      growthRate: details.growthRate as TGrowthRate,
       matureHeight: details.matureHeight || null,
       matureSpread: details.matureSpread || null,
       toxicityInfo: enDetails.toxicityInfo || null,
@@ -433,12 +413,12 @@ export class CreatePlantService {
 
   private async createPlantDetailsTranslations(
     productId: string,
-    bnDetails: any,
+    bnDetails: CreatePlantDto['bnDetails'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantDetailsTranslation = {
       plantId: productId,
-      locale: 'bn',
+      locale: bnDetails.locale,
       commonNames: bnDetails.commonNames || null,
       origin: bnDetails.origin || null,
       soilType: bnDetails.soilType || null,
@@ -450,41 +430,32 @@ export class CreatePlantService {
 
   private async createCareInstructions(
     productId: string,
-    instructions: any,
+    instructions: CreatePlantDto['careInstructions'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantCareInstructions = {
       productId,
-      lightInstructions: instructions.lightInstructions || null,
-      wateringInstructions: instructions.wateringInstructions || null,
-      humidityInstructions: instructions.humidityInstructions || null,
-      fertilizerSchedule: instructions.fertilizerSchedule || null,
-      repottingFrequency: instructions.repottingFrequency || null,
-      pruningNotes: instructions.pruningNotes || null,
-      commonProblems: instructions.commonProblems || null,
-      seasonalCare: instructions.seasonalCare || null,
+      lightInstructions: instructions?.lightInstructions || null,
+      wateringInstructions: instructions?.wateringInstructions || null,
+      humidityInstructions: instructions?.humidityInstructions || null,
+      fertilizerSchedule: instructions?.fertilizerSchedule || null,
+      repottingFrequency: instructions?.repottingFrequency || null,
+      pruningNotes: instructions?.pruningNotes || null,
+      commonProblems: instructions?.commonProblems || null,
+      seasonalCare: instructions?.seasonalCare || null,
     };
 
-    await tx.insert(plantCareInstructionsTable).values(payload);
+    const [care] = await tx.insert(plantCareInstructionsTable).values(payload).returning();
+    return care;
   }
 
   private async createCareTranslations(
-    productId: string,
-    translations: Array<{
-      locale: string;
-      lightInstructions?: string;
-      wateringInstructions?: string;
-      humidityInstructions?: string;
-      fertilizerSchedule?: string;
-      repottingFrequency?: string;
-      pruningNotes?: string;
-      commonProblems?: string;
-      seasonalCare?: string;
-    }>,
+    careId: string,
+    translations: CreatePlantDto['careTranslations'],
     tx: DrizzleTx,
   ) {
-    const payloads: TNewPlantCareTranslation[] = translations.map((t) => ({
-      careId: productId,
+    const payloads: TNewPlantCareTranslation[] = translations!.map((t) => ({
+      careId,
       locale: t.locale,
       lightInstructions: t.lightInstructions || null,
       wateringInstructions: t.wateringInstructions || null,
@@ -501,7 +472,7 @@ export class CreatePlantService {
 
   private async createVariants(
     productId: string,
-    variants: any[],
+    variants: CreatePlantDto['variants'],
     tx: DrizzleTx,
   ) {
     const variantPayloads: TNewProductVariant[] = variants.map((v, index) => ({
@@ -523,7 +494,6 @@ export class CreatePlantService {
       .values(variantPayloads)
       .returning();
 
-    // Collect all attribute payloads first, then batch insert
     const attrPayloads: TNewPlantVariantAttributes[] = [];
 
     for (let i = 0; i < variants.length; i++) {
@@ -550,7 +520,6 @@ export class CreatePlantService {
       }
     }
 
-    // Single batch insert for all variant attributes
     if (attrPayloads.length > 0) {
       await tx.insert(plantVariantAttributesTable).values(attrPayloads);
     }
@@ -560,7 +529,7 @@ export class CreatePlantService {
 
   private async createProductMedia(
     productId: string,
-    variants: any[],
+    variants: Awaited<ReturnType<typeof this.createVariants>>,
     dto: CreatePlantDto,
     tx: DrizzleTx,
   ) {

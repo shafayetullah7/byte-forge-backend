@@ -56,7 +56,9 @@
     "verificationAlreadyPending": "যাচাইকরণ ইতিমধ্যে অপেক্ষমান। দয়া করে প্রশাসক পর্যালোচনার জন্য অপেক্ষা করুন",
     "noChangesInResubmission": "কোন পরিবর্তন সনাক্ত করা হয়নি। পুনরায় জমা দেওয়ার আগে অন্তত একটি নথি বা তথ্য আপডেট করুন",
     "englishTranslationRequired": "ইংরেজি অনুবাদ আবশ্যক",
-    "invalidCredentials": "অবৈধ শংসাপত্র"
+    "invalidCredentials": "অবৈধ শংসাপত্র",
+    "duplicateSkuInVariants": "ভেরিয়েন্টে ডুপ্লিকেট SKU",
+    "duplicateMediaIds": "ডুপ্লিকেট মিডিয়া আইডি"
   },
   "success": {
     "userCreated": "নতুন ব্যবহারকারী তৈরি হয়েছে",
