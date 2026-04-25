@@ -10,6 +10,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
+import { plantVariantAttributesTable } from './plant-variant-attributes.schema';
+import { productMediaTable } from './product-media.schema';
 
 /**
  * Product Variants Table
@@ -39,6 +41,8 @@ export const productVariantsTable = pgTable(
     inventoryCount: integer('inventory_count').default(0),
     trackInventory: boolean('track_inventory').default(true).notNull(),
     lowStockThreshold: integer('low_stock_threshold').default(5),
+    displayOrder: integer('display_order').default(0).notNull(),
+    isBase: boolean('is_base').default(false).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
@@ -54,6 +58,8 @@ export const productVariantsTable = pgTable(
     index('product_variants_price_idx').on(t.price),
     index('product_variants_inventory_idx').on(t.inventoryCount),
     index('product_variants_is_active_idx').on(t.isActive),
+    index('product_variants_display_order_idx').on(t.displayOrder),
+    index('product_variants_is_base_idx').on(t.isBase),
   ],
 );
 
@@ -62,10 +68,15 @@ export type TNewProductVariant = typeof productVariantsTable.$inferInsert;
 
 export const productVariantsRelations = relations(
   productVariantsTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     product: one(productsTable, {
       fields: [productVariantsTable.productId],
       references: [productsTable.id],
     }),
+    plantAttributes: one(plantVariantAttributesTable, {
+      fields: [productVariantsTable.id],
+      references: [plantVariantAttributesTable.variantId],
+    }),
+    media: many(productMediaTable),
   }),
 );

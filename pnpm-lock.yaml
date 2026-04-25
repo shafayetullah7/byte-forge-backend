@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  drizzle-orm: 0.44.7
+
 importers:
 
   .:
@@ -51,7 +54,7 @@ importers:
         specifier: ^17.2.3
         version: 17.2.3
       drizzle-orm:
-        specifier: ^0.44.7
+        specifier: 0.44.7
         version: 0.44.7(@types/pg@8.15.6)(pg@8.16.3)
       drizzle-seed:
         specifier: ^0.3.1
@@ -2732,7 +2735,7 @@ packages:
   drizzle-seed@0.3.1:
     resolution: {integrity: sha512-F/0lgvfOAsqlYoHM/QAGut4xXIOXoE5VoAdv2FIl7DpGYVXlAzKuJO+IphkKUFK3Dz+rFlOsQLnMNrvoQ0cx7g==}
     peerDependencies:
-      drizzle-orm: '>=0.36.4'
+      drizzle-orm: 0.44.7
     peerDependenciesMeta:
       drizzle-orm:
         optional: true

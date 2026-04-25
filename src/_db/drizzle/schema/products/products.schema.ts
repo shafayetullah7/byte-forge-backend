@@ -11,6 +11,12 @@ import { shopTable } from '../shop';
 import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media/media.schema';
 import { ProductStatusEnum, ProductTypeEnum } from '../../enum';
+import { productVariantsTable } from './product-variants.schema';
+import { productTranslationsTable } from './product-translations.schema';
+import { productMediaTable } from './product-media.schema';
+import { productTagsTable } from './product-tags.schema';
+import { plantDetailsTable } from './plant-details.schema';
+import { plantCareInstructionsTable } from './plant-care-instructions.schema';
 
 /**
  * Unified Products Table
@@ -34,7 +40,6 @@ export const productStatusEnum = pgEnum('product_status_enum', [
   ProductStatusEnum.DRAFT,
   ProductStatusEnum.ACTIVE,
   ProductStatusEnum.ARCHIVED,
-  ProductStatusEnum.OUT_OF_STOCK,
 ]);
 
 export const productsTable = pgTable(
@@ -75,7 +80,7 @@ export const productsTable = pgTable(
 export type TProduct = typeof productsTable.$inferSelect;
 export type TNewProduct = typeof productsTable.$inferInsert;
 
-export const productsRelations = relations(productsTable, ({ one }) => ({
+export const productsRelations = relations(productsTable, ({ one, many }) => ({
   shop: one(shopTable, {
     fields: [productsTable.shopId],
     references: [shopTable.id],
@@ -87,5 +92,17 @@ export const productsRelations = relations(productsTable, ({ one }) => ({
   thumbnail: one(mediaTable, {
     fields: [productsTable.thumbnailId],
     references: [mediaTable.id],
+  }),
+  variants: many(productVariantsTable),
+  translations: many(productTranslationsTable),
+  media: many(productMediaTable),
+  tags: many(productTagsTable),
+  plantDetails: one(plantDetailsTable, {
+    fields: [productsTable.id],
+    references: [plantDetailsTable.productId],
+  }),
+  careInstructions: one(plantCareInstructionsTable, {
+    fields: [productsTable.id],
+    references: [plantCareInstructionsTable.productId],
   }),
 }));

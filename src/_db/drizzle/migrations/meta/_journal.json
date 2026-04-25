@@ -393,6 +393,20 @@
       "when": 1776915476179,
       "tag": "0057_silly_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1776998636126,
+      "tag": "0058_greedy_steel_serpent",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1777002087690,
+      "tag": "0059_numerous_the_twelve",
+      "breakpoints": true
     }
   ]
 }

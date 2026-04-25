@@ -1,0 +1,17 @@
+export * from './create-plant.dto';
+export * from './update-plant.dto';
+export * from './update-plant-status.dto';
+
+// Re-export schemas for use in other DTOs
+export {
+  productTranslationSchema,
+  plantDetailsSchema,
+  plantDetailsTranslationSchema,
+  plantVariantAttributesSchema,
+  productVariantSchema,
+  careInstructionsSchema,
+  careInstructionsTranslationSchema,
+  SlugSchema,
+  UUIDSchema,
+  LocaleSchema,
+} from './create-plant.dto';

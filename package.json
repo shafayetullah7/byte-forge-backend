@@ -127,5 +127,11 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.44.7"
+    }
   }
+  
 }

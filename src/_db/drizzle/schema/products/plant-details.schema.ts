@@ -72,17 +72,17 @@ export const plantDetailsTable = pgTable(
 
     // Scientific/Classification (no translation needed)
     scientificName: varchar('scientific_name', { length: 255 }),
-    commonNamesEn: text('common_names_en'), // English names
+    commonNames: text('common_names'), // Base language (English)
 
     // Origin (translated)
-    originEn: varchar('origin_en', { length: 255 }), // English
+    origin: varchar('origin', { length: 255 }), // Base language (English)
 
     // Care Requirements (ENUM values - no translation, used for filtering)
     lightRequirement: lightRequirementEnum('light_requirement'), // low, medium, bright_indirect, direct
     wateringFrequency: wateringFrequencyEnum('watering_frequency'), // daily, weekly, bi_weekly, monthly
     humidityLevel: humidityLevelEnum('humidity_level'), // low, medium, high
     temperatureRange: varchar('temperature_range', { length: 100 }), // "10-30°C"
-    soilTypeEn: varchar('soil_type_en', { length: 255 }), // English
+    soilType: varchar('soil_type', { length: 255 }), // Base language (English)
 
     // Difficulty & Growth (ENUM values - no translation, used for filtering)
     careDifficulty: careDifficultyEnum('care_difficulty'), // beginner, intermediate, expert
@@ -93,7 +93,7 @@ export const plantDetailsTable = pgTable(
     matureSpread: varchar('mature_spread', { length: 100 }), // "0.5-1 meter"
 
     // Toxicity (translated)
-    toxicityInfoEn: text('toxicity_info_en'), // English
+    toxicityInfo: text('toxicity_info'), // Base language (English)
   },
   (t) => [
     index('plant_details_product_id_idx').on(t.productId),

@@ -39,8 +39,6 @@ export const plantVariantAttributesTable = pgTable(
     propagationType: varchar('propagation_type', { length: 50 }),
     containerType: varchar('container_type', { length: 50 }),
     bundleType: varchar('bundle_type', { length: 50 }),
-    // Display
-    displayOrder: integer('display_order').default(0),
   },
   (t) => [
     index('plant_variant_attributes_variant_id_idx').on(t.variantId),
