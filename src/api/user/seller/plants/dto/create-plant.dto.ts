@@ -47,6 +47,10 @@ export const productTranslationSchema = z.object({
 
 // === Plant Details Schema ===
 export const plantDetailsSchema = z.object({
+  categoryId: UUIDSchema.refine((val) => val, {
+    message: 'Category ID is required',
+  }),
+  tagIds: z.array(UUIDSchema).max(20, 'Maximum 20 tags allowed').optional(),
   scientificName: z
     .string()
     .trim()
@@ -313,10 +317,6 @@ export const careInstructionsTranslationSchema = z.object({
 export const createPlantSchema = z.object({
   // Basic Product Information
   slug: SlugSchema,
-  categoryId: UUIDSchema.refine((val) => val, {
-    message: 'Category ID is required',
-  }),
-  tagIds: z.array(UUIDSchema).max(20, 'Maximum 20 tags allowed').optional(),
   thumbnailId: UUIDSchema.refine((val) => val, {
     message: 'Thumbnail ID is required',
   }),

@@ -21,12 +21,12 @@ import {
   productTranslationsTable,
   plantDetailsTable,
   plantDetailsTranslationsTable,
+  plantDetailsTagsTable,
   plantCareInstructionsTable,
   plantCareTranslationsTable,
   productVariantsTable,
   plantVariantAttributesTable,
   productMediaTable,
-  productTagsTable,
   TNewProduct,
   TNewProductTranslation,
   TNewPlantDetails,
@@ -36,6 +36,7 @@ import {
   TNewProductVariant,
   TNewPlantVariantAttributes,
   TNewProductMedia,
+  TNewPlantDetailsTags,
 } from '@/_db/drizzle/schema';
 import { eq, and, like } from 'drizzle-orm';
 
@@ -63,9 +64,9 @@ export class CreatePlantService {
 
       // === 5. Run independent validations in parallel ===
       await Promise.all([
-        this.validateCategory(dto.categoryId, tx, lang),
-        dto.tagIds && dto.tagIds.length > 0
-          ? this.validateTags(dto.tagIds, tx, lang)
+        this.validateCategory(dto.plantDetails.categoryId, tx, lang),
+        dto.plantDetails.tagIds && dto.plantDetails.tagIds.length > 0
+          ? this.validateTags(dto.plantDetails.tagIds, tx, lang)
           : Promise.resolve(),
       ]);
 
@@ -83,7 +84,6 @@ export class CreatePlantService {
         {
           shopId,
           productType: 'plant',
-          categoryId: dto.categoryId,
           slug,
           thumbnailId: dto.thumbnailId,
           status: (dto.status || ProductStatusEnum.DRAFT) as TProductStatus,
@@ -97,10 +97,10 @@ export class CreatePlantService {
       }
 
       // === 9. Create plant details (EN + Shared) ===
-      await this.createPlantDetails(product.id, dto.plantDetails, dto.enDetails, tx);
+      const plantDetails = await this.createPlantDetails(product.id, dto.plantDetails, dto.enDetails, tx);
 
       // === 10. Create plant details translations ===
-      await this.createPlantDetailsTranslations(product.id, dto.bnDetails, tx);
+      await this.createPlantDetailsTranslations(plantDetails.id, dto.bnDetails, tx);
 
       // === 11. Create care instructions ===
       if (dto.careInstructions) {
@@ -117,20 +117,20 @@ export class CreatePlantService {
       // === 13. Create product media (BATCH - single insert) ===
       await this.createProductMedia(product.id, variants, dto, tx);
 
-      // === 14. Create product tags (BATCH) ===
-      if (dto.tagIds && dto.tagIds.length > 0) {
-        await this.createProductTags(product.id, dto.tagIds, tx);
+      // === 14. Create plant detail tags (BATCH) ===
+      if (dto.plantDetails.tagIds && dto.plantDetails.tagIds.length > 0) {
+        await this.createPlantDetailTags(plantDetails.id, dto.plantDetails.tagIds, tx);
       }
 
       // === 15. Increment media usage counts (BATCH - single update) ===
       await this.mediaRepository.incrementMediaUsage(allMediaIds, tx);
 
       // === 16. Increment category usage count ===
-      await this.categoryRepository.incrementUsageCount(dto.categoryId, 1, tx);
+      await this.categoryRepository.incrementUsageCount(dto.plantDetails.categoryId, 1, tx);
 
       // === 17. Increment tag usage counts (BATCH) ===
-      if (dto.tagIds && dto.tagIds.length > 0) {
-        await this.tagRepository.incrementUsageCountBatch(dto.tagIds, 1, tx);
+      if (dto.plantDetails.tagIds && dto.plantDetails.tagIds.length > 0) {
+        await this.tagRepository.incrementUsageCountBatch(dto.plantDetails.tagIds, 1, tx);
       }
 
       // === 18. Return product ID (controller can fetch complete data if needed) ===
@@ -360,6 +360,7 @@ export class CreatePlantService {
   ) {
     const payload: TNewPlantDetails = {
       productId,
+      categoryId: details.categoryId,
       scientificName: details.scientificName || null,
       commonNames: enDetails.commonNames || null,
       origin: enDetails.origin || null,
@@ -375,16 +376,17 @@ export class CreatePlantService {
       toxicityInfo: enDetails.toxicityInfo || null,
     };
 
-    await tx.insert(plantDetailsTable).values(payload);
+    const [plantDetails] = await tx.insert(plantDetailsTable).values(payload).returning();
+    return plantDetails;
   }
 
   private async createPlantDetailsTranslations(
-    productId: string,
+    plantDetailsId: string,
     bnDetails: CreatePlantDto['bnDetails'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantDetailsTranslation = {
-      plantId: productId,
+      plantId: plantDetailsId,
       locale: bnDetails.locale,
       commonNames: bnDetails.commonNames || null,
       origin: bnDetails.origin || null,
@@ -532,17 +534,17 @@ export class CreatePlantService {
     }
   }
 
-  private async createProductTags(
-    productId: string,
+  private async createPlantDetailTags(
+    plantDetailsId: string,
     tagIds: string[],
     tx: DrizzleTx,
   ) {
-    const payloads = tagIds.map((tagId) => ({
-      productId,
+    const payloads: TNewPlantDetailsTags[] = tagIds.map((tagId) => ({
+      plantId: plantDetailsId,
       tagId,
     }));
 
-    await tx.insert(productTagsTable).values(payloads);
+    await tx.insert(plantDetailsTagsTable).values(payloads);
   }
 
   private generateSlug(name: string): string {

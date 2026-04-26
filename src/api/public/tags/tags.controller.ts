@@ -1,0 +1,51 @@
+import { Controller, Get, Param } from '@nestjs/common';
+import { PublicTagsService } from './tags.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { I18nLang } from 'nestjs-i18n';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import { ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+
+@ApiTags('🏷️ Public - Tags')
+@Controller({ path: 'tags', version: '1' })
+export class PublicTagsController {
+  constructor(private readonly tagsService: PublicTagsService) {}
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get all active tags grouped by group',
+    description: 'Returns all active tags organized by their tag groups',
+  })
+  @ApiResponse({ status: 200, description: 'Tags retrieved successfully' })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    enum: ['en', 'bn'],
+    default: 'en',
+    description: 'Response language',
+  })
+  @Get()
+  async findAll(@I18nLang() lang: string) {
+    const data = await this.tagsService.findAll(lang);
+    return { success: true, message: 'Tags retrieved', data };
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get tag by ID',
+    description: 'Returns a single tag with translations',
+  })
+  @ApiResponse({ status: 200, description: 'Tag retrieved successfully' })
+  @ApiNotFoundResponse('Tag not found')
+  @ApiParam({ name: 'id', description: 'Tag UUID' })
+  @Get(':id')
+  async findOne(@Param('id') id: string, @I18nLang() lang: string) {
+    const data = await this.tagsService.findOne(id, lang);
+    return { success: true, message: 'Tag retrieved', data };
+  }
+}

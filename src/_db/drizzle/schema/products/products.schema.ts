@@ -8,13 +8,11 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopTable } from '../shop';
-import { categoriesTable } from '../taxonomy/category.schema';
 import { mediaTable } from '../media/media.schema';
 import { ProductStatusEnum, ProductTypeEnum } from '../../enum';
 import { productVariantsTable } from './product-variants.schema';
 import { productTranslationsTable } from './product-translations.schema';
 import { productMediaTable } from './product-media.schema';
-import { productTagsTable } from './product-tags.schema';
 import { plantDetailsTable } from './plant-details.schema';
 import { plantCareInstructionsTable } from './plant-care-instructions.schema';
 
@@ -50,9 +48,6 @@ export const productsTable = pgTable(
       .notNull()
       .references(() => shopTable.id, { onDelete: 'cascade' }),
     productType: productTypeEnum('product_type').notNull(),
-    categoryId: uuid('category_id').references(() => categoriesTable.id, {
-      onDelete: 'set null',
-    }),
     slug: varchar('slug', { length: 255 }).notNull().unique(),
     // Base variant reference - price is taken from this variant
     // FK added via migration (circular reference with product_variants)
@@ -72,7 +67,6 @@ export const productsTable = pgTable(
   (t) => [
     index('products_shop_id_idx').on(t.shopId),
     index('products_product_type_idx').on(t.productType),
-    index('products_category_id_idx').on(t.categoryId),
     index('products_status_idx').on(t.status),
   ],
 );
@@ -85,10 +79,6 @@ export const productsRelations = relations(productsTable, ({ one, many }) => ({
     fields: [productsTable.shopId],
     references: [shopTable.id],
   }),
-  category: one(categoriesTable, {
-    fields: [productsTable.categoryId],
-    references: [categoriesTable.id],
-  }),
   thumbnail: one(mediaTable, {
     fields: [productsTable.thumbnailId],
     references: [mediaTable.id],
@@ -96,7 +86,6 @@ export const productsRelations = relations(productsTable, ({ one, many }) => ({
   variants: many(productVariantsTable),
   translations: many(productTranslationsTable),
   media: many(productMediaTable),
-  tags: many(productTagsTable),
   plantDetails: one(plantDetailsTable, {
     fields: [productsTable.id],
     references: [plantDetailsTable.productId],

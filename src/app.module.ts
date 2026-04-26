@@ -16,7 +16,7 @@ import { UserApiModule } from './api/user/user-api.module';
 import { HashingModule } from './common/modules/hashing/hashing.module';
 import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
-import { TreeCategoriesModule } from './api/library/tree-categories/tree-categories.module';
+import { PublicApiModule } from './api/public/public.module';
 import { AdminApiModule } from './api/admin/admin-api.module';
 import { ShopApiModule } from './api/shop/shop-api.module';
 
@@ -62,7 +62,7 @@ import * as morgan from 'morgan';
     UserApiModule,
     AdminApiModule,
     ShopApiModule,
-    TreeCategoriesModule,
+    PublicApiModule,
     MediaModule,
     HashingModule,
     CookieModule,

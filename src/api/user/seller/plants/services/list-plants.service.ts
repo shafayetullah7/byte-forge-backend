@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { productsTable, productVariantsTable } from '@/_db/drizzle/schema';
+import {
+  plantDetailsTagsTable,
+  plantDetailsTable,
+  productTranslationsTable,
+  productVariantsTable,
+  productsTable,
+} from '@/_db/drizzle/schema';
 import { paginate } from '@/common/utils/pagination.util';
 import { ListPlantsQueryDto } from '../dto/list-plants-query.dto';
-import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, count, eq, exists, ilike, inArray, or } from 'drizzle-orm';
 
 @Injectable()
 export class ListPlantsService {
@@ -27,24 +33,60 @@ export class ListPlantsService {
       eq(productsTable.shopId, shopId),
       eq(productsTable.productType, 'plant'),
       status ? eq(productsTable.status, status) : undefined,
-      categoryId ? eq(productsTable.categoryId, categoryId) : undefined,
+      categoryId
+        ? exists(
+            this.db.client
+              .select({ id: plantDetailsTable.id })
+              .from(plantDetailsTable)
+              .where(
+                and(
+                  eq(plantDetailsTable.productId, productsTable.id),
+                  eq(plantDetailsTable.categoryId, categoryId),
+                ),
+              ),
+          )
+        : undefined,
       search
         ? or(
             ilike(productsTable.slug, `%${search}%`),
-            sql`${productsTable.id} IN (
-              SELECT "product_id" FROM "product_translations"
-              WHERE LOWER("name") LIKE LOWER(${`%${search}%`})
-            )`,
+            exists(
+              this.db.client
+                .select({ id: productTranslationsTable.id })
+                .from(productTranslationsTable)
+                .where(
+                  and(
+                    eq(
+                      productTranslationsTable.productId,
+                      productsTable.id,
+                    ),
+                    ilike(
+                      productTranslationsTable.name,
+                      `%${search}%`,
+                    ),
+                  ),
+                ),
+            ),
           )
         : undefined,
     );
 
     const tagWhere =
       tagIds && tagIds.length > 0
-        ? sql`${productsTable.id} IN (
-            SELECT "product_id" FROM "product_tags"
-            WHERE "tag_id" = ANY(${tagIds}::uuid[])
-          )`
+        ? exists(
+            this.db.client
+              .select({ id: plantDetailsTagsTable.tagId })
+              .from(plantDetailsTagsTable)
+              .innerJoin(
+                plantDetailsTable,
+                eq(plantDetailsTagsTable.plantId, plantDetailsTable.id),
+              )
+              .where(
+                and(
+                  eq(plantDetailsTable.productId, productsTable.id),
+                  inArray(plantDetailsTagsTable.tagId, tagIds),
+                ),
+              ),
+          )
         : undefined;
 
     const fullWhere = tagWhere ? and(baseWhere, tagWhere) : baseWhere;
@@ -64,10 +106,14 @@ export class ListPlantsService {
     const products = await this.db.client.query.productsTable.findMany({
       where: fullWhere,
       with: {
-        category: {
-          columns: { id: true, slug: true },
+        plantDetails: {
           with: {
-            translations: { columns: { locale: true, name: true } },
+            category: {
+              columns: { id: true, slug: true },
+              with: {
+                translations: { columns: { locale: true, name: true } },
+              },
+            },
           },
         },
         translations: {
@@ -87,7 +133,7 @@ export class ListPlantsService {
         ? await this.db.client.query.productVariantsTable.findMany({
             where: and(
               eq(productVariantsTable.isBase, true),
-              sql`${productVariantsTable.productId} = ANY(${productIds}::uuid[])`,
+              inArray(productVariantsTable.productId, productIds),
             ),
             columns: {
               productId: true,
@@ -106,7 +152,7 @@ export class ListPlantsService {
     const enrichedData = products.map((p) => {
       const trans = p.translations.find((t) => t.locale === locale);
       const variant = variantMap.get(p.id);
-      const catTrans = p.category?.translations?.find(
+      const catTrans = p.plantDetails?.category?.translations?.find(
         (t) => t.locale === locale,
       );
 
@@ -122,10 +168,10 @@ export class ListPlantsService {
           ? parseFloat(variant.salePrice)
           : null,
         inventoryCount: variant?.inventoryCount ?? 0,
-        category: p.category
+        category: p.plantDetails?.category
           ? {
-              id: p.category.id,
-              slug: p.category.slug,
+              id: p.plantDetails.category.id,
+              slug: p.plantDetails.category.slug,
               name: catTrans?.name,
             }
           : null,

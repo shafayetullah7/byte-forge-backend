@@ -407,6 +407,13 @@
       "when": 1777002087690,
       "tag": "0059_numerous_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1777172087219,
+      "tag": "0060_loud_namorita",
+      "breakpoints": true
     }
   ]
 }

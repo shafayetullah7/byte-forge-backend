@@ -8,6 +8,7 @@ export * from './product-seo.schema';
 // Type-specific detail tables
 export * from './plant-details.schema';
 export * from './plant-details-translations.schema';
+export * from './plant-details-tags.schema';
 export * from './plant-care-instructions.schema';
 export * from './plant-care-translations.schema';
 export * from './pot-details.schema';

@@ -10,6 +10,8 @@ import {
 import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
 import { plantDetailsTranslationsTable } from './plant-details-translations.schema';
+import { plantDetailsTagsTable } from './plant-details-tags.schema';
+import { categoriesTable } from '../taxonomy/category.schema';
 import {
   CareDifficultyEnum,
   GrowthRateEnum,
@@ -70,6 +72,11 @@ export const plantDetailsTable = pgTable(
       .unique()
       .references(() => productsTable.id, { onDelete: 'cascade' }),
 
+    // Category (plant-specific taxonomy)
+    categoryId: uuid('category_id').references(() => categoriesTable.id, {
+      onDelete: 'set null',
+    }),
+
     // Scientific/Classification (no translation needed)
     scientificName: varchar('scientific_name', { length: 255 }),
     commonNames: text('common_names'), // Base language (English)
@@ -97,6 +104,7 @@ export const plantDetailsTable = pgTable(
   },
   (t) => [
     index('plant_details_product_id_idx').on(t.productId),
+    index('plant_details_category_id_idx').on(t.categoryId),
     // Indexes for common filters
     index('plant_details_light_requirement_idx').on(t.lightRequirement),
     index('plant_details_watering_frequency_idx').on(t.wateringFrequency),
@@ -114,6 +122,11 @@ export const plantDetailsRelations = relations(
       fields: [plantDetailsTable.productId],
       references: [productsTable.id],
     }),
+    category: one(categoriesTable, {
+      fields: [plantDetailsTable.categoryId],
+      references: [categoriesTable.id],
+    }),
     translations: many(plantDetailsTranslationsTable),
+    tags: many(plantDetailsTagsTable),
   }),
 );

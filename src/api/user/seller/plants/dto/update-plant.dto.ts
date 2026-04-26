@@ -25,8 +25,6 @@ export const updatePlantSchema = z.object({
     )
     .optional(),
 
-  categoryId: UUIDSchema.optional(),
-  tagIds: z.array(UUIDSchema).max(20, 'Maximum 20 tags allowed').optional(),
   thumbnailId: UUIDSchema.optional(),
 
   status: z
@@ -36,7 +34,7 @@ export const updatePlantSchema = z.object({
   // Translations (upserts provided locales)
   translations: z.array(productTranslationSchema).optional(),
 
-  // Plant Details (partial update)
+  // Plant Details (partial update - includes categoryId, tagIds)
   plantDetails: plantDetailsSchema.partial().optional(),
   plantDetailsTranslations: z
     .array(plantDetailsTranslationSchema)
