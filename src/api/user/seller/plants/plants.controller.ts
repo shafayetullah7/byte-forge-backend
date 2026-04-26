@@ -18,17 +18,21 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { ApiAuth } from '@/common/decorators/swagger.decorators';
+import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiConflictResponse,
 } from '@/common/decorators/api-error.decorator';
-import { ApiPagination } from '@/common/decorators/api-pagination.decorator';
 import { ZodValidationPipe } from 'nestjs-zod';
+import {
+  PlantListItemResponseDto,
+  PlantCreateResponseDto,
+} from './dto/plants-response.dto';
+import { ProductStatusEnum } from '@/_db/drizzle/enum';
 
 @ApiTags('🌱 Seller - Plants Management')
 @Controller({ path: 'user/seller/plants', version: '1' })
@@ -40,9 +44,58 @@ export class PlantsController {
   ) {}
 
   @ApiAuth()
-  @ApiOperation({ summary: 'Get all plants for seller', description: 'Returns a paginated list of plants owned by the authenticated seller' })
-  @ApiResponse({ status: 200, description: 'Plants retrieved successfully' })
-  @ApiPagination()
+  @ApiOperation({
+    summary: 'List plants',
+    description:
+      'Returns a paginated list of plants for the authenticated seller',
+  })
+  @ApiPaginatedResponse(PlantListItemResponseDto)
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by name or slug',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ProductStatusEnum,
+    description: 'Filter by product status',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: String,
+    format: 'uuid',
+    description: 'Filter by category',
+  })
+  @ApiQuery({
+    name: 'tagIds',
+    required: false,
+    type: String,
+    description: 'Comma-separated tag UUIDs',
+  })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    enum: ['en', 'bn'],
+    default: 'en',
+    description: 'Response language',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'updatedAt', 'name', 'price', 'inventory'],
+    default: 'createdAt',
+    description: 'Sort field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    default: 'desc',
+    description: 'Sort direction',
+  })
   @ApiUnauthorizedResponse()
   @Get()
   @UseGuards(VerifiedUserAuthGuard)
@@ -51,7 +104,7 @@ export class PlantsController {
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const result = await this.plantsService.getPlants(authenticUser.user.id, query);
+    const result = await this.plantsService.getPlants(authenticUser.user.id, query, lang);
     return this.responseService.paginated({
       message: this.i18n.t('message.success.plantsRetrieved', { lang }),
       data: result.data,
@@ -61,10 +114,14 @@ export class PlantsController {
 
   @ApiAuth()
   @ApiOperation({
-    summary: 'Create new plant',
+    summary: 'Create plant',
     description: 'Creates a new plant product with variants, care instructions, and media',
   })
-  @ApiResponse({ status: 201, description: 'Plant created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Plant created successfully',
+    type: PlantCreateResponseDto,
+  })
   @ApiBadRequestResponse('Validation failed')
   @ApiUnauthorizedResponse()
   @ApiConflictResponse('Slug already exists')

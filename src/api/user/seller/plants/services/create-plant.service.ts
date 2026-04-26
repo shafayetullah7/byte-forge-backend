@@ -4,13 +4,11 @@ import { DrizzleTx } from '@/_db/drizzle/types';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
 import { CategoryRepository } from '@/_repositories/library/taxonomy/category.repository';
 import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
-import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { CreatePlantDto } from '../dto/create-plant.dto';
-import { TLockTransaction } from '@/_repositories/_types/lock.transaction';
-import { ShopStatusEnum, ProductStatusEnum, TProductStatus } from '@/_db/drizzle/enum';
+import { ProductStatusEnum, TProductStatus } from '@/_db/drizzle/enum';
 import {
   TLightRequirement,
   TWateringFrequency,
@@ -48,16 +46,12 @@ export class CreatePlantService {
     private readonly mediaRepository: MediaRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly tagRepository: TagRepository,
-    private readonly shopRepository: ShopRepository,
     private readonly i18n: I18nService,
   ) {}
 
-  async execute(userId: string, dto: CreatePlantDto, lang: string) {
+  async execute(shopId: string, userId: string, dto: CreatePlantDto, lang: string) {
     return this.db.transaction(async (tx) => {
-      // === 1. Get and validate shop ===
-      const shop = await this.getShopByUserId(userId, tx, lang);
-
-      // === 2. Validate media duplicates FIRST (fail fast) ===
+      // === 1. Validate media duplicates FIRST (fail fast) ===
       this.validateMediaDuplicates(dto, lang);
 
       // === 3. Collect and validate ALL media IDs ===
@@ -77,17 +71,17 @@ export class CreatePlantService {
 
       // === 6. Resolve slug (validate or generate) ===
       const slug = dto.slug
-        ? await this.validateAndReturnSlug(dto.slug, shop.id, tx, lang)
+        ? await this.validateAndReturnSlug(dto.slug, shopId, tx, lang)
         : await this.generateUniqueSlug(
             dto.translations.find((t) => t.locale === 'en')?.name || 'plant',
-            shop.id,
+            shopId,
             tx,
           );
 
       // === 7. Create product ===
       const product = await this.createProductRecord(
         {
-          shopId: shop.id,
+          shopId,
           productType: 'plant',
           categoryId: dto.categoryId,
           slug,
@@ -145,33 +139,6 @@ export class CreatePlantService {
   }
 
   // === Validation Methods ===
-
-  private async getShopByUserId(
-    userId: string,
-    tx: DrizzleTx,
-    lang: string,
-  ) {
-    const transaction: TLockTransaction = { tx, lock: true };
-    const shop = await this.shopRepository.getShopByOwnerId(userId, transaction);
-
-    if (!shop) {
-      throw new CustomException({
-        message: this.i18n.t('message.error.shopNotFound', { lang }),
-        statusCode: HttpStatus.NOT_FOUND,
-        errorCode: ErrorCode.NOT_FOUND,
-      });
-    }
-
-    if (shop.status !== ShopStatusEnum.ACTIVE && shop.status !== ShopStatusEnum.PENDING_VERIFICATION) {
-      throw new CustomException({
-        message: this.i18n.t('message.error.shopNotActive', { lang }),
-        statusCode: HttpStatus.FORBIDDEN,
-        errorCode: ErrorCode.FORBIDDEN,
-      });
-    }
-
-    return shop;
-  }
 
   private async validateCategory(categoryId: string, tx: DrizzleTx, lang: string) {
     const category = await this.categoryRepository.findOne(categoryId, { tx, lock: false });
