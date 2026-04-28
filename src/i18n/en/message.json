@@ -58,7 +58,12 @@
     "englishTranslationRequired": "English translation is required",
     "invalidCredentials": "Invalid credentials",
     "duplicateSkuInVariants": "Duplicate SKU in variants",
-    "duplicateMediaIds": "Duplicate media IDs"
+    "duplicateMediaIds": "Duplicate media IDs",
+    "invalidCategory": "Invalid category",
+    "categoryInactive": "Category is not active",
+    "invalidTags": "Invalid tags",
+    "inactiveTags": "Some tags are not active",
+    "slugTaken": "Slug already exists"
   },
   "success": {
     "userCreated": "New user created",

@@ -58,7 +58,12 @@
     "englishTranslationRequired": "ইংরেজি অনুবাদ আবশ্যক",
     "invalidCredentials": "অবৈধ শংসাপত্র",
     "duplicateSkuInVariants": "ভেরিয়েন্টে ডুপ্লিকেট SKU",
-    "duplicateMediaIds": "ডুপ্লিকেট মিডিয়া আইডি"
+    "duplicateMediaIds": "ডুপ্লিকেট মিডিয়া আইডি",
+    "invalidCategory": "অবৈধ বিভাগ",
+    "categoryInactive": "বিভাগ সক্রিয় নেই",
+    "invalidTags": "অবৈধ ট্যাগ",
+    "inactiveTags": "কিছু ট্যাগ সক্রিয় নেই",
+    "slugTaken": "স্লাগ ইতিমধ্যে বিদ্যমান"
   },
   "success": {
     "userCreated": "নতুন ব্যবহারকারী তৈরি হয়েছে",
