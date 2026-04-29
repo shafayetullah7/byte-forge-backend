@@ -5,8 +5,7 @@ import {
   productTranslationSchema,
   plantDetailsSchema,
   plantDetailsTranslationSchema,
-  careInstructionsSchema,
-  careInstructionsTranslationSchema,
+  careGuideSchema,
   UUIDSchema,
 } from './create-plant.dto';
 
@@ -34,15 +33,16 @@ export const updatePlantSchema = z.object({
   // Translations (upserts provided locales)
   translations: z.array(productTranslationSchema).optional(),
 
-  // Plant Details (partial update - includes categoryId, tagIds)
+  // Plant Details (partial update - includes categoryId, tagIds, translations)
   plantDetails: plantDetailsSchema.partial().optional(),
-  plantDetailsTranslations: z
-    .array(plantDetailsTranslationSchema)
-    .optional(),
 
-  // Care Instructions (partial update)
-  careInstructions: careInstructionsSchema.partial().optional(),
-  careTranslations: z.array(careInstructionsTranslationSchema).optional(),
+  // Care Guide (partial update - EN and/or BN)
+  careGuide: z
+    .object({
+      en: careGuideSchema.partial(),
+      bn: careGuideSchema.partial(),
+    })
+    .optional(),
 
   // Media (replaces existing)
   mediaIds: z.array(UUIDSchema).optional(),

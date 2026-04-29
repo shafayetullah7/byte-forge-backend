@@ -97,17 +97,21 @@ export class CreatePlantService {
       }
 
       // === 9. Create plant details (EN + Shared) ===
-      const plantDetails = await this.createPlantDetails(product.id, dto.plantDetails, dto.enDetails, tx);
+      const plantDetails = await this.createPlantDetails(product.id, dto.plantDetails, tx);
 
       // === 10. Create plant details translations ===
-      await this.createPlantDetailsTranslations(plantDetails.id, dto.bnDetails, tx);
+      await this.createPlantDetailsTranslations(plantDetails.id, dto.plantDetails.translations.bn, tx);
 
       // === 11. Create care instructions ===
-      if (dto.careInstructions) {
-        const care = await this.createCareInstructions(product.id, dto.careInstructions, tx);
+      if (dto.careGuide) {
+        const care = await this.createCareInstructions(
+          product.id,
+          dto.careGuide.en,
+          tx,
+        );
 
-        if (dto.careTranslations && dto.careTranslations.length > 0) {
-          await this.createCareTranslations(care.id, dto.careTranslations, tx);
+        if (dto.careGuide.bn) {
+          await this.createCareTranslation(care.id, dto.careGuide.bn, tx);
         }
       }
 
@@ -355,25 +359,24 @@ export class CreatePlantService {
   private async createPlantDetails(
     productId: string,
     details: CreatePlantDto['plantDetails'],
-    enDetails: CreatePlantDto['enDetails'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantDetails = {
       productId,
       categoryId: details.categoryId,
       scientificName: details.scientificName || null,
-      commonNames: enDetails.commonNames || null,
-      origin: enDetails.origin || null,
+      commonNames: details.translations.en.commonNames || null,
+      origin: details.translations.en.origin || null,
       lightRequirement: details.lightRequirement as TLightRequirement,
       wateringFrequency: details.wateringFrequency as TWateringFrequency,
       humidityLevel: details.humidityLevel as THumidityLevel,
       temperatureRange: details.temperatureRange || null,
-      soilType: enDetails.soilType || null,
+      soilType: details.translations.en.soilType || null,
       careDifficulty: details.careDifficulty as TCareDifficulty,
       growthRate: details.growthRate as TGrowthRate,
       matureHeight: details.matureHeight || null,
       matureSpread: details.matureSpread || null,
-      toxicityInfo: enDetails.toxicityInfo || null,
+      toxicityInfo: details.translations.en.toxicityInfo || null,
     };
 
     const [plantDetails] = await tx.insert(plantDetailsTable).values(payload).returning();
@@ -382,12 +385,12 @@ export class CreatePlantService {
 
   private async createPlantDetailsTranslations(
     plantDetailsId: string,
-    bnDetails: CreatePlantDto['bnDetails'],
+    bnDetails: CreatePlantDto['plantDetails']['translations']['bn'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantDetailsTranslation = {
       plantId: plantDetailsId,
-      locale: bnDetails.locale,
+      locale: 'bn',
       commonNames: bnDetails.commonNames || null,
       origin: bnDetails.origin || null,
       soilType: bnDetails.soilType || null,
@@ -399,7 +402,7 @@ export class CreatePlantService {
 
   private async createCareInstructions(
     productId: string,
-    instructions: CreatePlantDto['careInstructions'],
+    instructions: NonNullable<CreatePlantDto['careGuide']>['en'],
     tx: DrizzleTx,
   ) {
     const payload: TNewPlantCareInstructions = {
@@ -418,25 +421,25 @@ export class CreatePlantService {
     return care;
   }
 
-  private async createCareTranslations(
+  private async createCareTranslation(
     careId: string,
-    translations: CreatePlantDto['careTranslations'],
+    bnCare: NonNullable<CreatePlantDto['careGuide']>['bn'],
     tx: DrizzleTx,
   ) {
-    const payloads: TNewPlantCareTranslation[] = translations!.map((t) => ({
+    const payload: TNewPlantCareTranslation = {
       careId,
-      locale: t.locale,
-      lightInstructions: t.lightInstructions || null,
-      wateringInstructions: t.wateringInstructions || null,
-      humidityInstructions: t.humidityInstructions || null,
-      fertilizerSchedule: t.fertilizerSchedule || null,
-      repottingFrequency: t.repottingFrequency || null,
-      pruningNotes: t.pruningNotes || null,
-      commonProblems: t.commonProblems || null,
-      seasonalCare: t.seasonalCare || null,
-    }));
+      locale: 'bn',
+      lightInstructions: bnCare?.lightInstructions || null,
+      wateringInstructions: bnCare?.wateringInstructions || null,
+      humidityInstructions: bnCare?.humidityInstructions || null,
+      fertilizerSchedule: bnCare?.fertilizerSchedule || null,
+      repottingFrequency: bnCare?.repottingFrequency || null,
+      pruningNotes: bnCare?.pruningNotes || null,
+      commonProblems: bnCare?.commonProblems || null,
+      seasonalCare: bnCare?.seasonalCare || null,
+    };
 
-    await tx.insert(plantCareTranslationsTable).values(payloads);
+    await tx.insert(plantCareTranslationsTable).values(payload);
   }
 
   private async createVariants(

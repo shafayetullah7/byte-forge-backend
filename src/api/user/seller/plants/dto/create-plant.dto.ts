@@ -45,6 +45,30 @@ export const productTranslationSchema = z.object({
     .optional(),
 });
 
+// === Plant Details Translation Schema ===
+export const plantDetailsTranslationSchema = z.object({
+  commonNames: z
+    .string()
+    .trim()
+    .max(500, 'Common names must be at most 500 characters')
+    .optional(),
+  origin: z
+    .string()
+    .trim()
+    .max(255, 'Origin must be at most 255 characters')
+    .optional(),
+  soilType: z
+    .string()
+    .trim()
+    .max(255, 'Soil type must be at most 255 characters')
+    .optional(),
+  toxicityInfo: z
+    .string()
+    .trim()
+    .max(1000, 'Toxicity info must be at most 1000 characters')
+    .optional(),
+});
+
 // === Plant Details Schema ===
 export const plantDetailsSchema = z.object({
   categoryId: UUIDSchema.refine((val) => val, {
@@ -56,16 +80,6 @@ export const plantDetailsSchema = z.object({
     .trim()
     .max(255, 'Scientific name must be at most 255 characters')
     .optional(),
-  commonNames: z
-    .string()
-    .trim()
-    .max(500, 'Common names must be at most 500 characters')
-    .optional(),
-  origin: z
-    .string()
-    .trim()
-    .max(255, 'Origin must be at most 255 characters')
-    .optional(),
   lightRequirement: z.enum(Object.keys(LightRequirementEnum) as [string, ...string[]]),
   wateringFrequency: z.enum(Object.keys(WateringFrequencyEnum) as [string, ...string[]]),
   humidityLevel: z.enum(Object.keys(HumidityLevelEnum) as [string, ...string[]]),
@@ -73,11 +87,6 @@ export const plantDetailsSchema = z.object({
     .string()
     .trim()
     .max(100, 'Temperature range must be at most 100 characters')
-    .optional(),
-  soilType: z
-    .string()
-    .trim()
-    .max(255, 'Soil type must be at most 255 characters')
     .optional(),
   careDifficulty: z.enum(Object.keys(CareDifficultyEnum) as [string, ...string[]]),
   growthRate: z
@@ -93,36 +102,10 @@ export const plantDetailsSchema = z.object({
     .trim()
     .max(100, 'Mature spread must be at most 100 characters')
     .optional(),
-  toxicityInfo: z
-    .string()
-    .trim()
-    .max(1000, 'Toxicity info must be at most 1000 characters')
-    .optional(),
-});
-
-// === Plant Details Translation Schema ===
-export const plantDetailsTranslationSchema = z.object({
-  locale: LocaleSchema,
-  commonNames: z
-    .string()
-    .trim()
-    .max(500, 'Common names must be at most 500 characters')
-    .optional(),
-  origin: z
-    .string()
-    .trim()
-    .max(255, 'Origin must be at most 255 characters')
-    .optional(),
-  soilType: z
-    .string()
-    .trim()
-    .max(255, 'Soil type must be at most 255 characters')
-    .optional(),
-  toxicityInfo: z
-    .string()
-    .trim()
-    .max(1000, 'Toxicity info must be at most 1000 characters')
-    .optional(),
+  translations: z.object({
+    en: plantDetailsTranslationSchema,
+    bn: plantDetailsTranslationSchema,
+  }),
 });
 
 // === Plant Variant Attributes Schema ===
@@ -224,53 +207,8 @@ export const productVariantSchema = z.object({
   mediaIds: z.array(UUIDSchema).max(10, 'Maximum 10 images per variant').optional(),
 });
 
-// === Care Instructions Schema ===
-export const careInstructionsSchema = z.object({
-  lightInstructions: z
-    .string()
-    .trim()
-    .max(5000, 'Light instructions must be at most 5000 characters')
-    .optional(),
-  wateringInstructions: z
-    .string()
-    .trim()
-    .max(5000, 'Watering instructions must be at most 5000 characters')
-    .optional(),
-  humidityInstructions: z
-    .string()
-    .trim()
-    .max(5000, 'Humidity instructions must be at most 5000 characters')
-    .optional(),
-  fertilizerSchedule: z
-    .string()
-    .trim()
-    .max(5000, 'Fertilizer schedule must be at most 5000 characters')
-    .optional(),
-  repottingFrequency: z
-    .string()
-    .trim()
-    .max(5000, 'Repotting frequency must be at most 5000 characters')
-    .optional(),
-  pruningNotes: z
-    .string()
-    .trim()
-    .max(5000, 'Pruning notes must be at most 5000 characters')
-    .optional(),
-  commonProblems: z
-    .string()
-    .trim()
-    .max(5000, 'Common problems must be at most 5000 characters')
-    .optional(),
-  seasonalCare: z
-    .string()
-    .trim()
-    .max(5000, 'Seasonal care must be at most 5000 characters')
-    .optional(),
-});
-
-// === Care Instructions Translation Schema ===
-export const careInstructionsTranslationSchema = z.object({
-  locale: LocaleSchema,
+// === Care Guide Schema ===
+export const careGuideSchema = z.object({
   lightInstructions: z
     .string()
     .trim()
@@ -338,12 +276,8 @@ export const createPlantSchema = z.object({
       'Duplicate locales are not allowed',
     ),
 
-  // Plant Details (Shared/ENUM fields)
+  // Plant Details (Shared/ENUM fields + translations)
   plantDetails: plantDetailsSchema,
-
-  // Plant Details Translations (EN + BN required)
-  enDetails: plantDetailsTranslationSchema,
-  bnDetails: plantDetailsTranslationSchema,
 
   // Variants (at least 1 required, exactly 1 must be marked as base, max 50 variants)
   variants: z
@@ -355,14 +289,12 @@ export const createPlantSchema = z.object({
       'Exactly one variant must be marked as base (isBase: true)',
     ),
 
-  // Care Instructions
-  careInstructions: careInstructionsSchema.optional(),
-  careTranslations: z
-    .array(careInstructionsTranslationSchema)
-    .refine(
-      (data) => new Set(data.map((t) => t.locale)).size === data.length,
-      'Duplicate locales are not allowed in care translations',
-    )
+  // Care Guide (EN and/or BN, both optional)
+  careGuide: z
+    .object({
+      en: careGuideSchema.optional(),
+      bn: careGuideSchema.optional(),
+    })
     .optional(),
 });
 
