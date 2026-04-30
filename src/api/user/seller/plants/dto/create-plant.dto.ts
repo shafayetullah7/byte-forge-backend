@@ -36,8 +36,8 @@ export const productTranslationSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(50, 'Description must be at least 50 characters')
-    .max(5000, 'Description must be at most 5000 characters'),
+    .max(5000, 'Description must be at most 5000 characters')
+    .optional(),
   shortDescription: z
     .string()
     .trim()

@@ -19,6 +19,6 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
     VerifiedUserAuthGuardModule,
     ShopRepositoryModule,
   ],
-  exports: [PlantsModule],
+  exports: [PlantsService],
 })
 export class PlantsModule {}
