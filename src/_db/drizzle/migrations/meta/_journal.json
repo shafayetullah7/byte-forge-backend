@@ -414,6 +414,13 @@
       "when": 1777172087219,
       "tag": "0060_loud_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1777514674092,
+      "tag": "0061_huge_rhodey",
+      "breakpoints": true
     }
   ]
 }

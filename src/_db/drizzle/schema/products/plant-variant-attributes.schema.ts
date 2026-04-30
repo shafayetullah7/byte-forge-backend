@@ -24,13 +24,6 @@ export const plantVariantAttributesTable = pgTable(
       .notNull()
       .unique()
       .references(() => productVariantsTable.id, { onDelete: 'cascade' }),
-    // Size/Pot attributes
-    potSize: varchar('pot_size', { length: 50 }),
-    potSizeInches: decimal('pot_size_inches', { precision: 5, scale: 2 }),
-    potMaterial: varchar('pot_material', { length: 50 }),
-    potColorEn: varchar('pot_color_en', { length: 100 }),
-    potColorBn: varchar('pot_color_bn', { length: 100 }),
-    potType: varchar('pot_type', { length: 50 }),
     // Growth attributes
     growthStage: varchar('growth_stage', { length: 50 }),
     plantForm: varchar('plant_form', { length: 50 }),
@@ -42,9 +35,7 @@ export const plantVariantAttributesTable = pgTable(
   },
   (t) => [
     index('plant_variant_attributes_variant_id_idx').on(t.variantId),
-    index('plant_variant_attributes_pot_size_idx').on(t.potSize),
     index('plant_variant_attributes_growth_stage_idx').on(t.growthStage),
-    index('plant_variant_attributes_pot_material_idx').on(t.potMaterial),
   ],
 );
 

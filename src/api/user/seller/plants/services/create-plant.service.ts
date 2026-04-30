@@ -451,8 +451,6 @@ export class CreatePlantService {
       productId,
       sku: v.sku || null,
       price: v.price.toString(),
-      salePrice: v.salePrice ? v.salePrice.toString() : null,
-      costPrice: v.costPrice ? v.costPrice.toString() : null,
       inventoryCount: v.inventoryCount ?? 0,
       trackInventory: v.trackInventory ?? true,
       lowStockThreshold: v.lowStockThreshold ?? 5,
@@ -475,13 +473,6 @@ export class CreatePlantService {
       if (variant.plantAttributes) {
         attrPayloads.push({
           variantId: createdVariant.id,
-          potSize: variant.plantAttributes.potSize || null,
-          potSizeInches: variant.plantAttributes.potSizeInches
-            ? variant.plantAttributes.potSizeInches.toString()
-            : null,
-          potMaterial: variant.plantAttributes.potMaterial || null,
-          potColorEn: variant.plantAttributes.potColor || null,
-          potType: variant.plantAttributes.potType || null,
           growthStage: variant.plantAttributes.growthStage || null,
           plantForm: variant.plantAttributes.plantForm || null,
           variegation: variant.plantAttributes.variegation || null,

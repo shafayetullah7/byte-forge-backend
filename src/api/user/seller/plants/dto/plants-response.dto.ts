@@ -38,9 +38,6 @@ export class PlantListItemResponseDto {
   @ApiPropertyOptional({ example: 29.99 })
   price?: number;
 
-  @ApiPropertyOptional({ example: 24.99 })
-  salePrice?: number;
-
   @ApiProperty({ example: 50 })
   inventoryCount!: number;
 
@@ -75,9 +72,6 @@ export class PlantCreateResponseDto {
 
   @ApiPropertyOptional()
   price?: number;
-
-  @ApiPropertyOptional()
-  salePrice?: number;
 
   @ApiProperty()
   inventoryCount!: number;

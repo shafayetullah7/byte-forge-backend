@@ -110,31 +110,6 @@ export const plantDetailsSchema = z.object({
 
 // === Plant Variant Attributes Schema ===
 export const plantVariantAttributesSchema = z.object({
-  potSize: z
-    .string()
-    .trim()
-    .max(50, 'Pot size must be at most 50 characters')
-    .optional(),
-  potSizeInches: z
-    .number()
-    .min(0.5, 'Pot size must be at least 0.5 inches')
-    .max(100, 'Pot size must be at most 100 inches')
-    .optional(),
-  potMaterial: z
-    .string()
-    .trim()
-    .max(50, 'Pot material must be at most 50 characters')
-    .optional(),
-  potColor: z
-    .string()
-    .trim()
-    .max(100, 'Pot color must be at most 100 characters')
-    .optional(),
-  potType: z
-    .string()
-    .trim()
-    .max(50, 'Pot type must be at most 50 characters')
-    .optional(),
   growthStage: z
     .string()
     .trim()
@@ -178,16 +153,6 @@ export const productVariantSchema = z.object({
     .number({ message: 'Price is required' })
     .positive('Price must be greater than 0')
     .max(999999.99, 'Price must be at most 999999.99'),
-  salePrice: z
-    .number()
-    .positive('Sale price must be greater than 0')
-    .max(999999.99, 'Sale price must be at most 999999.99')
-    .optional(),
-  costPrice: z
-    .number()
-    .nonnegative('Cost price cannot be negative')
-    .max(999999.99, 'Cost price must be at most 999999.99')
-    .optional(),
   inventoryCount: z
     .number()
     .int()

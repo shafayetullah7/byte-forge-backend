@@ -138,7 +138,6 @@ export class ListPlantsService {
             columns: {
               productId: true,
               price: true,
-              salePrice: true,
               inventoryCount: true,
             },
           })
@@ -164,9 +163,6 @@ export class ListPlantsService {
         name: trans?.name,
         shortDescription: trans?.shortDescription,
         price: variant?.price ? parseFloat(variant.price) : null,
-        salePrice: variant?.salePrice
-          ? parseFloat(variant.salePrice)
-          : null,
         inventoryCount: variant?.inventoryCount ?? 0,
         category: p.plantDetails?.category
           ? {

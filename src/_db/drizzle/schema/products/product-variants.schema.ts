@@ -36,8 +36,6 @@ export const productVariantsTable = pgTable(
       .references(() => productsTable.id, { onDelete: 'cascade' }),
     sku: varchar('sku', { length: 100 }).unique(),
     price: decimal('price', { precision: 10, scale: 2 }).notNull(),
-    salePrice: decimal('sale_price', { precision: 10, scale: 2 }),
-    costPrice: decimal('cost_price', { precision: 10, scale: 2 }),
     inventoryCount: integer('inventory_count').default(0),
     trackInventory: boolean('track_inventory').default(true).notNull(),
     lowStockThreshold: integer('low_stock_threshold').default(5),
