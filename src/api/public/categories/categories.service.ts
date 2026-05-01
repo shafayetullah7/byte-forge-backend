@@ -197,6 +197,8 @@ export class PublicCategoriesService {
       root.childrenCount = calculateTotalDescendants(root);
     });
 
+    console.log('🌳 CATEGORY TREE RESPONSE:', JSON.stringify(tree, null, 2));
+
     return tree;
   }
 }

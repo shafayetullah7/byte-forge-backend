@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { eq, sql, and } from 'drizzle-orm';
 import * as schema from '../drizzle/schema';
 
 // Load environment variables
@@ -147,7 +148,7 @@ const PLANT_CATEGORIES = [
       },
     ],
   },
-  // Succulents
+  // Succulents (with children)
   {
     slug: 'succulents',
     translations: [
@@ -197,7 +198,7 @@ const PLANT_CATEGORIES = [
       },
     ],
   },
-  // Exotic Plants
+  // Exotic Plants (no children)
   {
     slug: 'exotic-plants',
     translations: [
@@ -213,7 +214,7 @@ const PLANT_CATEGORIES = [
       },
     ],
   },
-  // Herbs & Medicinal
+  // Herbs & Medicinal (no children)
   {
     slug: 'herbs-medicinal',
     translations: [
@@ -229,7 +230,7 @@ const PLANT_CATEGORIES = [
       },
     ],
   },
-  // Seasonal Plants
+  // Seasonal Plants (no children)
   {
     slug: 'seasonal-plants',
     translations: [
@@ -253,69 +254,141 @@ interface CategoryData {
   children?: CategoryData[];
 }
 
+/**
+ * Upsert a category: create if not exists, return existing if already seeded.
+ */
+async function upsertCategory(slug: string) {
+  // Try to insert; if conflict, fetch existing
+  const [inserted] = await db
+    .insert(schema.categoriesTable)
+    .values({
+      slug,
+      isActive: true,
+      commissionRate: '10.00',
+    })
+    .onConflictDoNothing({ target: schema.categoriesTable.slug })
+    .returning();
+
+  if (inserted) {
+    return inserted;
+  }
+
+  // Already exists — fetch it
+  const existing = await db.query.categoriesTable.findFirst({
+    where: eq(schema.categoriesTable.slug, slug),
+  });
+
+  return existing ?? null;
+}
+
+/**
+ * Insert a self-reference (depth: 0) for a category into the closure table.
+ * Required for closure table queries to work correctly.
+ */
+async function insertSelfReference(categoryId: string) {
+  await db
+    .insert(schema.categoryHierarchyTable)
+    .values({
+      ancestorId: categoryId,
+      descendantId: categoryId,
+      depth: 0,
+    })
+    .onConflictDoNothing()
+    .execute();
+}
+
+/**
+ * Insert a parent→child link (depth: 1) into the closure table.
+ */
+async function insertParentChildLink(parentId: string, childId: string) {
+  await db
+    .insert(schema.categoryHierarchyTable)
+    .values({
+      ancestorId: parentId,
+      descendantId: childId,
+      depth: 1,
+    })
+    .onConflictDoNothing()
+    .execute();
+}
+
 async function seedCategories() {
   console.log('🌱 Seeding plant categories...');
 
   try {
     for (const categoryData of PLANT_CATEGORIES) {
-      // Create parent category
-      const [category] = await db
-        .insert(schema.categoriesTable)
-        .values({
-          slug: categoryData.slug,
-          isActive: true,
-          commissionRate: '10.00',
-        })
-        .onConflictDoNothing({ target: schema.categoriesTable.slug })
-        .returning();
+      // Upsert parent category
+      const category = await upsertCategory(categoryData.slug);
+      if (!category) {
+        console.warn(`⚠️  Could not upsert category: ${categoryData.slug}`);
+        continue;
+      }
 
-      if (category) {
-        console.log(`✅ Created category: ${category.slug}`);
+      console.log(`✅ Category: ${category.slug} (${category.id})`);
 
-        // Create translations for parent
-        for (const trans of categoryData.translations) {
-          await db
-            .insert(schema.categoryTranslationsTable)
-            .values({
-              categoryId: category.id,
-              locale: trans.locale,
-              name: trans.name,
-              description: trans.description,
-            })
-            .onConflictDoNothing()
-            .execute();
-        }
+      // Self-reference (depth: 0) — required for closure table
+      await insertSelfReference(category.id);
+
+      // Upsert translations for parent
+      for (const trans of categoryData.translations) {
+        await db
+          .insert(schema.categoryTranslationsTable)
+          .values({
+            categoryId: category.id,
+            locale: trans.locale,
+            name: trans.name,
+            description: trans.description,
+          })
+          .onConflictDoNothing()
+          .execute();
       }
 
       // Create children if exist
       if (categoryData.children) {
         for (const childData of categoryData.children) {
-          const [childCategory] = await db
-            .insert(schema.categoriesTable)
-            .values({
-              slug: childData.slug,
-              isActive: true,
-              commissionRate: '10.00',
-            })
-            .onConflictDoNothing({ target: schema.categoriesTable.slug })
-            .returning();
+          const childCategory = await upsertCategory(childData.slug);
+          if (!childCategory) {
+            console.warn(`⚠️  Could not upsert child: ${childData.slug}`);
+            continue;
+          }
 
-          if (childCategory) {
-            console.log(`✅ Created child category: ${childCategory.slug}`);
+          console.log(`  ✅ Child: ${childCategory.slug} (${childCategory.id})`);
 
-            // Create translations for child
-            for (const trans of childData.translations) {
-              await db
-                .insert(schema.categoryTranslationsTable)
-                .values({
-                  categoryId: childCategory.id,
-                  locale: trans.locale,
-                  name: trans.name,
-                  description: trans.description,
-                })
-                .onConflictDoNothing()
-                .execute();
-            }
+          // Self-reference for child (depth: 0)
+          await insertSelfReference(childCategory.id);
+
+          // Parent → child link (depth: 1)
+          await insertParentChildLink(category.id, childCategory.id);
+
+          // Update childrenCount on parent (idempotent: recalculate from hierarchy)
+          const childCountResult = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(schema.categoryHierarchyTable)
+            .where(
+              and(
+                eq(schema.categoryHierarchyTable.ancestorId, category.id),
+                eq(schema.categoryHierarchyTable.depth, 1),
+              ),
+            );
+
+          const childCount = childCountResult[0]?.count ?? 0;
+          await db
+            .update(schema.categoriesTable)
+            .set({ childrenCount: childCount })
+            .where(eq(schema.categoriesTable.id, category.id));
+
+          // Upsert translations for child
+          for (const trans of childData.translations) {
+            await db
+              .insert(schema.categoryTranslationsTable)
+              .values({
+                categoryId: childCategory.id,
+                locale: trans.locale,
+                name: trans.name,
+                description: trans.description,
+              })
+              .onConflictDoNothing()
+              .execute();
           }
         }
       }
