@@ -150,9 +150,11 @@ export class PublicCategoriesService {
       );
       const translation = resolveTranslation(translations, lang);
       return {
-        ...cat,
+        id: cat.id,
+        slug: cat.slug,
         name: translation?.name ?? cat.name,
-        translations,
+        childrenCount: cat.childrenCount,
+        parentId: cat.parentId,
       };
     });
 
@@ -160,7 +162,7 @@ export class PublicCategoriesService {
     const tree: any[] = [];
 
     localizedCategories.forEach((cat) => {
-      categoryMap.set(cat.id, { ...cat, children: [] });
+      categoryMap.set(cat.id, { ...cat, children: null });
     });
 
     localizedCategories.forEach((cat) => {
@@ -168,6 +170,9 @@ export class PublicCategoriesService {
       if (cat.parentId) {
         const parent = categoryMap.get(cat.parentId);
         if (parent) {
+          if (!parent.children) {
+            parent.children = [];
+          }
           parent.children.push(node);
         } else {
           tree.push(node);
@@ -175,6 +180,21 @@ export class PublicCategoriesService {
       } else {
         tree.push(node);
       }
+    });
+
+    const calculateTotalDescendants = (node: any): number => {
+      if (!node.children || node.children.length === 0) {
+        return 0;
+      }
+      let count = node.children.length;
+      for (const child of node.children) {
+        count += calculateTotalDescendants(child);
+      }
+      return count;
+    };
+
+    tree.forEach((root) => {
+      root.childrenCount = calculateTotalDescendants(root);
     });
 
     return tree;
