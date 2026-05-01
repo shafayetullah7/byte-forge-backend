@@ -50,7 +50,7 @@ export class PublicTagsService {
       orderBy: (t, { asc }) => asc(t.slug),
     });
 
-    return activeGroups
+    const result = activeGroups
       .filter((group) => group.tags.length > 0)
       .map((group) => {
         const groupTranslation = resolveTranslation(group.translations, lang);
@@ -73,6 +73,10 @@ export class PublicTagsService {
           }),
         };
       });
+
+    console.log('🏷️ TAGS API RESPONSE:', JSON.stringify(result, null, 2));
+
+    return result;
   }
 
   async findOne(id: string, lang: string = 'en'): Promise<PublicTagResponse> {
