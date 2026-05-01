@@ -19,7 +19,7 @@ import { productMediaTable } from './product-media.schema';
  * EVERY product must have at least ONE variant.
  * Cart and Orders reference this table ONLY.
  *
- * The base/default variant is tracked in products.baseVariantId
+ * The base/default variant is marked with isBase = true
  *
  * Type-specific attributes are stored in:
  * - plant_variant_attributes

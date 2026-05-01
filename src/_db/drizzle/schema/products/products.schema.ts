@@ -20,7 +20,7 @@ import { plantCareInstructionsTable } from './plant-care-instructions.schema';
  * Unified Products Table
  *
  * Supports multiple product types: plant, pot, seed, fertilizer
- * Every product must have at least one variant (tracked via baseVariantId)
+ * Every product must have at least one variant (marked with isBase = true)
  *
  * @see product_variants - Cart/Orders reference this table
  * @see product_translations - Bilingual content
@@ -49,9 +49,6 @@ export const productsTable = pgTable(
       .references(() => shopTable.id, { onDelete: 'cascade' }),
     productType: productTypeEnum('product_type').notNull(),
     slug: varchar('slug', { length: 255 }).notNull().unique(),
-    // Base variant reference - price is taken from this variant
-    // FK added via migration (circular reference with product_variants)
-    baseVariantId: uuid('base_variant_id'),
     thumbnailId: uuid('thumbnail_id').references(() => mediaTable.id, {
       onDelete: 'set null',
     }),

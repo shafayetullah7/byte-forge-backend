@@ -7,6 +7,12 @@ import {
   HumidityLevelEnum,
   CareDifficultyEnum,
   GrowthRateEnum,
+  GrowthStageEnum,
+  PlantFormEnum,
+  LeafDensityEnum,
+  VariegationEnum,
+  PropagationTypeEnum,
+  ContainerTypeEnum,
 } from '@/_db/drizzle/enum';
 
 // === Reusable Schemas ===
@@ -111,29 +117,49 @@ export const plantDetailsSchema = z.object({
 // === Plant Variant Attributes Schema ===
 export const plantVariantAttributesSchema = z.object({
   growthStage: z
-    .string()
-    .trim()
-    .max(50, 'Growth stage must be at most 50 characters')
-    .optional(),
+    .enum(Object.keys(GrowthStageEnum) as [string, ...string[]])
+    .optional()
+    .default('juvenile'),
   plantForm: z
-    .string()
-    .trim()
-    .max(50, 'Plant form must be at most 50 characters')
-    .optional(),
+    .enum(Object.keys(PlantFormEnum) as [string, ...string[]])
+    .optional()
+    .default('upright'),
   variegation: z
+    .enum(Object.keys(VariegationEnum) as [string, ...string[]])
+    .optional()
+    .default('none'),
+  leafDensity: z
+    .enum(Object.keys(LeafDensityEnum) as [string, ...string[]])
+    .optional()
+    .default('moderate'),
+  stemCount: z
+    .number()
+    .int()
+    .nonnegative('Stem count cannot be negative')
+    .optional()
+    .default(1),
+  currentHeight: z
     .string()
     .trim()
-    .max(50, 'Variegation must be at most 50 characters')
+    .max(50, 'Current height must be at most 50 characters')
+    .optional(),
+  currentSpread: z
+    .string()
+    .trim()
+    .max(50, 'Current spread must be at most 50 characters')
     .optional(),
   propagationType: z
-    .string()
-    .trim()
-    .max(50, 'Propagation type must be at most 50 characters')
-    .optional(),
+    .enum(Object.keys(PropagationTypeEnum) as [string, ...string[]])
+    .optional()
+    .default('cutting'),
   containerType: z
+    .enum(Object.keys(ContainerTypeEnum) as [string, ...string[]])
+    .optional()
+    .default('nursery_pot'),
+  containerSize: z
     .string()
     .trim()
-    .max(50, 'Container type must be at most 50 characters')
+    .max(50, 'Container size must be at most 50 characters')
     .optional(),
   bundleType: z
     .string()
