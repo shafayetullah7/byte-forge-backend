@@ -17,11 +17,6 @@ export interface PublicCategoryResponse {
   childrenCount: number;
   usageCount: number;
   parentId: string | null;
-  translations: Array<{
-    locale: string;
-    name: string;
-    description: string | null;
-  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,11 +54,6 @@ export class PublicCategoriesService {
         childrenCount: cat.childrenCount,
         usageCount: cat.usageCount,
         parentId,
-        translations: cat.translations.map((t) => ({
-          locale: t.locale,
-          name: t.name,
-          description: t.description ?? null,
-        })),
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt,
       };
@@ -101,11 +91,6 @@ export class PublicCategoriesService {
       childrenCount: category.childrenCount,
       usageCount: category.usageCount,
       parentId,
-      translations: category.translations.map((t) => ({
-        locale: t.locale,
-        name: t.name,
-        description: t.description ?? null,
-      })),
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };
@@ -196,8 +181,6 @@ export class PublicCategoriesService {
     tree.forEach((root) => {
       root.childrenCount = calculateTotalDescendants(root);
     });
-
-    console.log('🌳 CATEGORY TREE RESPONSE:', JSON.stringify(tree, null, 2));
 
     return tree;
   }

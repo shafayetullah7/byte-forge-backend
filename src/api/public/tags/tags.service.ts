@@ -15,11 +15,6 @@ export interface PublicTagResponse {
   name: string;
   description: string | null;
   usageCount: number;
-  translations: Array<{
-    locale: string;
-    name: string;
-    description: string | null;
-  }>;
 }
 
 export interface PublicTagGroupResponse {
@@ -74,11 +69,6 @@ export class PublicTagsService {
               name: tagTranslation?.name ?? 'Unnamed Tag',
               description: tagTranslation?.description ?? null,
               usageCount: tag.usageCount,
-              translations: tag.translations.map((t) => ({
-                locale: t.locale,
-                name: t.name,
-                description: t.description ?? null,
-              })),
             };
           }),
         };
@@ -108,11 +98,6 @@ export class PublicTagsService {
       name: translation?.name ?? 'Unnamed Tag',
       description: translation?.description ?? null,
       usageCount: tag.usageCount,
-      translations: tag.translations.map((t) => ({
-        locale: t.locale,
-        name: t.name,
-        description: t.description ?? null,
-      })),
     };
   }
 }
