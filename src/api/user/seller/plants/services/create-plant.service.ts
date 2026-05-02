@@ -473,12 +473,12 @@ export class CreatePlantService {
       if (variant.plantAttributes) {
         attrPayloads.push({
           variantId: createdVariant.id,
-          growthStage: variant.plantAttributes.growthStage || null,
-          plantForm: variant.plantAttributes.plantForm || null,
-          variegation: variant.plantAttributes.variegation || null,
-          propagationType: variant.plantAttributes.propagationType || null,
-          containerType: variant.plantAttributes.containerType || null,
-          bundleType: variant.plantAttributes.bundleType || null,
+          growthStage: variant.plantAttributes.growthStage || undefined,
+          plantForm: variant.plantAttributes.plantForm || undefined,
+          variegation: variant.plantAttributes.variegation || undefined,
+          propagationType: variant.plantAttributes.propagationType || undefined,
+          containerType: variant.plantAttributes.containerType || undefined,
+          bundleType: variant.plantAttributes.bundleType || undefined,
         });
       }
     }
