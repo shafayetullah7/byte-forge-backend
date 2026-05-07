@@ -74,8 +74,6 @@ export class PublicTagsService {
         };
       });
 
-    console.log('🏷️ TAGS API RESPONSE:', JSON.stringify(result, null, 2));
-
     return result;
   }
 

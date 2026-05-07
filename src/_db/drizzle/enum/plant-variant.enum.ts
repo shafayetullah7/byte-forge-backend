@@ -1,60 +1,60 @@
 export const GrowthStageEnum = {
-  SEEDLING: 'seedling',
-  JUVENILE: 'juvenile',
-  MATURE: 'mature',
-  CUTTING: 'cutting',
+  SEEDLING: 'SEEDLING',
+  JUVENILE: 'JUVENILE',
+  MATURE: 'MATURE',
+  CUTTING: 'CUTTING',
 } as const;
 
 export type TGrowthStage =
   (typeof GrowthStageEnum)[keyof typeof GrowthStageEnum];
 
 export const PlantFormEnum = {
-  UPRIGHT: 'upright',
-  TRAILING: 'trailing',
-  BUSHY: 'bushy',
-  CLIMBING: 'climbing',
-  ROSETTE: 'rosette',
+  UPRIGHT: 'UPRIGHT',
+  TRAILING: 'TRAILING',
+  BUSHY: 'BUSHY',
+  CLIMBING: 'CLIMBING',
+  ROSETTE: 'ROSETTE',
 } as const;
 
 export type TPlantForm = (typeof PlantFormEnum)[keyof typeof PlantFormEnum];
 
 export const LeafDensityEnum = {
-  SPARSE: 'sparse',
-  MODERATE: 'moderate',
-  DENSE: 'dense',
+  SPARSE: 'SPARSE',
+  MODERATE: 'MODERATE',
+  DENSE: 'DENSE',
 } as const;
 
 export type TLeafDensity =
   (typeof LeafDensityEnum)[keyof typeof LeafDensityEnum];
 
 export const VariegationEnum = {
-  NONE: 'none',
-  VARIEGATED: 'variegated',
-  SEMI_VARIEGATED: 'semi_variegated',
-  ALBO: 'albo',
-  AUREO: 'aureo',
+  NONE: 'NONE',
+  VARIEGATED: 'VARIEGATED',
+  SEMI_VARIEGATED: 'SEMI_VARIEGATED',
+  ALBO: 'ALBO',
+  AUREO: 'AUREO',
 } as const;
 
 export type TVariegation =
   (typeof VariegationEnum)[keyof typeof VariegationEnum];
 
 export const PropagationTypeEnum = {
-  CUTTING: 'cutting',
-  SEED: 'seed',
-  TISSUE_CULTURE: 'tissue_culture',
-  AIR_LAYER: 'air_layer',
-  DIVISION: 'division',
+  CUTTING: 'CUTTING',
+  SEED: 'SEED',
+  TISSUE_CULTURE: 'TISSUE_CULTURE',
+  AIR_LAYER: 'AIR_LAYER',
+  DIVISION: 'DIVISION',
 } as const;
 
 export type TPropagationType =
   (typeof PropagationTypeEnum)[keyof typeof PropagationTypeEnum];
 
 export const ContainerTypeEnum = {
-  NURSERY_POT: 'nursery_pot',
-  DECORATIVE_POT: 'decorative_pot',
-  HANGING_BASKET: 'hanging_basket',
-  TERRARIUM: 'terrarium',
-  GROW_BAG: 'grow_bag',
+  NURSERY_POT: 'NURSERY_POT',
+  DECORATIVE_POT: 'DECORATIVE_POT',
+  HANGING_BASKET: 'HANGING_BASKET',
+  TERRARIUM: 'TERRARIUM',
+  GROW_BAG: 'GROW_BAG',
 } as const;
 
 export type TContainerType =

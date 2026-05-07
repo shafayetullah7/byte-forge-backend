@@ -17,7 +17,7 @@ export const plantDetailsTranslationsTable = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     plantId: uuid('plant_id')
       .notNull()
-      .references(() => plantDetailsTable.productId, { onDelete: 'cascade' }),
+      .references(() => plantDetailsTable.id, { onDelete: 'cascade' }),
     locale: varchar('locale', { length: 2 })
       .notNull()
       .references(() => languagesTable.code),
@@ -41,7 +41,7 @@ export const plantDetailsTranslationsRelations = relations(
   ({ one }) => ({
     plant: one(plantDetailsTable, {
       fields: [plantDetailsTranslationsTable.plantId],
-      references: [plantDetailsTable.productId],
+      references: [plantDetailsTable.id],
     }),
     language: one(languagesTable, {
       fields: [plantDetailsTranslationsTable.locale],

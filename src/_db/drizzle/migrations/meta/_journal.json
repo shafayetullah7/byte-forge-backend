@@ -442,6 +442,20 @@
       "when": 1777646721103,
       "tag": "0064_conscious_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1778124733919,
+      "tag": "0065_nebulous_steel_serpent",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1778132955942,
+      "tag": "0066_brave_rick_jones",
+      "breakpoints": true
     }
   ]
 }

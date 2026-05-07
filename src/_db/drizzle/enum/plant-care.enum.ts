@@ -1,41 +1,41 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
 export const LightRequirementEnum = {
-  LOW: 'low',
-  MEDIUM: 'medium',
-  BRIGHT_INDIRECT: 'bright_indirect',
-  DIRECT: 'direct',
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  BRIGHT_INDIRECT: 'BRIGHT_INDIRECT',
+  DIRECT: 'DIRECT',
 } as const;
 
 export type TLightRequirement =
   (typeof LightRequirementEnum)[keyof typeof LightRequirementEnum];
 
 export const WateringFrequencyEnum = {
-  DAILY: 'daily',
-  WEEKLY: 'weekly',
-  BI_WEEKLY: 'bi_weekly',
-  MONTHLY: 'monthly',
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  BI_WEEKLY: 'BI_WEEKLY',
+  MONTHLY: 'MONTHLY',
 } as const;
 
 export type TWateringFrequency =
   (typeof WateringFrequencyEnum)[keyof typeof WateringFrequencyEnum];
 
 export const HumidityLevelEnum = {
-  LOW: 'low',
-  MEDIUM: 'medium',
-  HIGH: 'high',
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
 } as const;
 
 export const CareDifficultyEnum = {
-  BEGINNER: 'beginner',
-  INTERMEDIATE: 'intermediate',
-  EXPERT: 'expert',
+  BEGINNER: 'BEGINNER',
+  INTERMEDIATE: 'INTERMEDIATE',
+  EXPERT: 'EXPERT',
 } as const;
 
 export const GrowthRateEnum = {
-  SLOW: 'slow',
-  MODERATE: 'moderate',
-  FAST: 'fast',
+  SLOW: 'SLOW',
+  MODERATE: 'MODERATE',
+  FAST: 'FAST',
 } as const;
 
 export type THumidityLevel =
