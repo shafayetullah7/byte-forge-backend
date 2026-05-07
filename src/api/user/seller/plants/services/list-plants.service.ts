@@ -6,10 +6,36 @@ import {
   productTranslationsTable,
   productVariantsTable,
   productsTable,
+  mediaTable,
 } from '@/_db/drizzle/schema';
 import { paginate } from '@/common/utils/pagination.util';
 import { ListPlantsQueryDto } from '../dto/list-plants-query.dto';
-import { and, count, eq, exists, ilike, inArray, or } from 'drizzle-orm';
+import {
+  and,
+  count,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  or,
+  asc,
+  desc,
+} from 'drizzle-orm';
+
+export type PlantListItem = {
+  id: string;
+  slug: string;
+  status: string;
+  thumbnail: { id: string; url: string } | null;
+  name: string | null;
+  shortDescription: string | null;
+  price: string | null;
+  inventoryCount: number;
+  category: { id: string; slug: string; name: string | null } | null;
+  tags: { id: string; slug: string; name: string | null }[];
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Injectable()
 export class ListPlantsService {
@@ -28,6 +54,7 @@ export class ListPlantsService {
       sortOrder,
     } = query;
     const offset = (page - 1) * limit;
+    const isAsc = sortOrder === 'asc';
 
     const baseWhere = and(
       eq(productsTable.shopId, shopId),
@@ -59,10 +86,7 @@ export class ListPlantsService {
                       productTranslationsTable.productId,
                       productsTable.id,
                     ),
-                    ilike(
-                      productTranslationsTable.name,
-                      `%${search}%`,
-                    ),
+                    ilike(productTranslationsTable.name, `%${search}%`),
                   ),
                 ),
             ),
@@ -97,105 +121,141 @@ export class ListPlantsService {
       .where(fullWhere)
       .execute();
 
-    const dbSortColumn =
-      sortBy === 'updatedAt'
-        ? productsTable.updatedAt
-        : productsTable.createdAt;
-    const orderFn = sortOrder === 'asc' ? 'asc' : 'desc';
+    const rows = await this.db.client
+      .select({
+        productId: productsTable.id,
+        slug: productsTable.slug,
+        status: productsTable.status,
+        thumbnailId: productsTable.thumbnailId,
+        thumbnailUrl: mediaTable.url,
+        name: productTranslationsTable.name,
+        shortDescription: productTranslationsTable.shortDescription,
+        price: productVariantsTable.price,
+        inventoryCount: productVariantsTable.inventoryCount,
+        createdAt: productsTable.createdAt,
+        updatedAt: productsTable.updatedAt,
+      })
+      .from(productsTable)
+      .leftJoin(
+        mediaTable,
+        eq(mediaTable.id, productsTable.thumbnailId),
+      )
+      .leftJoin(
+        productTranslationsTable,
+        and(
+          eq(productTranslationsTable.productId, productsTable.id),
+          eq(productTranslationsTable.locale, locale),
+        ),
+      )
+      .leftJoin(
+        productVariantsTable,
+        and(
+          eq(productVariantsTable.productId, productsTable.id),
+          eq(productVariantsTable.isBase, true),
+        ),
+      )
+      .where(fullWhere)
+      .orderBy(() => {
+        switch (sortBy) {
+          case 'name':
+            return isAsc
+              ? asc(productTranslationsTable.name)
+              : desc(productTranslationsTable.name);
+          case 'price':
+            return isAsc
+              ? asc(productVariantsTable.price)
+              : desc(productVariantsTable.price);
+          case 'inventory':
+            return isAsc
+              ? asc(productVariantsTable.inventoryCount)
+              : desc(productVariantsTable.inventoryCount);
+          case 'updatedAt':
+            return isAsc
+              ? asc(productsTable.updatedAt)
+              : desc(productsTable.updatedAt);
+          case 'createdAt':
+          default:
+            return isAsc
+              ? asc(productsTable.createdAt)
+              : desc(productsTable.createdAt);
+        }
+      })
+      .limit(limit)
+      .offset(offset);
 
-    const products = await this.db.client.query.productsTable.findMany({
-      where: fullWhere,
-      with: {
-        plantDetails: {
-          with: {
-            category: {
-              columns: { id: true, slug: true },
-              with: {
-                translations: { columns: { locale: true, name: true } },
+    if (rows.length === 0) {
+      return paginate<PlantListItem>([], Number(total), page, limit);
+    }
+
+    const productIds = rows.map((r) => r.productId);
+
+    const plantDetails =
+      await this.db.client.query.plantDetailsTable.findMany({
+        where: inArray(plantDetailsTable.productId, productIds),
+        with: {
+          category: {
+            columns: { id: true, slug: true },
+            with: {
+              translations: { columns: { locale: true, name: true } },
+            },
+          },
+          tags: {
+            with: {
+              tag: {
+                columns: { id: true, slug: true },
+                with: {
+                  translations: {
+                    columns: { locale: true, name: true },
+                  },
+                },
               },
             },
           },
         },
-        translations: {
-          columns: { locale: true, name: true, shortDescription: true },
-        },
-      },
-      limit,
-      offset,
-      orderBy: (t, { asc, desc }) =>
-        orderFn === 'asc' ? asc(dbSortColumn) : desc(dbSortColumn),
-    });
+      });
 
-    const productIds = products.map((p) => p.id);
+    const plantDetailMap = new Map(
+      plantDetails.map((d) => [d.productId, d]),
+    );
 
-    const baseVariants =
-      productIds.length > 0
-        ? await this.db.client.query.productVariantsTable.findMany({
-            where: and(
-              eq(productVariantsTable.isBase, true),
-              inArray(productVariantsTable.productId, productIds),
-            ),
-            columns: {
-              productId: true,
-              price: true,
-              inventoryCount: true,
-            },
-          })
-        : [];
-
-    const variantMap = new Map<
-      string,
-      (typeof baseVariants)[number]
-    >(baseVariants.map((v) => [v.productId, v]));
-
-    const enrichedData = products.map((p) => {
-      const trans = p.translations.find((t) => t.locale === locale);
-      const variant = variantMap.get(p.id);
-      const catTrans = p.plantDetails?.category?.translations?.find(
+    const result: PlantListItem[] = rows.map((row) => {
+      const plantDetail = plantDetailMap.get(row.productId);
+      const catTrans = plantDetail?.category?.translations?.find(
         (t) => t.locale === locale,
       );
 
+      const tags =
+        plantDetail?.tags?.map((pt) => {
+          const tagTrans = pt.tag?.translations?.find(
+            (t) => t.locale === locale,
+          );
+          return { id: pt.tag.id, slug: pt.tag.slug, name: tagTrans?.name ?? null };
+        }) ?? [];
+
       return {
-        id: p.id,
-        slug: p.slug,
-        status: p.status,
-        thumbnailId: p.thumbnailId,
-        name: trans?.name,
-        shortDescription: trans?.shortDescription,
-        price: variant?.price ? parseFloat(variant.price) : null,
-        inventoryCount: variant?.inventoryCount ?? 0,
-        category: p.plantDetails?.category
+        id: row.productId,
+        slug: row.slug,
+        status: row.status,
+        thumbnail: row.thumbnailId && row.thumbnailUrl
+          ? { id: row.thumbnailId, url: row.thumbnailUrl }
+          : null,
+        name: row.name ?? null,
+        shortDescription: row.shortDescription ?? null,
+        price: row.price ?? null,
+        inventoryCount: row.inventoryCount ?? 0,
+        category: plantDetail?.category
           ? {
-              id: p.plantDetails.category.id,
-              slug: p.plantDetails.category.slug,
-              name: catTrans?.name,
+              id: plantDetail.category.id,
+              slug: plantDetail.category.slug,
+              name: catTrans?.name ?? null,
             }
           : null,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
+        tags,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
       };
     });
 
-    if (sortBy === 'name') {
-      const sortFn = sortOrder === 'asc' ? 1 : -1;
-      enrichedData.sort((a, b) => {
-        const nameA = a.name || '';
-        const nameB = b.name || '';
-        return nameA.localeCompare(nameB) * sortFn;
-      });
-    } else if (sortBy === 'price' || sortBy === 'inventory') {
-      const sortFn = sortOrder === 'asc' ? 1 : -1;
-      enrichedData.sort((a, b) => {
-        const valA =
-          sortBy === 'price' ? a.price ?? -1 : a.inventoryCount;
-        const valB =
-          sortBy === 'price' ? b.price ?? -1 : b.inventoryCount;
-        if (valA < valB) return -1 * sortFn;
-        if (valA > valB) return 1 * sortFn;
-        return 0;
-      });
-    }
-
-    return paginate(enrichedData, Number(total), page, limit);
+    return paginate(result, Number(total), page, limit);
   }
 }
