@@ -52,8 +52,8 @@ export class PlantListItemResponseDto {
   @ApiPropertyOptional({ example: 'A popular tropical houseplant' })
   shortDescription?: string;
 
-  @ApiPropertyOptional({ example: 29.99 })
-  price?: number;
+  @ApiPropertyOptional({ example: "29.99" })
+  price?: string;
 
   @ApiProperty({ example: 50 })
   inventoryCount!: number;
@@ -91,7 +91,7 @@ export class PlantCreateResponseDto {
   shortDescription?: string;
 
   @ApiPropertyOptional()
-  price?: number;
+  price?: string;
 
   @ApiProperty()
   inventoryCount!: number;

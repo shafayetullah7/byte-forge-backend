@@ -256,6 +256,8 @@ export class ListPlantsService {
       };
     });
 
+    console.log("[ListPlantsService] Result:", JSON.stringify(result, null, 2));
+
     return paginate(result, Number(total), page, limit);
   }
 }
