@@ -24,7 +24,7 @@ export class PlantsService {
 
   async getPlants(userId: string, query: ListPlantsQueryDto, lang: string) {
     const shop = await this.resolveShop(userId, lang);
-    return this.listPlantsService.execute(shop.id, query);
+    return this.listPlantsService.execute(shop.id, query, lang);
   }
 
   private async resolveShop(userId: string, lang: string) {

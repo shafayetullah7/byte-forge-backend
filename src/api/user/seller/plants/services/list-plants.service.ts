@@ -41,7 +41,7 @@ export type PlantListItem = {
 export class ListPlantsService {
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(shopId: string, query: ListPlantsQueryDto) {
+  async execute(shopId: string, query: ListPlantsQueryDto, lang: string = 'en') {
     const {
       page,
       limit,
@@ -49,7 +49,6 @@ export class ListPlantsService {
       status,
       categoryId,
       tagIds,
-      locale,
       sortBy,
       sortOrder,
     } = query;
@@ -144,7 +143,7 @@ export class ListPlantsService {
         productTranslationsTable,
         and(
           eq(productTranslationsTable.productId, productsTable.id),
-          eq(productTranslationsTable.locale, locale),
+          eq(productTranslationsTable.locale, lang),
         ),
       )
       .leftJoin(
@@ -221,13 +220,13 @@ export class ListPlantsService {
     const result: PlantListItem[] = rows.map((row) => {
       const plantDetail = plantDetailMap.get(row.productId);
       const catTrans = plantDetail?.category?.translations?.find(
-        (t) => t.locale === locale,
+        (t) => t.locale === lang,
       );
 
       const tags =
         plantDetail?.tags?.map((pt) => {
           const tagTrans = pt.tag?.translations?.find(
-            (t) => t.locale === locale,
+            (t) => t.locale === lang,
           );
           return { id: pt.tag.id, slug: pt.tag.slug, name: tagTrans?.name ?? null };
         }) ?? [];

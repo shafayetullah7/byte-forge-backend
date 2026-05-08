@@ -76,13 +76,6 @@ export class PlantsController {
     description: 'Comma-separated tag UUIDs',
   })
   @ApiQuery({
-    name: 'locale',
-    required: false,
-    enum: ['en', 'bn'],
-    default: 'en',
-    description: 'Response language',
-  })
-  @ApiQuery({
     name: 'sortBy',
     required: false,
     enum: ['createdAt', 'updatedAt', 'name', 'price', 'inventory'],
