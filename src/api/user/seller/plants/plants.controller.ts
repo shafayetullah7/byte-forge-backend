@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   UseGuards,
@@ -13,7 +14,6 @@ import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';
-import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -26,11 +26,13 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiConflictResponse,
+  ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 import { ZodValidationPipe } from 'nestjs-zod';
 import {
   PlantListItemResponseDto,
   PlantCreateResponseDto,
+  PlantDetailResponseDto,
 } from './dto/plants-response.dto';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
 
@@ -107,6 +109,32 @@ export class PlantsController {
 
   @ApiAuth()
   @ApiOperation({
+    summary: 'Get plant by ID',
+    description: 'Returns full plant details including variants, care instructions, and all translations',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Plant details retrieved successfully',
+    type: PlantDetailResponseDto,
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Plant not found')
+  @Get(':id')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getPlantById(
+    @Param('id') id: string,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    const plant = await this.plantsService.getPlantById(authenticUser.user.id, id, lang);
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantRetrieved', { lang }),
+      data: plant,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
     summary: 'Create plant',
     description: 'Creates a new plant product with variants, care instructions, and media',
   })
@@ -124,7 +152,7 @@ export class PlantsController {
     @Body(new ZodValidationPipe(CreatePlantDto.schema)) dto: CreatePlantDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
-  ): Promise<SuccessResponse<any>> {
+  ) {
     const plant = await this.plantsService.createPlant(
       authenticUser.user.id,
       dto,
