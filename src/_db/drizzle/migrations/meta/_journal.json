@@ -456,6 +456,13 @@
       "when": 1778132955942,
       "tag": "0066_brave_rick_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1778550015894,
+      "tag": "0067_lowly_professor_monster",
+      "breakpoints": true
     }
   ]
 }

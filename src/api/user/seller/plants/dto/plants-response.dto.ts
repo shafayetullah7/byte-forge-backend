@@ -292,9 +292,6 @@ export class PlantVariantMediaResponseDto {
   @ApiProperty()
   type!: string;
 
-  @ApiPropertyOptional()
-  isPrimary?: boolean;
-
   @ApiProperty()
   url!: string;
 }

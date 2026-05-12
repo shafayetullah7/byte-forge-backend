@@ -32,12 +32,10 @@ export const productMediaTable = pgTable(
       .references(() => mediaTable.id, { onDelete: 'cascade' }),
     displayOrder: integer('display_order').default(0).notNull(),
     type: varchar('type', { length: 20 }).notNull().default('image'),
-    isPrimary: boolean('is_primary').default(false),
   },
   (t) => [
     index('product_media_product_id_idx').on(t.productId),
     index('product_media_variant_id_idx').on(t.variantId),
-    index('product_media_is_primary_idx').on(t.isPrimary),
   ],
 );
 

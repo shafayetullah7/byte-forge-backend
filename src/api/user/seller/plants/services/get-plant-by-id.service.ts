@@ -1,17 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { productsTable } from '@/_db/drizzle/schema';
 
-type Product = typeof productsTable.$inferSelect;
-type ProductTranslation = typeof import('@/_db/drizzle/schema').productTranslationsTable.$inferSelect;
-type PlantDetails = typeof import('@/_db/drizzle/schema').plantDetailsTable.$inferSelect;
-type PlantDetailsTranslation = typeof import('@/_db/drizzle/schema').plantDetailsTranslationsTable.$inferSelect;
-type PlantCareInstructions = typeof import('@/_db/drizzle/schema').plantCareInstructionsTable.$inferSelect;
-type PlantCareTranslation = typeof import('@/_db/drizzle/schema').plantCareTranslationsTable.$inferSelect;
-type ProductVariant = typeof import('@/_db/drizzle/schema').productVariantsTable.$inferSelect;
-type PlantVariantAttributes = typeof import('@/_db/drizzle/schema').plantVariantAttributesTable.$inferSelect;
-type ProductMedia = typeof import('@/_db/drizzle/schema').productMediaTable.$inferSelect;
+const DEFAULT_INVENTORY_COUNT = 0;
+const DEFAULT_LOW_STOCK_THRESHOLD = 5;
+const DEFAULT_STEM_COUNT = 0;
 
 export type PlantDetailResult = {
   id: string;
@@ -85,8 +79,8 @@ export type PlantDetailResult = {
     sku: string | null;
     price: string;
     inventoryCount: number;
-    trackInventory: boolean;
     lowStockThreshold: number;
+    trackInventory: boolean;
     displayOrder: number;
     isBase: boolean;
     isActive: boolean;
@@ -109,7 +103,6 @@ export type PlantDetailResult = {
       mediaId: string;
       displayOrder: number;
       type: string;
-      isPrimary: boolean;
       url: string;
     }>;
   }>;
@@ -117,13 +110,17 @@ export type PlantDetailResult = {
   updatedAt: Date;
 };
 
+type DrizzleProduct = NonNullable<
+  Awaited<ReturnType<GetPlantByIdService['queryProduct']>>
+>;
+
 @Injectable()
 export class GetPlantByIdService {
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(shopId: string, plantId: string): Promise<PlantDetailResult | null> {
-    const product = await this.db.client.query.productsTable.findFirst({
-      where: eq(productsTable.id, plantId),
+  private queryProduct(shopId: string, plantId: string) {
+    return this.db.client.query.productsTable.findFirst({
+      where: and(eq(productsTable.id, plantId), eq(productsTable.shopId, shopId)),
       with: {
         thumbnail: {
           columns: { id: true, url: true },
@@ -165,6 +162,17 @@ export class GetPlantByIdService {
           },
         },
         careInstructions: {
+          columns: {
+            id: true,
+            lightInstructions: true,
+            wateringInstructions: true,
+            humidityInstructions: true,
+            fertilizerSchedule: true,
+            repottingFrequency: true,
+            pruningNotes: true,
+            commonProblems: true,
+            seasonalCare: true,
+          },
           with: {
             translations: {
               columns: {
@@ -195,19 +203,15 @@ export class GetPlantByIdService {
         },
       },
     });
+  }
 
-    if (!product) {
-      return null;
-    }
-
-    if (product.shopId !== shopId) {
-      return null;
-    }
-
+  async execute(shopId: string, plantId: string): Promise<PlantDetailResult | null> {
+    const product = await this.queryProduct(shopId, plantId);
+    if (!product) return null;
     return this.mapResult(product);
   }
 
-  private mapResult(product: any): PlantDetailResult {
+  private mapResult(product: DrizzleProduct): PlantDetailResult {
     const thumbnail = product.thumbnail
       ? { id: product.thumbnail.id, url: product.thumbnail.url }
       : null;
@@ -215,8 +219,8 @@ export class GetPlantByIdService {
     const translations = product.translations.map((t) => ({
       locale: t.locale,
       name: t.name,
-      description: t.description ?? null,
-      shortDescription: t.shortDescription ?? null,
+      description: t.description,
+      shortDescription: t.shortDescription,
     }));
 
     const plantDetails = product.plantDetails
@@ -229,11 +233,11 @@ export class GetPlantByIdService {
 
     const variants = product.variants.map((v) => ({
       id: v.id,
-      sku: v.sku ?? null,
+      sku: v.sku,
       price: v.price,
-      inventoryCount: v.inventoryCount,
+      inventoryCount: v.inventoryCount ?? DEFAULT_INVENTORY_COUNT,
       trackInventory: v.trackInventory,
-      lowStockThreshold: v.lowStockThreshold,
+      lowStockThreshold: v.lowStockThreshold ?? DEFAULT_LOW_STOCK_THRESHOLD,
       displayOrder: v.displayOrder,
       isBase: v.isBase,
       isActive: v.isActive,
@@ -244,23 +248,24 @@ export class GetPlantByIdService {
             plantForm: v.plantAttributes.plantForm,
             variegation: v.plantAttributes.variegation,
             leafDensity: v.plantAttributes.leafDensity,
-            stemCount: v.plantAttributes.stemCount,
-            currentHeight: v.plantAttributes.currentHeight ?? null,
-            currentSpread: v.plantAttributes.currentSpread ?? null,
+            stemCount: v.plantAttributes.stemCount ?? DEFAULT_STEM_COUNT,
+            currentHeight: v.plantAttributes.currentHeight,
+            currentSpread: v.plantAttributes.currentSpread,
             propagationType: v.plantAttributes.propagationType,
             containerType: v.plantAttributes.containerType,
-            containerSize: v.plantAttributes.containerSize ?? null,
-            bundleType: v.plantAttributes.bundleType ?? null,
+            containerSize: v.plantAttributes.containerSize,
+            bundleType: v.plantAttributes.bundleType,
           }
         : null,
-      media: v.media.map((m) => ({
-        id: m.id,
-        mediaId: m.mediaId,
-        displayOrder: m.displayOrder,
-        type: m.type,
-        isPrimary: m.isPrimary,
-        url: m.media.url,
-      })),
+      media: v.media
+        .filter((m): m is typeof m & { media: NonNullable<typeof m.media> } => m.media != null)
+        .map((m) => ({
+          id: m.id,
+          mediaId: m.mediaId,
+          displayOrder: m.displayOrder,
+          type: m.type,
+          url: m.media.url,
+        })),
     }));
 
     return {
@@ -277,7 +282,7 @@ export class GetPlantByIdService {
     };
   }
 
-  private mapPlantDetails(details: any): PlantDetailResult['plantDetails'] {
+  private mapPlantDetails(details: NonNullable<DrizzleProduct['plantDetails']>): PlantDetailResult['plantDetails'] {
     const category = details.category
       ? {
           id: details.category.id,
@@ -289,68 +294,70 @@ export class GetPlantByIdService {
         }
       : null;
 
-    const tags = details.tags.map((pt) => ({
-      id: pt.tag.id,
-      slug: pt.tag.slug,
-      translations: pt.tag.translations.map((t) => ({
-        locale: t.locale,
-        name: t.name,
-      })),
-    }));
+    const tags = details.tags
+      .filter((pt): pt is typeof pt & { tag: NonNullable<typeof pt.tag> } => pt.tag != null)
+      .map((pt) => ({
+        id: pt.tag.id,
+        slug: pt.tag.slug,
+        translations: pt.tag.translations.map((t) => ({
+          locale: t.locale,
+          name: t.name,
+        })),
+      }));
 
     const translations = details.translations.map((t) => ({
       locale: t.locale,
-      commonNames: t.commonNames ?? null,
-      origin: t.origin ?? null,
-      soilType: t.soilType ?? null,
-      toxicityInfo: t.toxicityInfo ?? null,
+      commonNames: t.commonNames,
+      origin: t.origin,
+      soilType: t.soilType,
+      toxicityInfo: t.toxicityInfo,
     }));
 
     return {
       id: details.id,
-      categoryId: details.categoryId ?? null,
-      scientificName: details.scientificName ?? null,
-      commonNames: details.commonNames ?? null,
-      origin: details.origin ?? null,
-      lightRequirement: details.lightRequirement ?? null,
-      wateringFrequency: details.wateringFrequency ?? null,
-      humidityLevel: details.humidityLevel ?? null,
-      temperatureRange: details.temperatureRange ?? null,
-      soilType: details.soilType ?? null,
-      careDifficulty: details.careDifficulty ?? null,
-      growthRate: details.growthRate ?? null,
-      matureHeight: details.matureHeight ?? null,
-      matureSpread: details.matureSpread ?? null,
-      toxicityInfo: details.toxicityInfo ?? null,
+      categoryId: details.categoryId,
+      scientificName: details.scientificName,
+      commonNames: details.commonNames,
+      origin: details.origin,
+      lightRequirement: details.lightRequirement,
+      wateringFrequency: details.wateringFrequency,
+      humidityLevel: details.humidityLevel,
+      temperatureRange: details.temperatureRange,
+      soilType: details.soilType,
+      careDifficulty: details.careDifficulty,
+      growthRate: details.growthRate,
+      matureHeight: details.matureHeight,
+      matureSpread: details.matureSpread,
+      toxicityInfo: details.toxicityInfo,
       category,
       tags,
       translations,
     };
   }
 
-  private mapCareInstructions(care: any): PlantDetailResult['careInstructions'] {
+  private mapCareInstructions(care: NonNullable<DrizzleProduct['careInstructions']>): PlantDetailResult['careInstructions'] {
     const translations = care.translations.map((t) => ({
       locale: t.locale,
-      lightInstructions: t.lightInstructions ?? null,
-      wateringInstructions: t.wateringInstructions ?? null,
-      humidityInstructions: t.humidityInstructions ?? null,
-      fertilizerSchedule: t.fertilizerSchedule ?? null,
-      repottingFrequency: t.repottingFrequency ?? null,
-      pruningNotes: t.pruningNotes ?? null,
-      commonProblems: t.commonProblems ?? null,
-      seasonalCare: t.seasonalCare ?? null,
+      lightInstructions: t.lightInstructions,
+      wateringInstructions: t.wateringInstructions,
+      humidityInstructions: t.humidityInstructions,
+      fertilizerSchedule: t.fertilizerSchedule,
+      repottingFrequency: t.repottingFrequency,
+      pruningNotes: t.pruningNotes,
+      commonProblems: t.commonProblems,
+      seasonalCare: t.seasonalCare,
     }));
 
     return {
       id: care.id,
-      lightInstructions: care.lightInstructions ?? null,
-      wateringInstructions: care.wateringInstructions ?? null,
-      humidityInstructions: care.humidityInstructions ?? null,
-      fertilizerSchedule: care.fertilizerSchedule ?? null,
-      repottingFrequency: care.repottingFrequency ?? null,
-      pruningNotes: care.pruningNotes ?? null,
-      commonProblems: care.commonProblems ?? null,
-      seasonalCare: care.seasonalCare ?? null,
+      lightInstructions: care.lightInstructions,
+      wateringInstructions: care.wateringInstructions,
+      humidityInstructions: care.humidityInstructions,
+      fertilizerSchedule: care.fertilizerSchedule,
+      repottingFrequency: care.repottingFrequency,
+      pruningNotes: care.pruningNotes,
+      commonProblems: care.commonProblems,
+      seasonalCare: care.seasonalCare,
       translations,
     };
   }

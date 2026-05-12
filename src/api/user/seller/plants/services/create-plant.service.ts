@@ -503,7 +503,6 @@ export class CreatePlantService {
       variantId: null,
       mediaId: dto.thumbnailId,
       displayOrder: -1,
-      isPrimary: true,
       type: 'image',
     });
 
@@ -516,7 +515,6 @@ export class CreatePlantService {
             variantId: variant.id,
             mediaId,
             displayOrder: mediaIndex,
-            isPrimary: mediaIndex === 0,
             type: 'image',
           });
         });
