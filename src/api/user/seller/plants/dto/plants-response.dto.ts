@@ -334,6 +334,14 @@ export class PlantVariantAttributesResponseDto {
   bundleType?: string;
 }
 
+export class PlantVariantTranslationResponseDto {
+  @ApiProperty({ example: 'en' })
+  locale!: string;
+
+  @ApiProperty({ example: 'Small (15cm)' })
+  title!: string;
+}
+
 export class PlantVariantResponseDto {
   @ApiProperty()
   id!: string;
@@ -364,6 +372,9 @@ export class PlantVariantResponseDto {
 
   @ApiPropertyOptional({ type: PlantVariantAttributesResponseDto })
   plantAttributes?: PlantVariantAttributesResponseDto;
+
+  @ApiPropertyOptional({ type: [PlantVariantTranslationResponseDto] })
+  translations?: PlantVariantTranslationResponseDto[];
 
   @ApiPropertyOptional({ type: [PlantVariantMediaResponseDto] })
   media?: PlantVariantMediaResponseDto[];

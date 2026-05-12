@@ -12,6 +12,7 @@ import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
 import { plantVariantAttributesTable } from './plant-variant-attributes.schema';
 import { productMediaTable } from './product-media.schema';
+import { productVariantTranslationsTable } from './product-variant-translations.schema';
 
 /**
  * Product Variants Table
@@ -76,5 +77,6 @@ export const productVariantsRelations = relations(
       references: [plantVariantAttributesTable.variantId],
     }),
     media: many(productMediaTable),
+    translations: many(productVariantTranslationsTable),
   }),
 );

@@ -98,6 +98,10 @@ export type PlantDetailResult = {
       containerSize: string | null;
       bundleType: string | null;
     } | null;
+    translations: Array<{
+      locale: string;
+      title: string;
+    }>;
     media: Array<{
       id: string;
       mediaId: string;
@@ -192,6 +196,9 @@ export class GetPlantByIdService {
         variants: {
           with: {
             plantAttributes: true,
+            translations: {
+              columns: { locale: true, title: true },
+            },
             media: {
               with: {
                 media: {
@@ -257,6 +264,10 @@ export class GetPlantByIdService {
             bundleType: v.plantAttributes.bundleType,
           }
         : null,
+      translations: v.translations.map((t) => ({
+        locale: t.locale,
+        title: t.title,
+      })),
       media: v.media
         .filter((m): m is typeof m & { media: NonNullable<typeof m.media> } => m.media != null)
         .map((m) => ({

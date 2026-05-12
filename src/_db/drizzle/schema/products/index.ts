@@ -3,6 +3,7 @@ export * from './products.schema';
 export * from './product-translations.schema';
 export * from './product-tags.schema';
 export * from './product-variants.schema';
+export * from './product-variant-translations.schema';
 export * from './product-seo.schema';
 
 // Type-specific detail tables
