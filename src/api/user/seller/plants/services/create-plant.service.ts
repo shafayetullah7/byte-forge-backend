@@ -481,9 +481,14 @@ export class CreatePlantService {
           growthStage: variant.plantAttributes.growthStage || undefined,
           plantForm: variant.plantAttributes.plantForm || undefined,
           variegation: variant.plantAttributes.variegation || undefined,
+          leafDensity: variant.plantAttributes.leafDensity || undefined,
+          stemCount: variant.plantAttributes.stemCount || undefined,
+          currentHeight: variant.plantAttributes.currentHeight || null,
+          currentSpread: variant.plantAttributes.currentSpread || null,
           propagationType: variant.plantAttributes.propagationType || undefined,
           containerType: variant.plantAttributes.containerType || undefined,
-          bundleType: variant.plantAttributes.bundleType || undefined,
+          containerSize: variant.plantAttributes.containerSize || null,
+          bundleType: variant.plantAttributes.bundleType || null,
         });
       }
     }
@@ -536,10 +541,14 @@ export class CreatePlantService {
     dto: CreatePlantDto,
     tx: DrizzleTx,
   ) {
-    const payloads: TNewProductVariantTranslation[] = variants.flatMap((v, i) => [
-      { variantId: v.id, locale: 'en' as const, title: dto.variants[i].translations.en.title },
-      { variantId: v.id, locale: 'bn' as const, title: dto.variants[i].translations.bn.title },
-    ]);
+    const payloads: TNewProductVariantTranslation[] = [];
+
+    for (let i = 0; i < variants.length; i++) {
+      const enTitle = dto.variants[i].translations.en.title?.trim();
+      const bnTitle = dto.variants[i].translations.bn.title?.trim();
+      if (enTitle) payloads.push({ variantId: variants[i].id, locale: 'en', title: enTitle });
+      if (bnTitle) payloads.push({ variantId: variants[i].id, locale: 'bn', title: bnTitle });
+    }
 
     if (payloads.length > 0) {
       await tx.insert(productVariantTranslationsTable).values(payloads);

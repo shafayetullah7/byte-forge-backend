@@ -119,8 +119,8 @@ export const variantTranslationSchema = z.object({
   title: z
     .string()
     .trim()
-    .min(1, 'Variant title is required')
-    .max(255, 'Title must be at most 255 characters'),
+    .max(255, 'Title must be at most 255 characters')
+    .optional(),
 });
 
 // === Plant Variant Attributes Schema ===
