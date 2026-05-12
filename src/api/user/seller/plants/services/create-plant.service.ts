@@ -27,6 +27,7 @@ import {
   productVariantsTable,
   plantVariantAttributesTable,
   productMediaTable,
+  productVariantTranslationsTable,
   TNewProduct,
   TNewProductTranslation,
   TNewPlantDetails,
@@ -37,6 +38,7 @@ import {
   TNewPlantVariantAttributes,
   TNewProductMedia,
   TNewPlantDetailsTags,
+  TNewProductVariantTranslation,
 } from '@/_db/drizzle/schema';
 import { eq, and, like } from 'drizzle-orm';
 
@@ -117,6 +119,9 @@ export class CreatePlantService {
 
       // === 12. Create variants (BATCH) ===
       const variants = await this.createVariants(product.id, dto.variants, tx);
+
+      // === 12.5. Create variant translations (BATCH) ===
+      await this.createVariantTranslations(variants, dto, tx);
 
       // === 13. Create product media (BATCH - single insert) ===
       await this.createProductMedia(product.id, variants, dto, tx);
@@ -523,6 +528,21 @@ export class CreatePlantService {
 
     if (mediaPayloads.length > 0) {
       await tx.insert(productMediaTable).values(mediaPayloads);
+    }
+  }
+
+  private async createVariantTranslations(
+    variants: Awaited<ReturnType<typeof this.createVariants>>,
+    dto: CreatePlantDto,
+    tx: DrizzleTx,
+  ) {
+    const payloads: TNewProductVariantTranslation[] = variants.flatMap((v, i) => [
+      { variantId: v.id, locale: 'en' as const, title: dto.variants[i].translations.en.title },
+      { variantId: v.id, locale: 'bn' as const, title: dto.variants[i].translations.bn.title },
+    ]);
+
+    if (payloads.length > 0) {
+      await tx.insert(productVariantTranslationsTable).values(payloads);
     }
   }
 

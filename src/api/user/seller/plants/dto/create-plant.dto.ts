@@ -114,6 +114,15 @@ export const plantDetailsSchema = z.object({
   }),
 });
 
+// === Variant Translation Schema ===
+export const variantTranslationSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Variant title is required')
+    .max(255, 'Title must be at most 255 characters'),
+});
+
 // === Plant Variant Attributes Schema ===
 export const plantVariantAttributesSchema = z.object({
   growthStage: z
@@ -196,6 +205,10 @@ export const productVariantSchema = z.object({
   isActive: z.boolean().optional().default(true),
   plantAttributes: plantVariantAttributesSchema.optional(),
   mediaIds: z.array(UUIDSchema).max(10, 'Maximum 10 images per variant').optional(),
+  translations: z.object({
+    en: variantTranslationSchema,
+    bn: variantTranslationSchema,
+  }),
 });
 
 // === Care Guide Schema ===
