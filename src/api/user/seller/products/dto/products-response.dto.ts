@@ -8,6 +8,48 @@ export class ProductThumbnailResponseDto {
   url!: string;
 }
 
+export class ProductDetailResponseDto {
+  @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  id!: string;
+
+  @ApiProperty({ example: 'monstera-deliciosa' })
+  slug!: string;
+
+  @ApiProperty({ enum: ['plant', 'pot', 'seed', 'fertilizer'], example: 'plant' })
+  productType!: string;
+
+  @ApiProperty({ enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'], example: 'ACTIVE' })
+  status!: string;
+
+  @ApiPropertyOptional({ type: ProductThumbnailResponseDto })
+  thumbnail?: ProductThumbnailResponseDto;
+
+  @ApiPropertyOptional({
+    type: [Object],
+    example: [
+      { locale: 'en', name: 'Monstera Deliciosa', description: '...', shortDescription: '...' },
+    ],
+  })
+  translations?: Array<{
+    locale: string;
+    name: string;
+    description: string | null;
+    shortDescription: string | null;
+  }>;
+
+  @ApiProperty({ example: 50 })
+  inventoryCount!: number;
+
+  @ApiProperty({ example: 3 })
+  totalVariants!: number;
+
+  @ApiProperty({ type: Date })
+  createdAt!: Date;
+
+  @ApiProperty({ type: Date })
+  updatedAt!: Date;
+}
+
 export class ProductListItemResponseDto {
   @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
   id!: string;

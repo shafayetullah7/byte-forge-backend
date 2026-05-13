@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Logger,
+  Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,13 +15,15 @@ import { ResponseService } from '@/common/modules/response/response.service';
 import {
   ApiTags,
   ApiOperation,
+  ApiParam,
   ApiQuery,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
-import { ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
+import { ApiNotFoundResponse, ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { ProductListItemResponseDto } from './dto/products-response.dto';
+import { ProductListItemResponseDto, ProductDetailResponseDto } from './dto/products-response.dto';
 import { ProductStatusEnum, ProductTypeEnum } from '@/_db/drizzle/enum';
 
 @ApiTags('📦 Seller - Products Management')
@@ -94,6 +97,49 @@ export class ProductsController {
     } catch (error) {
       this.logger.error(
         `Failed to fetch products for user ${authenticUser.user.id} | Query: ${JSON.stringify(query)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get product by ID',
+    description: 'Returns full product details including thumbnail and variant information',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'Product ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Product details retrieved successfully',
+    type: ProductDetailResponseDto,
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Product not found')
+  @Get(':id')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getProductById(
+    @Param('id') id: string,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    this.logger.log(
+      `Fetching product ${id} for user ${authenticUser.user.id}`,
+    );
+    try {
+      const product = await this.productsService.getProductById(authenticUser.user.id, id, lang);
+      this.logger.log(`Successfully fetched product ${id}`);
+      return this.responseService.success({
+        message: this.i18n.t('message.success.productRetrieved', { lang }),
+        data: product,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch product ${id} for user ${authenticUser.user.id}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
