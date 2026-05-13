@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Logger,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -25,6 +26,8 @@ import { ProductStatusEnum, ProductTypeEnum } from '@/_db/drizzle/enum';
 @ApiTags('📦 Seller - Products Management')
 @Controller({ path: 'user/seller/products', version: '1' })
 export class ProductsController {
+  private readonly logger = new Logger(ProductsController.name);
+
   constructor(
     private readonly productsService: ProductsService,
     private readonly responseService: ResponseService,
@@ -77,11 +80,23 @@ export class ProductsController {
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const result = await this.productsService.getProducts(authenticUser.user.id, query, lang);
-    return this.responseService.paginated({
-      message: this.i18n.t('message.success.productsRetrieved', { lang }),
-      data: result.data,
-      meta: result.meta,
-    });
+    this.logger.log(
+      `Fetching products for user ${authenticUser.user.id} | Query: ${JSON.stringify(query)}`,
+    );
+    try {
+      const result = await this.productsService.getProducts(authenticUser.user.id, query, lang);
+      this.logger.log(`Successfully fetched ${result.data.length} products`);
+      return this.responseService.paginated({
+        message: this.i18n.t('message.success.productsRetrieved', { lang }),
+        data: result.data,
+        meta: result.meta,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch products for user ${authenticUser.user.id} | Query: ${JSON.stringify(query)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 }

@@ -50,6 +50,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 1. Zod Validation Errors
     if (exception instanceof ZodValidationException) {
       const validationErrors = this.formatZodErrors(exception, lang);
+      const zodError = exception.getZodError() as ZodError;
+      this.logger.error(
+        `Validation Error [${JSON.stringify(zodError.issues)}]`,
+      );
       return this.responseService.error({
         statusCode: HttpStatus.BAD_REQUEST,
         code: ErrorCode.VALIDATION_ERROR,
