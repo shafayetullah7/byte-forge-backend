@@ -15,8 +15,21 @@ export type ProductDetailResult = {
     description: string | null;
     shortDescription: string | null;
   }>;
-  inventoryCount: number;
-  totalVariants: number;
+  variants: Array<{
+    id: string;
+    sku: string | null;
+    price: string;
+    inventoryCount: number;
+    lowStockThreshold: number;
+    isBase: boolean;
+    isActive: boolean;
+  }>;
+  stockBreakdown: {
+    totalStock: number;
+    availableStock: number;
+    reservedStock: number;
+    lowStockCount: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 };
@@ -44,7 +57,12 @@ export class GetProductByIdService {
         variants: {
           columns: {
             id: true,
+            sku: true,
+            price: true,
             inventoryCount: true,
+            lowStockThreshold: true,
+            isBase: true,
+            isActive: true,
           },
         },
       },
@@ -77,11 +95,20 @@ export class GetProductByIdService {
       shortDescription: t.shortDescription,
     }));
 
-    const inventoryCount = product.variants.reduce(
-      (sum, v) => sum + (v.inventoryCount ?? 0),
-      0,
-    );
-    const totalVariants = product.variants.length;
+    const variants = product.variants.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      price: v.price,
+      inventoryCount: v.inventoryCount ?? 0,
+      lowStockThreshold: v.lowStockThreshold ?? 5,
+      isBase: v.isBase,
+      isActive: v.isActive,
+    }));
+
+    const totalStock = variants.reduce((sum, v) => sum + v.inventoryCount, 0);
+    const lowStockCount = variants.filter(
+      (v) => v.inventoryCount > 0 && v.inventoryCount <= v.lowStockThreshold,
+    ).length;
 
     return {
       id: product.id,
@@ -90,8 +117,13 @@ export class GetProductByIdService {
       status: product.status,
       thumbnail,
       translations,
-      inventoryCount,
-      totalVariants,
+      variants,
+      stockBreakdown: {
+        totalStock,
+        availableStock: totalStock,
+        reservedStock: 0,
+        lowStockCount,
+      },
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };

@@ -37,11 +37,32 @@ export class ProductDetailResponseDto {
     shortDescription: string | null;
   }>;
 
-  @ApiProperty({ example: 50 })
-  inventoryCount!: number;
+  @ApiPropertyOptional({
+    type: [Object],
+    example: [
+      { id: 'var-1', sku: 'ALBO-MED-001', price: '4500.00', inventoryCount: 8, lowStockThreshold: 3, isBase: true, isActive: true },
+    ],
+  })
+  variants?: Array<{
+    id: string;
+    sku: string | null;
+    price: string;
+    inventoryCount: number;
+    lowStockThreshold: number;
+    isBase: boolean;
+    isActive: boolean;
+  }>;
 
-  @ApiProperty({ example: 3 })
-  totalVariants!: number;
+  @ApiPropertyOptional({
+    type: Object,
+    example: { totalStock: 12, availableStock: 12, reservedStock: 0, lowStockCount: 1 },
+  })
+  stockBreakdown?: {
+    totalStock: number;
+    availableStock: number;
+    reservedStock: number;
+    lowStockCount: number;
+  };
 
   @ApiProperty({ type: Date })
   createdAt!: Date;
