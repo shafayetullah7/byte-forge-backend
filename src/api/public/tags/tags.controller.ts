@@ -10,6 +10,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import { ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+import { GetTagByIdParamsDto } from './dto/get-tag-by-id-params.dto';
 
 @ApiTags('🏷️ Public - Tags')
 @Controller({ path: 'tags', version: '1' })
@@ -44,8 +45,8 @@ export class PublicTagsController {
   @ApiNotFoundResponse('Tag not found')
   @ApiParam({ name: 'id', description: 'Tag UUID' })
   @Get(':id')
-  async findOne(@Param('id') id: string, @I18nLang() lang: string) {
-    const data = await this.tagsService.findOne(id, lang);
+  async findOne(@Param() params: GetTagByIdParamsDto, @I18nLang() lang: string) {
+    const data = await this.tagsService.findOne(params.id, lang);
     return { success: true, message: 'Tag retrieved', data };
   }
 }

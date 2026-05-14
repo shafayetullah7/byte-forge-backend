@@ -10,6 +10,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import { ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+import { GetCategoryByIdParamsDto } from './dto/get-category-by-id-params.dto';
 
 @ApiTags('📂 Public - Categories')
 @Controller({ path: 'tree-categories', version: '1' })
@@ -63,8 +64,8 @@ export class PublicCategoriesController {
   @ApiNotFoundResponse('Category not found')
   @ApiParam({ name: 'id', description: 'Category UUID' })
   @Get(':id')
-  async findOne(@Param('id') id: string, @I18nLang() lang: string) {
-    const data = await this.categoriesService.findOne(id, lang);
+  async findOne(@Param() params: GetCategoryByIdParamsDto, @I18nLang() lang: string) {
+    const data = await this.categoriesService.findOne(params.id, lang);
     return { success: true, message: 'Category retrieved', data };
   }
 }

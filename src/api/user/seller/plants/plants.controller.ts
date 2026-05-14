@@ -10,6 +10,7 @@ import {
 import { PlantsService } from './plants.service';
 import { CreatePlantDto } from './dto/create-plant.dto';
 import { ListPlantsQueryDto } from './dto/list-plants-query.dto';
+import { GetPlantByIdParamsDto } from './dto/get-plant-by-id-params.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
@@ -117,16 +118,17 @@ export class PlantsController {
     description: 'Plant details retrieved successfully',
     type: PlantDetailResponseDto,
   })
+  @ApiBadRequestResponse('Validation failed')
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse('Plant not found')
   @Get(':id')
   @UseGuards(VerifiedUserAuthGuard)
   async getPlantById(
-    @Param('id') id: string,
+    @Param() params: GetPlantByIdParamsDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const plant = await this.plantsService.getPlantById(authenticUser.user.id, id, lang);
+    const plant = await this.plantsService.getPlantById(authenticUser.user.id, params.id, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: plant,

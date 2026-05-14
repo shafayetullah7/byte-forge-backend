@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
+import { GetProductByIdParamsDto } from './dto/get-product-by-id-params.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
@@ -22,7 +23,6 @@ import {
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
 import { ApiNotFoundResponse, ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
-import { ZodValidationPipe } from 'nestjs-zod';
 import { ProductListItemResponseDto, ProductDetailResponseDto, ProductSummaryResponseDto, ProductOverviewResponseDto } from './dto/products-response.dto';
 import { ProductStatusEnum, ProductTypeEnum } from '@/_db/drizzle/enum';
 
@@ -79,7 +79,7 @@ export class ProductsController {
   @Get()
   @UseGuards(VerifiedUserAuthGuard)
   async getProducts(
-    @Query(new ZodValidationPipe(ListProductsQueryDto.schema)) query: ListProductsQueryDto,
+    @Query() query: ListProductsQueryDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
@@ -123,10 +123,11 @@ export class ProductsController {
   @Get(':id')
   @UseGuards(VerifiedUserAuthGuard)
   async getProductById(
-    @Param('id') id: string,
+    @Param() params: GetProductByIdParamsDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
+    const { id } = params;
     this.logger.log(
       `Fetching product ${id} for user ${authenticUser.user.id}`,
     );
@@ -166,10 +167,11 @@ export class ProductsController {
   @Get(':id/summary')
   @UseGuards(VerifiedUserAuthGuard)
   async getProductSummary(
-    @Param('id') id: string,
+    @Param() params: GetProductByIdParamsDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
+    const { id } = params;
     this.logger.log(
       `Fetching product summary ${id} for user ${authenticUser.user.id}`,
     );
@@ -209,10 +211,11 @@ export class ProductsController {
   @Get(':id/overview')
   @UseGuards(VerifiedUserAuthGuard)
   async getProductOverview(
-    @Param('id') id: string,
+    @Param() params: GetProductByIdParamsDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
+    const { id } = params;
     this.logger.log(
       `Fetching product overview ${id} for user ${authenticUser.user.id}`,
     );
