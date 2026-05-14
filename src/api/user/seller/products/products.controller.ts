@@ -23,7 +23,7 @@ import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
 import { ApiNotFoundResponse, ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { ProductListItemResponseDto, ProductDetailResponseDto } from './dto/products-response.dto';
+import { ProductListItemResponseDto, ProductDetailResponseDto, ProductSummaryResponseDto, ProductOverviewResponseDto } from './dto/products-response.dto';
 import { ProductStatusEnum, ProductTypeEnum } from '@/_db/drizzle/enum';
 
 @ApiTags('📦 Seller - Products Management')
@@ -140,6 +140,92 @@ export class ProductsController {
     } catch (error) {
       this.logger.error(
         `Failed to fetch product ${id} for user ${authenticUser.user.id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get product summary',
+    description: 'Returns lightweight product info for layout header (id, slug, type, status, translations)',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'Product ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Product summary retrieved successfully',
+    type: ProductSummaryResponseDto,
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Product not found')
+  @Get(':id/summary')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getProductSummary(
+    @Param('id') id: string,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    this.logger.log(
+      `Fetching product summary ${id} for user ${authenticUser.user.id}`,
+    );
+    try {
+      const summary = await this.productsService.getProductSummary(authenticUser.user.id, id, lang);
+      this.logger.log(`Successfully fetched product summary ${id}`);
+      return this.responseService.success({
+        message: this.i18n.t('message.success.productRetrieved', { lang }),
+        data: summary,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch product summary ${id} for user ${authenticUser.user.id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get product overview',
+    description: 'Returns product overview data (thumbnail, variants, stock breakdown)',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'Product ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Product overview retrieved successfully',
+    type: ProductOverviewResponseDto,
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Product not found')
+  @Get(':id/overview')
+  @UseGuards(VerifiedUserAuthGuard)
+  async getProductOverview(
+    @Param('id') id: string,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    this.logger.log(
+      `Fetching product overview ${id} for user ${authenticUser.user.id}`,
+    );
+    try {
+      const overview = await this.productsService.getProductOverview(authenticUser.user.id, id, lang);
+      this.logger.log(`Successfully fetched product overview ${id}`);
+      return this.responseService.success({
+        message: this.i18n.t('message.success.productRetrieved', { lang }),
+        data: overview,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch product overview ${id} for user ${authenticUser.user.id}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
