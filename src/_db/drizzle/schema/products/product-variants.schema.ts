@@ -13,6 +13,7 @@ import { productsTable } from './products.schema';
 import { plantVariantAttributesTable } from './plant-variant-attributes.schema';
 import { productMediaTable } from './product-media.schema';
 import { productVariantTranslationsTable } from './product-variant-translations.schema';
+import { inventoryTable } from '../inventory/inventory.schema';
 
 /**
  * Product Variants Table

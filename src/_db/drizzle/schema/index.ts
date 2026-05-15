@@ -6,4 +6,5 @@ export * from './shop';
 export * from './media';
 export * from './products';
 export * from './taxonomy';
+export * from './inventory';
 export * from './i18n/language.schema';

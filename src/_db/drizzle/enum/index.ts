@@ -9,3 +9,4 @@ export * from './shop.verification.status.enum';
 export * from './shop.verification.action.enum';
 export * from './plant-care.enum';
 export * from './plant-variant.enum';
+export * from './inventory-movement-type.enum';
