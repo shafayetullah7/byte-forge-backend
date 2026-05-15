@@ -1,13 +1,11 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Body,
   Query,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { ShopsService } from './shops.service';
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
@@ -33,27 +31,26 @@ export class ShopsController {
   }
 
   @Patch(':id/approve')
-  async approveShop(@Param() params: GetShopByIdParamsDto, @Body() dto: ApproveShopDto) {
+  async approveShop(
+    @Param() params: GetShopByIdParamsDto,
+    @Body() dto: ApproveShopDto,
+  ) {
     return this.shopsService.approve(params.id, dto);
   }
 
   @Patch(':id/reject')
-  async rejectShop(@Param() params: GetShopByIdParamsDto, @Body() dto: RejectShopDto) {
-    if (!dto.reason || dto.reason.trim().length < 10) {
-      throw new BadRequestException(
-        'Rejection reason must be at least 10 characters',
-      );
-    }
+  async rejectShop(
+    @Param() params: GetShopByIdParamsDto,
+    @Body() dto: RejectShopDto,
+  ) {
     return this.shopsService.reject(params.id, dto);
   }
 
   @Patch(':id/suspend')
-  async suspendShop(@Param() params: GetShopByIdParamsDto, @Body() dto: SuspendShopDto) {
-    if (!dto.reason || dto.reason.trim().length < 10) {
-      throw new BadRequestException(
-        'Suspension reason must be at least 10 characters',
-      );
-    }
+  async suspendShop(
+    @Param() params: GetShopByIdParamsDto,
+    @Body() dto: SuspendShopDto,
+  ) {
     return this.shopsService.suspend(params.id, dto);
   }
 

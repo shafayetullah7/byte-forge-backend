@@ -18,18 +18,13 @@ import { CategoryQueryDto } from './dto/category-query.dto';
 import { CategoryParamDto } from './dto/category-param.dto';
 import { UpsertCategoryTranslationDto } from './dto/upsert-category-translation.dto';
 import { CategoryTranslationParamDto } from './dto/category-translation-param.dto';
+import { CategoryTranslationListParamDto } from './dto/category-translation-list-param.dto';
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 import { ApiPagination } from '@/common/decorators/api-pagination.decorator';
@@ -142,9 +137,10 @@ export class AdminCategoriesController {
   @ApiOperation({ summary: 'Get category translations' })
   @ApiResponse({ status: 200, description: 'Translations retrieved' })
   @Get(':category_id/translations')
-  async findAllTranslations(@Param('category_id') categoryId: string) {
-    const data =
-      await this.categoryTranslationsService.findAllByCategory(categoryId);
+  async findAllTranslations(@Param() param: CategoryTranslationListParamDto) {
+    const data = await this.categoryTranslationsService.findAllByCategory(
+      param.category_id,
+    );
     return this.responseService.success({
       message: 'Category translations retrieved successfully',
       data,
@@ -156,11 +152,11 @@ export class AdminCategoriesController {
   @ApiResponse({ status: 200, description: 'Translation updated' })
   @Post(':category_id/translations')
   async upsertTranslation(
-    @Param('category_id') categoryId: string,
+    @Param() param: CategoryTranslationListParamDto,
     @Body() upsertDto: UpsertCategoryTranslationDto,
   ) {
     const data = await this.categoryTranslationsService.upsert(
-      categoryId,
+      param.category_id,
       upsertDto,
     );
     return this.responseService.success({

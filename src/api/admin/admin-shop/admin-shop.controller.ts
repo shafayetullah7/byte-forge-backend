@@ -6,24 +6,17 @@ import {
   Post,
   Query,
   UseGuards,
-  ParseUUIDPipe,
-  Patch,
 } from '@nestjs/common';
 import { AdminShopService } from './admin-shop.service';
 import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { DeactivateShopDto } from './dto/deactivate-shop.dto';
+import { ShopIdParamDto } from './dto/shop-id-param.dto';
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
@@ -64,8 +57,8 @@ export class AdminShopController {
   @ApiNotFoundResponse('Shop')
   @Post(':id/approve')
   @UseGuards(AdminAuthGuard)
-  async approveShop(@Param('id', ParseUUIDPipe) id: string) {
-    const verification = await this.adminShopService.approveShop(id);
+  async approveShop(@Param() params: ShopIdParamDto) {
+    const verification = await this.adminShopService.approveShop(params.id);
     return this.responseService.success({
       message: 'Shop approved successfully',
       data: verification,
@@ -80,10 +73,10 @@ export class AdminShopController {
   @Post(':id/reject')
   @UseGuards(AdminAuthGuard)
   async rejectShop(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param() params: ShopIdParamDto,
     @Body() dto: RejectShopDto,
   ) {
-    const verification = await this.adminShopService.rejectShop(id, dto);
+    const verification = await this.adminShopService.rejectShop(params.id, dto);
     return this.responseService.success({
       message: 'Shop rejected successfully',
       data: verification,
@@ -102,7 +95,7 @@ export class AdminShopController {
   @UseGuards(AdminAuthGuard)
   async getAllShops(@Query() query: ShopQueryDto) {
     const result = await this.adminShopService.getAllShops(query);
-    const response =  this.responseService.paginated({
+    const response = this.responseService.paginated({
       message: 'Shops retrieved successfully',
       data: result.data,
       meta: result.meta,
@@ -130,8 +123,8 @@ export class AdminShopController {
   @ApiNotFoundResponse('Shop')
   @Get(':id')
   @UseGuards(AdminAuthGuard)
-  async getShopById(@Param('id', ParseUUIDPipe) id: string) {
-    const shop = await this.adminShopService.getShopById(id);
+  async getShopById(@Param() params: ShopIdParamDto) {
+    const shop = await this.adminShopService.getShopById(params.id);
     return this.responseService.success({
       message: 'Shop retrieved successfully',
       data: shop,
@@ -139,16 +132,19 @@ export class AdminShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get shop verification details',
-    description: 'Retrieves complete verification information including documents, admin notes, and history.',
+    description:
+      'Retrieves complete verification information including documents, admin notes, and history.',
   })
   @ApiResponse({ status: 200, description: 'Verification details retrieved' })
   @ApiNotFoundResponse('Shop verification')
   @Get(':id/verification')
   @UseGuards(AdminAuthGuard)
-  async getShopVerification(@Param('id', ParseUUIDPipe) id: string) {
-    const verification = await this.adminShopService.getShopVerification(id);
+  async getShopVerification(@Param() params: ShopIdParamDto) {
+    const verification = await this.adminShopService.getShopVerification(
+      params.id,
+    );
     return this.responseService.success({
       message: 'Verification details retrieved successfully',
       data: verification,
@@ -163,10 +159,10 @@ export class AdminShopController {
   @Post(':id/suspend')
   @UseGuards(AdminAuthGuard)
   async suspendShop(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param() params: ShopIdParamDto,
     @Body() dto: SuspendShopDto,
   ) {
-    const result = await this.adminShopService.suspendShop(id, dto);
+    const result = await this.adminShopService.suspendShop(params.id, dto);
     return this.responseService.success({
       message: 'Shop suspended successfully',
       data: result,
@@ -184,10 +180,10 @@ export class AdminShopController {
   @Post(':id/deactivate')
   @UseGuards(AdminAuthGuard)
   async deactivateShop(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param() params: ShopIdParamDto,
     @Body() dto: DeactivateShopDto,
   ) {
-    const result = await this.adminShopService.deactivateShop(id, dto);
+    const result = await this.adminShopService.deactivateShop(params.id, dto);
     return this.responseService.success({
       message: 'Shop deactivated successfully',
       data: result,
@@ -200,8 +196,8 @@ export class AdminShopController {
   @ApiNotFoundResponse('Shop')
   @Post(':id/reactivate')
   @UseGuards(AdminAuthGuard)
-  async reactivateShop(@Param('id', ParseUUIDPipe) id: string) {
-    const result = await this.adminShopService.reactivateShop(id);
+  async reactivateShop(@Param() params: ShopIdParamDto) {
+    const result = await this.adminShopService.reactivateShop(params.id);
     return this.responseService.success({
       message: 'Shop reactivated successfully',
       data: result,

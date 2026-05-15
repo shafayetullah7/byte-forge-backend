@@ -19,7 +19,6 @@ import { ResponseService } from '../modules/response/response.service';
 import { CustomException } from '../exceptions/custom.exception';
 import { ErrorCode } from '../modules/response/dto/error.schema';
 import { ResponseValidationError } from '../modules/response/dto/response.validation.error.schema';
-import { ValidationError } from 'class-validator';
 import { AppEnvService } from '../../_config/app-env/app-env.service';
 import { ZodValidationException } from 'nestjs-zod';
 import { I18nContext, I18nService } from 'nestjs-i18n';
@@ -156,7 +155,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (Array.isArray(res)) {
-      validationErrors = (res as ValidationError[]).map((err) => ({
+      validationErrors = (
+        res as Array<{ property: string; constraints?: Record<string, string> }>
+      ).map((err) => ({
         field: err.property,
         message: err.constraints
           ? Object.values(err.constraints).join(', ')

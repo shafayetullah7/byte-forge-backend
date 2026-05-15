@@ -1,7 +1,8 @@
-import { IsString, MinLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class RejectShopDto {
-  @IsString()
-  @MinLength(10, { message: 'Rejection reason must be at least 10 characters' })
-  reason: string;
-}
+const rejectShopSchema = z.object({
+  reason: z.string().min(10, 'Rejection reason must be at least 10 characters'),
+});
+
+export class RejectShopDto extends createZodDto(rejectShopSchema) {}

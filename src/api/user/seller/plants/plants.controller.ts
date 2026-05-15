@@ -15,21 +15,18 @@ import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { ResponseService } from '@/common/modules/response/response.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
+import {
+  ApiAuth,
+  ApiPaginatedResponse,
+} from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiConflictResponse,
   ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
-import { ZodValidationPipe } from 'nestjs-zod';
 import {
   PlantListItemResponseDto,
   PlantCreateResponseDto,
@@ -96,11 +93,15 @@ export class PlantsController {
   @Get()
   @UseGuards(VerifiedUserAuthGuard)
   async getPlants(
-    @Query(new ZodValidationPipe(ListPlantsQueryDto.schema)) query: ListPlantsQueryDto,
+    @Query() query: ListPlantsQueryDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const result = await this.plantsService.getPlants(authenticUser.user.id, query, lang);
+    const result = await this.plantsService.getPlants(
+      authenticUser.user.id,
+      query,
+      lang,
+    );
     return this.responseService.paginated({
       message: this.i18n.t('message.success.plantsRetrieved', { lang }),
       data: result.data,
@@ -111,7 +112,8 @@ export class PlantsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get plant by ID',
-    description: 'Returns full plant details including variants, care instructions, and all translations',
+    description:
+      'Returns full plant details including variants, care instructions, and all translations',
   })
   @ApiResponse({
     status: 200,
@@ -128,7 +130,11 @@ export class PlantsController {
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const plant = await this.plantsService.getPlantById(authenticUser.user.id, params.id, lang);
+    const plant = await this.plantsService.getPlantById(
+      authenticUser.user.id,
+      params.id,
+      lang,
+    );
     return this.responseService.success({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: plant,
@@ -138,7 +144,8 @@ export class PlantsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Create plant',
-    description: 'Creates a new plant product with variants, care instructions, and media',
+    description:
+      'Creates a new plant product with variants, care instructions, and media',
   })
   @ApiResponse({
     status: 201,
@@ -151,7 +158,7 @@ export class PlantsController {
   @Post()
   @UseGuards(VerifiedUserAuthGuard)
   async createPlant(
-    @Body(new ZodValidationPipe(CreatePlantDto.schema)) dto: CreatePlantDto,
+    @Body() dto: CreatePlantDto,
     @AuthenticUser() authenticUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
