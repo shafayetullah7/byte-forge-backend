@@ -20,6 +20,13 @@
       "slugMin": "Slug must be at least 3 characters",
       "slugFormat": "Slug can only contain lowercase letters, numbers, and hyphens",
       "descriptionMin": "Description must be at least 10 characters"
+    },
+    "inventory": {
+      "invalidQuantity": "Quantity must be a positive number",
+      "trackingDisabled": "Inventory tracking is disabled for this variant",
+      "insufficientStock": "Insufficient stock. Current stock: {current}, requested: {requested}",
+      "reservedExceedsQuantity": "Cannot reduce stock below reserved quantity",
+      "damagedExceedsAvailable": "Cannot mark more as damaged than available stock. Available: {available}, requested: {requested}"
     }
   },
   "error": {
@@ -49,6 +56,9 @@
     "mediaNotOwned": "Media not owned by user",
     "plantNotFound": "Plant not found",
     "productNotFound": "Product not found",
+    "variantNotFound": "Variant not found",
+    "inventoryNotFound": "Inventory record not found",
+    "inventoryNotOwned": "Inventory does not belong to your shop",
     "categoryNotFound": "Category not found",
     "shopNotFound": "Shop not found",
     "shopAlreadyExists": "You already have a shop",
@@ -96,6 +106,11 @@
     "shopReactivated": "Shop reactivated successfully",
     "plantRetrieved": "Plant retrieved successfully",
     "productRetrieved": "Product retrieved successfully",
+    "inventoryRetrieved": "Inventory retrieved successfully",
+    "movementsRetrieved": "Stock movements retrieved successfully",
+    "stockRestocked": "Stock restocked successfully",
+    "stockAdjusted": "Stock adjusted successfully",
+    "stockDamaged": "Stock marked as damaged successfully",
     "plantDeleted": "Plant deleted successfully",
     "mediaRetrieved": "Media list retrieved successfully",
     "tagRetrieved": "Tags retrieved successfully",

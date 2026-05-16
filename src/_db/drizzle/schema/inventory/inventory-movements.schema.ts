@@ -6,7 +6,6 @@ import {
   text,
   timestamp,
   pgEnum,
-  jsonb,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -64,7 +63,6 @@ export const inventoryMovementsTable = pgTable(
     createdBy: uuid('created_by').references(() => userTable.id, {
       onDelete: 'set null',
     }),
-    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
