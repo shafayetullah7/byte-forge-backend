@@ -16,6 +16,7 @@ import { PaymentMethodEnum } from '../../enum/payment-method.enum';
 import { orderItemsTable } from './order-items.schema';
 import { orderStatusHistoryTable } from './order-status-history.schema';
 import { orderAddressTable } from './order-address.schema';
+import { orderGroupsTable } from './order-groups.schema';
 
 export const orderStatusEnum = pgEnum('order_status_enum', [
   OrderStatusEnum.PENDING_PAYMENT,
@@ -57,6 +58,9 @@ export const ordersTable = pgTable(
     shopId: uuid('shop_id')
       .notNull()
       .references(() => shopTable.id, { onDelete: 'cascade' }),
+    groupId: uuid('group_id').references(() => orderGroupsTable.id, {
+      onDelete: 'set null',
+    }),
     status: orderStatusEnum('status')
       .default(OrderStatusEnum.PENDING_PAYMENT)
       .notNull(),
@@ -91,6 +95,7 @@ export const ordersTable = pgTable(
     index('orders_payment_status_idx').on(t.paymentStatus),
     index('orders_order_number_idx').on(t.orderNumber),
     index('orders_created_at_idx').on(t.createdAt),
+    index('orders_group_id_idx').on(t.groupId),
   ],
 );
 
@@ -105,6 +110,10 @@ export const ordersRelations = relations(ordersTable, ({ one, many }) => ({
   shop: one(shopTable, {
     fields: [ordersTable.shopId],
     references: [shopTable.id],
+  }),
+  group: one(orderGroupsTable, {
+    fields: [ordersTable.groupId],
+    references: [orderGroupsTable.id],
   }),
   items: many(orderItemsTable),
   statusHistory: many(orderStatusHistoryTable),
