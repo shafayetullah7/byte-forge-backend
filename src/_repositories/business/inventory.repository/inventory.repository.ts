@@ -10,7 +10,8 @@ import {
   TInventoryMovement,
   TNewInventoryMovement,
 } from '@/_db/drizzle/schema';
-import { Injectable } from '@nestjs/common';
+import { DrizzleTx } from '@/_db/drizzle/types';
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface MovementFilterParams {
   variantId?: string;
@@ -28,7 +29,62 @@ export interface PaginatedMovementsResult {
 
 @Injectable()
 export class InventoryRepository {
+  private readonly logger = new Logger(InventoryRepository.name);
+
   constructor(private readonly db: DrizzleService) {}
+
+  /**
+   * Acquire advisory lock for a variant
+   * Uses variantId converted to bigint for the lock
+   */
+  async acquireAdvisoryLock(variantId: string, tx: DrizzleTx): Promise<void> {
+    // Convert UUID to a bigint hash for advisory lock
+    const hash = this.uuidToHash(variantId);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${hash})`);
+  }
+
+  /**
+   * Get or create inventory for a variant within a transaction
+   * Uses advisory lock to prevent race conditions
+   */
+  async getOrCreateInventory(
+    variantId: string,
+    shopId: string,
+    tx: DrizzleTx,
+    lowStockThreshold: number = 5,
+  ): Promise<TInventory> {
+    // Acquire advisory lock for this variant
+    await this.acquireAdvisoryLock(variantId, tx);
+
+    // Check if inventory exists
+    const [existing] = await tx
+      .select()
+      .from(inventoryTable)
+      .where(eq(inventoryTable.variantId, variantId))
+      .execute();
+
+    if (existing) {
+      return existing;
+    }
+
+    // Create new inventory record
+    const [created] = await tx
+      .insert(inventoryTable)
+      .values({
+        variantId,
+        shopId,
+        quantity: 0,
+        reservedQuantity: 0,
+        lowStockThreshold,
+        trackInventory: true,
+        allowBackorder: false,
+      })
+      .returning()
+      .execute();
+
+    this.logger.log(`Created new inventory record for variant ${variantId}`);
+    return created;
+  }
 
   async findByVariantId(variantId: string): Promise<TInventory | undefined> {
     const [inventory] = await this.db.client
@@ -57,7 +113,7 @@ export class InventoryRepository {
       .execute();
   }
 
-  async createInventory(payload: TNewInventory, tx?: any): Promise<TInventory> {
+  async createInventory(payload: TNewInventory, tx?: DrizzleTx): Promise<TInventory> {
     const executor = this.db.getExecutor(tx);
     const [created] = await executor
       .insert(inventoryTable)
@@ -70,7 +126,7 @@ export class InventoryRepository {
   async update(
     inventoryId: string,
     data: Partial<Pick<TNewInventory, 'quantity' | 'reservedQuantity'>>,
-    tx?: any,
+    tx?: DrizzleTx,
   ): Promise<TInventory> {
     const executor = this.db.getExecutor(tx);
     const [updated] = await executor
@@ -84,7 +140,7 @@ export class InventoryRepository {
 
   async createMovement(
     payload: TNewInventoryMovement,
-    tx?: any,
+    tx?: DrizzleTx,
   ): Promise<TInventoryMovement> {
     const executor = this.db.getExecutor(tx);
     const [created] = await executor
@@ -164,5 +220,21 @@ export class InventoryRepository {
     }
 
     return this.findMovements(inventory.id, filters, page, limit);
+  }
+
+  /**
+   * Convert UUID to a bigint hash for advisory lock
+   * Uses a simple hash function to convert UUID string to bigint
+   */
+  private uuidToHash(uuid: string): number {
+    // Simple hash function for UUID
+    let hash = 0;
+    for (let i = 0; i < uuid.length; i++) {
+      const char = uuid.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    // Ensure positive number
+    return Math.abs(hash);
   }
 }

@@ -72,7 +72,6 @@ export class InventoryService {
       referenceType?: string;
       referenceId?: string;
       reason?: string;
-      metadata?: Record<string, unknown>;
     },
     lang: string,
   ) {
@@ -95,7 +94,6 @@ export class InventoryService {
       referenceType?: string;
       referenceId?: string;
       reason: string;
-      metadata?: Record<string, unknown>;
     },
     lang: string,
   ) {
@@ -116,7 +114,6 @@ export class InventoryService {
       variantId: string;
       quantity: number;
       reason?: string;
-      metadata?: Record<string, unknown>;
     },
     lang: string,
   ) {

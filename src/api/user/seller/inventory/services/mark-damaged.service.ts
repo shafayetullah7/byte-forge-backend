@@ -39,6 +39,7 @@ export class MarkDamagedService {
         variantSku: productVariantsTable.sku,
         productId: productsTable.id,
         shopId: productsTable.shopId,
+        lowStockThreshold: productVariantsTable.lowStockThreshold,
       })
       .from(productVariantsTable)
       .innerJoin(
@@ -63,30 +64,21 @@ export class MarkDamagedService {
       });
     }
 
-    const variant = { id: variantRecord.variantId, sku: variantRecord.variantSku };
+    const variant = { 
+      id: variantRecord.variantId, 
+      sku: variantRecord.variantSku,
+      lowStockThreshold: variantRecord.lowStockThreshold ?? 5,
+    };
 
-    // Execute in transaction: lock inventory, validate, update, create movement
+    // Execute in transaction: get/create inventory, lock, validate, update, create movement
     return await this.db.transaction(async (tx) => {
-      // Fetch inventory WITH row lock — held for the duration of this transaction
-      const inventory = await this.inventoryRepository.findByVariantIdForUpdate(
+      // Get or create inventory record with advisory lock
+      const inventory = await this.inventoryRepository.getOrCreateInventory(
         variant.id,
+        shopId,
+        tx,
+        variant.lowStockThreshold,
       );
-
-      if (!inventory) {
-        throw new CustomException({
-          message: this.i18n.t('message.error.inventoryNotFound', { lang }),
-          statusCode: HttpStatus.NOT_FOUND,
-          errorCode: ErrorCode.NOT_FOUND,
-        });
-      }
-
-      if (inventory.shopId !== shopId) {
-        throw new CustomException({
-          message: this.i18n.t('message.error.inventoryNotOwned', { lang }),
-          statusCode: HttpStatus.FORBIDDEN,
-          errorCode: ErrorCode.FORBIDDEN,
-        });
-      }
 
       if (!inventory.trackInventory) {
         throw new CustomException({
@@ -103,7 +95,10 @@ export class MarkDamagedService {
       // Validate: cannot damage more than available stock
       if (data.quantity > availableQuantity) {
         throw new CustomException({
-          message: `Cannot mark more as damaged than available stock. Available: ${availableQuantity}, requested: ${data.quantity}`,
+          message: this.i18n.t('message.validation.inventory.damagedExceedsAvailable', {
+            lang,
+            args: { available: availableQuantity, requested: data.quantity },
+          }),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });

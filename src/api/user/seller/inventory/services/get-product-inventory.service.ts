@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   inventoryTable,
@@ -7,12 +7,6 @@ import {
   productsTable,
 } from '@/_db/drizzle/schema';
 import { VariantInventoryDto } from '../dto/inventory-response.dto';
-
-type DrizzleInventoryRow = {
-  inventory: typeof inventoryTable.$inferSelect;
-  product_variants: typeof productVariantsTable.$inferSelect;
-  products: typeof productsTable.$inferSelect;
-};
 
 @Injectable()
 export class GetProductInventoryService {
@@ -22,52 +16,122 @@ export class GetProductInventoryService {
 
   async execute(shopId: string, productId: string) {
     try {
-      const rows = await this.db.client
-        .select()
-        .from(inventoryTable)
-        .innerJoin(
-          productVariantsTable,
-          eq(inventoryTable.variantId, productVariantsTable.id),
-        )
-        .innerJoin(
-          productsTable,
-          eq(productVariantsTable.productId, productsTable.id),
-        )
+      // First verify the product exists and belongs to the shop
+      const [product] = await this.db.client
+        .select({
+          id: productsTable.id,
+          slug: productsTable.slug,
+        })
+        .from(productsTable)
         .where(
           and(
             eq(productsTable.shopId, shopId),
             eq(productsTable.id, productId),
           ),
         )
+        .limit(1)
         .execute();
 
-      if (rows.length === 0) {
-        return null;
+      if (!product) {
+        return null; // Product doesn't exist or doesn't belong to shop
       }
 
-      const product = rows[0].products;
-      const variants = rows.map((row) => this.mapVariant(row));
+      // Get all variants for this product
+      const variants = await this.db.client
+        .select()
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.productId, productId))
+        .orderBy(productVariantsTable.displayOrder)
+        .execute();
 
-      const totalStock = variants.reduce((sum, v) => sum + v.quantity, 0);
-      const reservedStock = variants.reduce((sum, v) => sum + v.reservedQuantity, 0);
+      // Get inventory records for these variants
+      const variantIds = variants.map((v) => v.id);
+      let inventoryRecords: typeof inventoryTable.$inferSelect[] = [];
+      
+      if (variantIds.length > 0) {
+        inventoryRecords = await this.db.client
+          .select()
+          .from(inventoryTable)
+          .where(inArray(inventoryTable.variantId, variantIds))
+          .execute();
+      }
+
+      // Create a map of variantId -> inventory record
+      const inventoryMap = new Map(
+        inventoryRecords.map((inv) => [inv.variantId, inv]),
+      );
+
+      // Map all variants, using inventory data if available, otherwise defaults
+      const mappedVariants = variants.map((variant) => {
+        const inventory = inventoryMap.get(variant.id);
+        
+        if (!inventory) {
+          // No inventory record yet - return zero stock
+          return {
+            inventoryId: '',
+            variantId: variant.id,
+            sku: variant.sku,
+            variantName: null,
+            price: variant.price,
+            quantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
+            lowStockThreshold: variant.lowStockThreshold ?? 5,
+            trackInventory: variant.trackInventory ?? true,
+            allowBackorder: false,
+            status: 'out_of_stock' as const,
+            lastStockUpdate: new Date(),
+          };
+        }
+
+        const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+
+        let status: 'in_stock' | 'low_stock' | 'out_of_stock';
+        if (availableQuantity === 0) {
+          status = 'out_of_stock';
+        } else if (availableQuantity <= inventory.lowStockThreshold) {
+          status = 'low_stock';
+        } else {
+          status = 'in_stock';
+        }
+
+        return {
+          inventoryId: inventory.id,
+          variantId: variant.id,
+          sku: variant.sku,
+          variantName: null,
+          price: variant.price,
+          quantity: inventory.quantity,
+          reservedQuantity: inventory.reservedQuantity,
+          availableQuantity,
+          lowStockThreshold: inventory.lowStockThreshold,
+          trackInventory: inventory.trackInventory,
+          allowBackorder: inventory.allowBackorder,
+          status,
+          lastStockUpdate: inventory.updatedAt,
+        };
+      });
+
+      const totalStock = mappedVariants.reduce((sum, v) => sum + v.quantity, 0);
+      const reservedStock = mappedVariants.reduce((sum, v) => sum + v.reservedQuantity, 0);
       const availableStock = totalStock - reservedStock;
-      const lowStockCount = variants.filter(
+      const lowStockCount = mappedVariants.filter(
         (v) => v.availableQuantity > 0 && v.availableQuantity <= v.lowStockThreshold,
       ).length;
-      const outOfStockCount = variants.filter(
+      const outOfStockCount = mappedVariants.filter(
         (v) => v.availableQuantity === 0,
       ).length;
 
       return {
         productId: product.id,
-        productName: product.id, // Name comes from translations, not stored on product
+        productName: product.id,
         productSlug: product.slug,
         totalStock,
         reservedStock,
         availableStock,
         lowStockCount,
         outOfStockCount,
-        variants,
+        variants: mappedVariants,
       };
     } catch (error) {
       this.logger.error(
@@ -76,35 +140,5 @@ export class GetProductInventoryService {
       );
       throw error;
     }
-  }
-
-  private mapVariant(row: DrizzleInventoryRow): VariantInventoryDto {
-    const { inventory, product_variants: variant } = row;
-    const availableQuantity = inventory.quantity - inventory.reservedQuantity;
-
-    let status: 'in_stock' | 'low_stock' | 'out_of_stock';
-    if (availableQuantity === 0) {
-      status = 'out_of_stock';
-    } else if (availableQuantity <= inventory.lowStockThreshold) {
-      status = 'low_stock';
-    } else {
-      status = 'in_stock';
-    }
-
-    return {
-      inventoryId: inventory.id,
-      variantId: variant.id,
-      sku: variant.sku,
-      variantName: null, // Variant name comes from translations, not stored
-      price: variant.price,
-      quantity: inventory.quantity,
-      reservedQuantity: inventory.reservedQuantity,
-      availableQuantity,
-      lowStockThreshold: inventory.lowStockThreshold,
-      trackInventory: inventory.trackInventory,
-      allowBackorder: inventory.allowBackorder,
-      status,
-      lastStockUpdate: inventory.updatedAt,
-    };
   }
 }

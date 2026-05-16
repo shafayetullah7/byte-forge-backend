@@ -24,9 +24,10 @@
     "inventory": {
       "invalidQuantity": "Quantity must be a positive number",
       "trackingDisabled": "Inventory tracking is disabled for this variant",
-      "insufficientStock": "Insufficient stock. Current stock: {current}, requested: {requested}",
+      "insufficientStock": "Insufficient stock. Current: {current}, requested removal: {requested}",
       "reservedExceedsQuantity": "Cannot reduce stock below reserved quantity",
-      "damagedExceedsAvailable": "Cannot mark more as damaged than available stock. Available: {available}, requested: {requested}"
+      "damagedExceedsAvailable": "Cannot mark more as damaged than available stock. Available: {available}, requested: {requested}",
+      "stockOverflow": "Stock quantity would exceed maximum allowed value"
     }
   },
   "error": {
