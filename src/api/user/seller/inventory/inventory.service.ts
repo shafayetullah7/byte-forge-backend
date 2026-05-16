@@ -54,13 +54,15 @@ export class InventoryService {
     lang: string,
   ) {
     const shop = await this.resolveShop(userId, lang);
-    return this.getStockMovementsService.execute(
+    const result =  await this.getStockMovementsService.execute(
       shop.id,
       productId,
       filters,
       page,
       limit,
     );
+    console.log(result)
+    return result;
   }
 
   async restock(
