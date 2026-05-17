@@ -54,7 +54,9 @@ export class PublicPlantsController {
     @Query() query: ListPlantsQueryDto,
     @I18nLang() lang: string,
   ) {
+    console.log(query)
     const result = await this.publicPlantsService.listPlants(query, lang);
+    console.log(result)
     return this.responseService.paginated({
       message: this.i18n.t('message.success.plantsRetrieved', { lang }),
       data: result.data,
