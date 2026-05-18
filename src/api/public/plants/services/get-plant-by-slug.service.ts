@@ -3,15 +3,9 @@ import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   productsTable,
-  productTranslationsTable,
-  productVariantsTable,
-  plantDetailsTable,
-  productMediaTable,
   productSeoTable,
-  mediaTable,
-  plantDetailsTagsTable,
 } from '@/_db/drizzle/schema';
-import { shopTable, shopTranslationsTable } from '@/_db/drizzle/schema/shop';
+import { shopTable } from '@/_db/drizzle/schema/shop';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 export type PublicPlantDetail = {
@@ -112,6 +106,22 @@ export type PublicPlantDetail = {
 
 type QueryResult = Awaited<ReturnType<GetPlantBySlugService['queryProduct']>>;
 type ProductWithRelations = NonNullable<QueryResult>;
+
+type ShopQueryResult = {
+  id: string;
+  slug: string;
+  isVerified: boolean;
+  logo: { id: string; url: string } | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  translations: Array<{ locale: string; name: string }>;
+};
+
+type SeoResult = {
+  metaTitle: string | null;
+  metaDescription: string | null;
+  focusKeywords: string | null;
+} | null;
 
 @Injectable()
 export class GetPlantBySlugService {
@@ -268,8 +278,8 @@ export class GetPlantBySlugService {
 
   private mapDetail(
     product: ProductWithRelations,
-    shop: NonNullable<Awaited<ReturnType<typeof this.fetchShop>>>,
-    seo: Awaited<ReturnType<typeof this.fetchSeo>>,
+    shop: ShopQueryResult,
+    seo: SeoResult,
     lang: string,
   ): PublicPlantDetail {
     const translation = resolveTranslation(product.translations, lang);
@@ -444,24 +454,5 @@ export class GetPlantBySlugService {
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
-  }
-
-  private async fetchShop(shopId: string) {
-    return this.db.client.query.shopTable.findFirst({
-      where: eq(shopTable.id, shopId),
-      with: {
-        logo: { columns: { id: true, url: true } },
-        translations: { columns: { locale: true, name: true } },
-      },
-    });
-  }
-
-  private async fetchSeo(productId: string) {
-    const [seo] = await this.db.client
-      .select()
-      .from(productSeoTable)
-      .where(eq(productSeoTable.productId, productId))
-      .execute();
-    return seo;
   }
 }
