@@ -352,34 +352,33 @@ export class GetPlantBySlugService {
     );
 
     const careInstructions = product.careInstructions
-      ? {
-          lightInstructions:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.lightInstructions ?? product.careInstructions.lightInstructions,
-          wateringInstructions:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.wateringInstructions ??
-            product.careInstructions.wateringInstructions,
-          humidityInstructions:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.humidityInstructions ??
-            product.careInstructions.humidityInstructions,
-          fertilizerSchedule:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.fertilizerSchedule ?? product.careInstructions.fertilizerSchedule,
-          repottingFrequency:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.repottingFrequency ?? product.careInstructions.repottingFrequency,
-          pruningNotes:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.pruningNotes ?? product.careInstructions.pruningNotes,
-          commonProblems:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.commonProblems ?? product.careInstructions.commonProblems,
-          seasonalCare:
-            resolveTranslation(product.careInstructions.translations, lang)
-              ?.seasonalCare ?? product.careInstructions.seasonalCare,
-        }
+      ? (() => {
+          const careAll = [
+            {
+              locale: 'en' as const,
+              lightInstructions: product.careInstructions.lightInstructions,
+              wateringInstructions: product.careInstructions.wateringInstructions,
+              humidityInstructions: product.careInstructions.humidityInstructions,
+              fertilizerSchedule: product.careInstructions.fertilizerSchedule,
+              repottingFrequency: product.careInstructions.repottingFrequency,
+              pruningNotes: product.careInstructions.pruningNotes,
+              commonProblems: product.careInstructions.commonProblems,
+              seasonalCare: product.careInstructions.seasonalCare,
+            },
+            ...product.careInstructions.translations,
+          ];
+          const resolved = resolveTranslation(careAll, lang);
+          return {
+            lightInstructions: resolved?.lightInstructions ?? null,
+            wateringInstructions: resolved?.wateringInstructions ?? null,
+            humidityInstructions: resolved?.humidityInstructions ?? null,
+            fertilizerSchedule: resolved?.fertilizerSchedule ?? null,
+            repottingFrequency: resolved?.repottingFrequency ?? null,
+            pruningNotes: resolved?.pruningNotes ?? null,
+            commonProblems: resolved?.commonProblems ?? null,
+            seasonalCare: resolved?.seasonalCare ?? null,
+          };
+        })()
       : null;
 
     const shopInfo = shop

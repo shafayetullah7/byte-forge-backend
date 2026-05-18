@@ -77,6 +77,7 @@ export class PublicPlantsController {
     @I18nLang() lang: string,
   ) {
     const plant = await this.publicPlantsService.getPlantBySlug(params.slug, lang);
+    console.log(plant)
     return this.responseService.success({
       message: this.i18n.t('message.success.plantRetrieved', { lang }),
       data: plant,
