@@ -41,7 +41,7 @@ import {
 import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('🛒 Cart Management')
-@Controller({ path: 'cart', version: '1' })
+@Controller({ path: 'user/buyer/cart', version: '1' })
 export class CartController {
   constructor(
     private readonly cartService: CartService,
