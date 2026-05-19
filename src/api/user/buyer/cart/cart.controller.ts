@@ -7,14 +7,19 @@ import {
   Patch,
   Post,
   UseGuards,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { CartItemIdParamsDto } from './dto/cart-item-id.params.dto';
-import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
-import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
-import { TAuthenticUser } from '@/common/types';
+import { BulkUpdateCartItemsDto } from './dto/bulk-update-items.dto';
+import { BulkRemoveCartItemsDto } from './dto/bulk-remove-items.dto';
+import { MergeCartDto } from './dto/merge-cart.dto';
+import { CartAccessGuard } from '@/common/guards/cart-access-guard/cart-access.guard';
+import { CartContextParam } from '@/common/decorators/cart-context.decorator';
+import { CartContext as CartContextType } from '@/common/types/cart-context.type';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
@@ -27,8 +32,16 @@ import {
   ApiNotFoundResponse,
   ApiForbiddenResponse,
 } from '@/common/decorators/api-error.decorator';
-import { CartDto, CartItemDto } from './dto/cart-response.dto';
+import {
+  CartDto,
+  CartItemDto,
+  CartValidationResultDto,
+  BulkUpdateResultDto,
+  BulkRemoveResultDto,
+  MergeCartResultDto,
+} from './dto/cart-response.dto';
 import { I18nLang, I18nService } from 'nestjs-i18n';
+import { Request, Response } from 'express';
 
 @ApiTags('🛒 Cart Management')
 @Controller({ path: 'cart', version: '1' })
@@ -42,17 +55,17 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get current cart',
-    description: 'Returns the authenticated user\'s cart with all items',
+    description: 'Returns the authenticated user\'s cart with all items, totals, stock status, and variant attributes',
   })
   @ApiOkResponseTyped(CartDto, 'Cart retrieved successfully')
   @ApiUnauthorizedResponse()
   @Get()
-  @UseGuards(UserAuthGuard)
+  @UseGuards(CartAccessGuard)
   async getCart(
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
-    const cart = await this.cartService.getCart(authenticUser.user.id);
+    const cart = await this.cartService.getCart(cartContext, lang);
 
     if (!cart) {
       return this.responseService.success({
@@ -81,13 +94,13 @@ export class CartController {
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse('Product variant not found')
   @Post('items')
-  @UseGuards(UserAuthGuard)
+  @UseGuards(CartAccessGuard)
   async addToCart(
     @Body() dto: AddToCartDto,
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
-    const item = await this.cartService.addToCart(authenticUser.user.id, dto);
+    const item = await this.cartService.addToCart(cartContext, dto, lang);
 
     return this.responseService.success({
       message: this.i18n.t('message.success.itemAddedToCart', { lang }),
@@ -110,17 +123,18 @@ export class CartController {
   @ApiNotFoundResponse('Cart item not found')
   @ApiForbiddenResponse('Permission denied')
   @Patch('items/:itemId')
-  @UseGuards(UserAuthGuard)
+  @UseGuards(CartAccessGuard)
   async updateCartItem(
     @Param() params: CartItemIdParamsDto,
     @Body() dto: UpdateCartItemDto,
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
     const item = await this.cartService.updateCartItem(
-      authenticUser.user.id,
+      cartContext,
       params.itemId,
       dto,
+      lang,
     );
 
     return this.responseService.success({
@@ -142,13 +156,13 @@ export class CartController {
   @ApiNotFoundResponse('Cart item not found')
   @ApiForbiddenResponse('Permission denied')
   @Delete('items/:itemId')
-  @UseGuards(UserAuthGuard)
+  @UseGuards(CartAccessGuard)
   async removeCartItem(
     @Param() params: CartItemIdParamsDto,
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
-    await this.cartService.removeCartItem(authenticUser.user.id, params.itemId);
+    await this.cartService.removeCartItem(cartContext, params.itemId);
 
     return this.responseService.success({
       message: this.i18n.t('message.success.cartItemRemoved', { lang }),
@@ -168,16 +182,113 @@ export class CartController {
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse('Cart not found')
   @Delete()
-  @UseGuards(UserAuthGuard)
+  @UseGuards(CartAccessGuard)
   async clearCart(
-    @AuthenticUser() authenticUser: TAuthenticUser,
+    @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
-    await this.cartService.clearCart(authenticUser.user.id);
+    await this.cartService.clearCart(cartContext);
 
     return this.responseService.success({
       message: this.i18n.t('message.success.cartCleared', { lang }),
       data: null,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Validate cart',
+    description: 'Checks if all items in the cart are still available and purchasable. Useful before checkout.',
+  })
+  @ApiOkResponseTyped(CartValidationResultDto, 'Cart validated successfully')
+  @ApiUnauthorizedResponse()
+  @Post('validate')
+  @UseGuards(CartAccessGuard)
+  async validateCart(
+    @CartContextParam() cartContext: CartContextType,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.cartService.validateCart(cartContext, lang);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.cartValidated', { lang }),
+      data: result,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Bulk update cart items',
+    description: 'Updates quantities of multiple cart items in a single request. Set quantity to 0 to remove an item.',
+  })
+  @ApiOkResponseTyped(BulkUpdateResultDto, 'Cart items updated successfully')
+  @ApiUnauthorizedResponse()
+  @ApiBadRequestResponse('Validation failed')
+  @Patch('items/bulk')
+  @UseGuards(CartAccessGuard)
+  async bulkUpdateCartItems(
+    @Body() dto: BulkUpdateCartItemsDto,
+    @CartContextParam() cartContext: CartContextType,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.cartService.bulkUpdateCartItems(
+      cartContext,
+      dto,
+      lang,
+    );
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.cartItemsBulkUpdated', { lang }),
+      data: result,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Bulk remove cart items',
+    description: 'Removes multiple items from the cart in a single request',
+  })
+  @ApiOkResponseTyped(BulkRemoveResultDto, 'Cart items removed successfully')
+  @ApiUnauthorizedResponse()
+  @ApiBadRequestResponse('Validation failed')
+  @Delete('items/bulk')
+  @UseGuards(CartAccessGuard)
+  async bulkRemoveCartItems(
+    @Body() dto: BulkRemoveCartItemsDto,
+    @CartContextParam() cartContext: CartContextType,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.cartService.bulkRemoveCartItems(
+      cartContext,
+      dto,
+    );
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.cartItemsBulkRemoved', { lang }),
+      data: result,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Merge guest cart items',
+    description: 'Merges guest cart items (from localStorage) into the authenticated user\'s cart',
+  })
+  @ApiOkResponseTyped(MergeCartResultDto, 'Cart merged successfully')
+  @ApiUnauthorizedResponse()
+  @ApiBadRequestResponse('Validation failed')
+  @Post('merge')
+  @UseGuards(CartAccessGuard)
+  async mergeCart(
+    @Body() dto: MergeCartDto,
+    @CartContextParam() cartContext: CartContextType,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.cartService.mergeCart(cartContext, dto, lang);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.cartMerged', { lang }),
+      data: result,
     });
   }
 }

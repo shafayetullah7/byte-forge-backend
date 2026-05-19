@@ -8,22 +8,22 @@ export class ClearCartService {
 
   constructor(private readonly cartRepository: CartRepository) {}
 
-  async execute(userId: string): Promise<void> {
+  async executeByCartId(cartId: string): Promise<void> {
     try {
-      const cart = await this.cartRepository.getCartByUserId(userId);
+      const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
       if (!cart) {
         throw CustomException.notFound({
           message: 'Cart not found',
-          details: 'No cart exists for this user',
+          details: 'No cart exists',
         });
       }
 
-      await this.cartRepository.deleteAllCartItems(cart.id);
+      await this.cartRepository.deleteAllCartItems(cartId);
     } catch (error) {
       if (error instanceof CustomException) throw error;
       this.logger.error(
-        `Failed to clear cart for user ${userId}`,
+        `Failed to clear cart ${cartId}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;

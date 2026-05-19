@@ -484,6 +484,13 @@
       "when": 1778984882026,
       "tag": "0070_great_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1779174981179,
+      "tag": "0071_purple_magik",
+      "breakpoints": true
     }
   ]
 }

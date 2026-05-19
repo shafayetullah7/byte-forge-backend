@@ -1,12 +1,12 @@
 import {
   pgTable,
   uuid,
+  varchar,
   timestamp,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user/user.schema';
-import { shopTable } from '../shop/shop.schema';
 import { cartItemsTable } from './cart-items.schema';
 
 export const cartsTable = pgTable(
@@ -14,9 +14,8 @@ export const cartsTable = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     userId: uuid('user_id')
-      .notNull()
-      .unique()
       .references(() => userTable.id, { onDelete: 'cascade' }),
+    guestToken: varchar('guest_token', { length: 64 }).unique(),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -27,6 +26,7 @@ export const cartsTable = pgTable(
   },
   (t) => [
     index('carts_user_id_idx').on(t.userId),
+    index('carts_guest_token_idx').on(t.guestToken),
   ],
 );
 

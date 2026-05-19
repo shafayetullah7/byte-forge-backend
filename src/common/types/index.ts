@@ -3,3 +3,5 @@ export * from './user-auth-access.type';
 export * from './authentic-user.type';
 export * from './authentic-admin.type';
 export * from './pagination.type';
+export * from './cart-context.type';
+export * from './cart-context.type';

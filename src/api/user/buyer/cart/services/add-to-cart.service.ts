@@ -1,26 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { CartRepository } from '@/_repositories/user/cart.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   productVariantsTable,
   inventoryTable,
-  productsTable,
 } from '@/_db/drizzle/schema';
+import { ProductStatusEnum } from '@/_db/drizzle/enum';
 import { CustomException } from '@/common/exceptions/custom.exception';
-import { HttpStatus } from '@nestjs/common';
 import { AddToCartDto } from '../dto/add-to-cart.dto';
+import { computeStockStatus, computeLineTotal } from '../cart.utils';
 
 export type AddToCartResult = {
   id: string;
   variantId: string;
   quantity: number;
   price: string;
+  lineTotal: string;
   productName: string;
   productSlug: string;
   productType: string;
   shopId: string;
   thumbnail: { id: string; url: string } | null;
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' | 'untracked';
+  availableQuantity: number | null;
+  maxQuantity: number;
+  variantAttributes: {
+    growthStage?: string;
+    plantForm?: string;
+    variegation?: string;
+    leafDensity?: string;
+    containerType?: string;
+    containerSize?: string;
+  } | null;
 };
 
 @Injectable()
@@ -32,7 +44,12 @@ export class AddToCartService {
     private readonly db: DrizzleService,
   ) {}
 
-  async execute(userId: string, dto: AddToCartDto): Promise<AddToCartResult> {
+  async executeByCartId(
+    cartId: string,
+    userId: string | undefined,
+    dto: AddToCartDto,
+    locale: string = 'en',
+  ): Promise<AddToCartResult> {
     try {
       return await this.db.transaction(async (tx) => {
         const variant = await this.db.client.query.productVariantsTable.findFirst({
@@ -56,6 +73,16 @@ export class AddToCartService {
                 },
               },
             },
+            plantAttributes: {
+              columns: {
+                growthStage: true,
+                plantForm: true,
+                variegation: true,
+                leafDensity: true,
+                containerType: true,
+                containerSize: true,
+              },
+            },
           },
         });
 
@@ -73,7 +100,7 @@ export class AddToCartService {
           });
         }
 
-        if (variant.product.status !== 'ACTIVE') {
+        if (variant.product.status !== ProductStatusEnum.ACTIVE) {
           throw CustomException.badRequest({
             message: 'This product is not available for purchase',
             details: `Product status: ${variant.product.status}`,
@@ -82,7 +109,7 @@ export class AddToCartService {
 
         const inventory = await this.db.client.query.inventoryTable.findFirst({
           where: eq(inventoryTable.variantId, dto.variantId),
-        });
+        }) ?? null;
 
         if (inventory) {
           if (!inventory.trackInventory) {
@@ -98,17 +125,8 @@ export class AddToCartService {
           }
         }
 
-        let cart = await this.cartRepository.getCartByUserId(userId);
-
-        if (!cart) {
-          cart = await this.cartRepository.createCart(
-            { userId },
-            tx,
-          );
-        }
-
         const existingItem = await this.cartRepository.getCartItem(
-          cart.id,
+          cartId,
           dto.variantId,
         );
 
@@ -131,24 +149,24 @@ export class AddToCartService {
             tx,
           );
 
-          return this.mapCartItem(updatedItem, variant);
+          return this.mapCartItem(updatedItem, variant, inventory, locale);
         }
 
         const newItem = await this.cartRepository.createCartItem(
           {
-            cartId: cart.id,
+            cartId,
             variantId: dto.variantId,
             quantity: dto.quantity,
           },
           tx,
         );
 
-        return this.mapCartItem(newItem, variant);
+        return this.mapCartItem(newItem, variant, inventory, locale);
       });
     } catch (error) {
       if (error instanceof CustomException) throw error;
       this.logger.error(
-        `Failed to add item to cart for user ${userId}`,
+        `Failed to add item to cart ${cartId}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -158,14 +176,30 @@ export class AddToCartService {
   private mapCartItem(
     item: { id: string; variantId: string; quantity: number },
     variant: NonNullable<Awaited<ReturnType<typeof this.fetchVariant>>>,
+    inventory: Awaited<ReturnType<typeof this.fetchInventory>> | null,
+    locale: string,
   ): AddToCartResult {
-    const translation = variant.product?.translations?.find((t) => t.locale === 'en');
+    const translation = variant.product?.translations?.find((t) => t.locale === locale);
+    const price = variant.price ?? '0.00';
+    const stockInfo = computeStockStatus(inventory, item.quantity);
+
+    const variantAttributes = variant.plantAttributes
+      ? {
+          growthStage: variant.plantAttributes.growthStage,
+          plantForm: variant.plantAttributes.plantForm,
+          variegation: variant.plantAttributes.variegation,
+          leafDensity: variant.plantAttributes.leafDensity,
+          containerType: variant.plantAttributes.containerType,
+          containerSize: variant.plantAttributes.containerSize ?? undefined,
+        }
+      : null;
 
     return {
       id: item.id,
       variantId: item.variantId,
       quantity: item.quantity,
-      price: variant.price ?? '0.00',
+      price,
+      lineTotal: computeLineTotal(price, item.quantity),
       productName: translation?.name ?? 'Unknown Product',
       productSlug: variant.product?.slug ?? '',
       productType: variant.product?.productType ?? '',
@@ -173,6 +207,10 @@ export class AddToCartService {
       thumbnail: variant.product?.thumbnail
         ? { id: variant.product.thumbnail.id, url: variant.product.thumbnail.url }
         : null,
+      stockStatus: stockInfo.stockStatus,
+      availableQuantity: stockInfo.availableQuantity,
+      maxQuantity: stockInfo.maxQuantity,
+      variantAttributes,
     };
   }
 
@@ -198,7 +236,23 @@ export class AddToCartService {
             },
           },
         },
+        plantAttributes: {
+          columns: {
+            growthStage: true,
+            plantForm: true,
+            variegation: true,
+            leafDensity: true,
+            containerType: true,
+            containerSize: true,
+          },
+        },
       },
+    });
+  }
+
+  private async fetchInventory(variantId: string) {
+    return this.db.client.query.inventoryTable.findFirst({
+      where: eq(inventoryTable.variantId, variantId),
     });
   }
 }
