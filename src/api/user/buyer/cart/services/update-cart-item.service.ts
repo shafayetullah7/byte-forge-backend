@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { CartRepository } from '@/_repositories/user/cart.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productVariantsTable,
-  inventoryTable,
-} from '@/_db/drizzle/schema';
+import { productVariantsTable, TInventory } from '@/_db/drizzle/schema';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
@@ -52,7 +49,12 @@ export class UpdateCartItemService {
   ): Promise<UpdateCartItemResult> {
     try {
       return await this.db.transaction(async (tx) => {
-        const cartItem = await this.cartRepository.getCartItemById(itemId);
+        const lockTx = { tx, lock: true };
+
+        const cartItem = await this.cartRepository.getCartItemById(
+          itemId,
+          lockTx,
+        );
 
         if (!cartItem || cartItem.cartId !== cartId) {
           throw CustomException.notFound({
@@ -61,39 +63,40 @@ export class UpdateCartItemService {
           });
         }
 
-        const variant = await this.db.client.query.productVariantsTable.findFirst({
-          where: eq(productVariantsTable.id, cartItem.variantId),
-          with: {
-            product: {
-              columns: {
-                id: true,
-                slug: true,
-                productType: true,
-                status: true,
-                shopId: true,
-                thumbnailId: true,
-              },
-              with: {
-                thumbnail: {
-                  columns: { id: true, url: true },
+        const variant =
+          await this.db.client.query.productVariantsTable.findFirst({
+            where: eq(productVariantsTable.id, cartItem.variantId),
+            with: {
+              product: {
+                columns: {
+                  id: true,
+                  slug: true,
+                  productType: true,
+                  status: true,
+                  shopId: true,
+                  thumbnailId: true,
                 },
-                translations: {
-                  columns: { locale: true, name: true },
+                with: {
+                  thumbnail: {
+                    columns: { id: true, url: true },
+                  },
+                  translations: {
+                    columns: { locale: true, name: true },
+                  },
+                },
+              },
+              plantAttributes: {
+                columns: {
+                  growthStage: true,
+                  plantForm: true,
+                  variegation: true,
+                  leafDensity: true,
+                  containerType: true,
+                  containerSize: true,
                 },
               },
             },
-            plantAttributes: {
-              columns: {
-                growthStage: true,
-                plantForm: true,
-                variegation: true,
-                leafDensity: true,
-                containerType: true,
-                containerSize: true,
-              },
-            },
-          },
-        });
+          });
 
         if (!variant) {
           throw CustomException.notFound({
@@ -107,18 +110,24 @@ export class UpdateCartItemService {
           });
         }
 
-        if (variant.product.status !== ProductStatusEnum.ACTIVE) {
+        if (
+          !variant.product ||
+          variant.product.status !== ProductStatusEnum.ACTIVE
+        ) {
           throw CustomException.badRequest({
             message: 'This product is not available for purchase',
           });
         }
 
-        const inventory = await this.db.client.query.inventoryTable.findFirst({
-          where: eq(inventoryTable.variantId, cartItem.variantId),
-        }) ?? null;
+        const inventory =
+          (await this.cartRepository.getInventoryByVariantIdLocked(
+            cartItem.variantId,
+            lockTx,
+          )) ?? null;
 
         if (inventory?.trackInventory) {
-          const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+          const availableQuantity =
+            inventory.quantity - inventory.reservedQuantity;
           if (availableQuantity < dto.quantity) {
             throw CustomException.badRequest({
               message: 'Insufficient stock',
@@ -130,7 +139,7 @@ export class UpdateCartItemService {
         const updatedItem = await this.cartRepository.updateCartItem(
           itemId,
           { quantity: dto.quantity },
-          tx,
+          lockTx,
         );
 
         return this.mapCartItem(updatedItem, variant, inventory, locale);
@@ -144,24 +153,26 @@ export class UpdateCartItemService {
       throw error;
     }
   }
-
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
   private mapCartItem(
     item: { id: string; variantId: string; quantity: number },
-    variant: NonNullable<Awaited<ReturnType<typeof this.fetchVariant>>>,
-    inventory: Awaited<ReturnType<typeof this.fetchInventory>> | null,
+    variant: any,
+    inventory: TInventory | null,
     locale: string,
   ): UpdateCartItemResult {
-    const translation = variant.product?.translations?.find((t) => t.locale === locale);
+    const translation = variant.product?.translations?.find(
+      (t: { locale: string }) => t.locale === locale,
+    );
     const price = variant.price ?? '0.00';
-    const stockInfo = computeStockStatus(inventory, item.quantity);
+    const stockInfo = computeStockStatus(inventory);
 
     const variantAttributes = variant.plantAttributes
       ? {
-          growthStage: variant.plantAttributes.growthStage,
-          plantForm: variant.plantAttributes.plantForm,
-          variegation: variant.plantAttributes.variegation,
-          leafDensity: variant.plantAttributes.leafDensity,
-          containerType: variant.plantAttributes.containerType,
+          growthStage: variant.plantAttributes.growthStage ?? undefined,
+          plantForm: variant.plantAttributes.plantForm ?? undefined,
+          variegation: variant.plantAttributes.variegation ?? undefined,
+          leafDensity: variant.plantAttributes.leafDensity ?? undefined,
+          containerType: variant.plantAttributes.containerType ?? undefined,
           containerSize: variant.plantAttributes.containerSize ?? undefined,
         }
       : null;
@@ -177,7 +188,10 @@ export class UpdateCartItemService {
       productType: variant.product?.productType ?? '',
       shopId: variant.product?.shopId ?? '',
       thumbnail: variant.product?.thumbnail
-        ? { id: variant.product.thumbnail.id, url: variant.product.thumbnail.url }
+        ? {
+            id: variant.product.thumbnail.id,
+            url: variant.product.thumbnail.url,
+          }
         : null,
       stockStatus: stockInfo.stockStatus,
       availableQuantity: stockInfo.availableQuantity,
@@ -185,46 +199,5 @@ export class UpdateCartItemService {
       variantAttributes,
     };
   }
-
-  private async fetchVariant(variantId: string) {
-    return this.db.client.query.productVariantsTable.findFirst({
-      where: eq(productVariantsTable.id, variantId),
-      with: {
-        product: {
-          columns: {
-            id: true,
-            slug: true,
-            productType: true,
-            status: true,
-            shopId: true,
-            thumbnailId: true,
-          },
-          with: {
-            thumbnail: {
-              columns: { id: true, url: true },
-            },
-            translations: {
-              columns: { locale: true, name: true },
-            },
-          },
-        },
-        plantAttributes: {
-          columns: {
-            growthStage: true,
-            plantForm: true,
-            variegation: true,
-            leafDensity: true,
-            containerType: true,
-            containerSize: true,
-          },
-        },
-      },
-    });
-  }
-
-  private async fetchInventory(variantId: string) {
-    return this.db.client.query.inventoryTable.findFirst({
-      where: eq(inventoryTable.variantId, variantId),
-    });
-  }
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 }

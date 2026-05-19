@@ -1,4 +1,8 @@
-export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'untracked';
+export type StockStatus =
+  | 'in_stock'
+  | 'low_stock'
+  | 'out_of_stock'
+  | 'untracked';
 
 export class CartItemDto {
   id: string;
@@ -38,7 +42,12 @@ export class CartValidationIssueDto {
   itemId: string;
   variantId: string;
   productName: string;
-  issue: 'variant_not_found' | 'variant_deactivated' | 'product_unavailable' | 'insufficient_stock' | 'shop_closed';
+  issue:
+    | 'variant_not_found'
+    | 'variant_deactivated'
+    | 'product_unavailable'
+    | 'insufficient_stock'
+    | 'shop_closed';
   details: string;
   availableQuantity?: number;
 }

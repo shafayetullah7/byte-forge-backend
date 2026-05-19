@@ -1,14 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CartRepository } from '@/_repositories/user/cart.repository';
-import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
-import { eq } from 'drizzle-orm';
 
 export type ValidateIssue = {
   itemId: string;
   variantId: string;
   productName: string;
-  issue: 'variant_not_found' | 'variant_deactivated' | 'product_unavailable' | 'insufficient_stock';
+  issue:
+    | 'variant_not_found'
+    | 'variant_deactivated'
+    | 'product_unavailable'
+    | 'insufficient_stock';
   details: string;
   availableQuantity?: number;
 };
@@ -24,22 +26,30 @@ export type ValidateCartResult = {
 export class ValidateCartService {
   private readonly logger = new Logger(ValidateCartService.name);
 
-  constructor(
-    private readonly cartRepository: CartRepository,
-    private readonly db: DrizzleService,
-  ) {}
+  constructor(private readonly cartRepository: CartRepository) {}
 
-  async executeByCartId(cartId: string, locale: string = 'en'): Promise<ValidateCartResult> {
+  async executeByCartId(
+    cartId: string,
+    locale: string = 'en',
+  ): Promise<ValidateCartResult> {
     try {
       const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
       if (!cart || cart.items.length === 0) {
-        return { isValid: true, issues: [], validItemsCount: 0, invalidItemsCount: 0 };
+        return {
+          isValid: true,
+          issues: [],
+          validItemsCount: 0,
+          invalidItemsCount: 0,
+        };
       }
 
       const variantIds = cart.items.map((item) => item.variantId);
-      const inventories = await this.cartRepository.getInventoryByVariantIds(variantIds);
-      const inventoryMap = new Map(inventories.map((inv) => [inv.variantId, inv]));
+      const inventories =
+        await this.cartRepository.getInventoryByVariantIds(variantIds);
+      const inventoryMap = new Map(
+        inventories.map((inv) => [inv.variantId, inv]),
+      );
 
       const issues: ValidateIssue[] = [];
       let validCount = 0;
@@ -60,7 +70,9 @@ export class ValidateCartService {
 
         if (!variant.isActive) {
           const product = variant.product;
-          const translation = product?.translations?.find((t) => t.locale === locale);
+          const translation = product?.translations?.find(
+            (t) => t.locale === locale,
+          );
           issues.push({
             itemId: item.id,
             variantId: item.variantId,
@@ -73,7 +85,9 @@ export class ValidateCartService {
 
         const product = variant.product;
         if (!product || product.status !== ProductStatusEnum.ACTIVE) {
-          const translation = product?.translations?.find((t) => t.locale === locale);
+          const translation = product?.translations?.find(
+            (t) => t.locale === locale,
+          );
           issues.push({
             itemId: item.id,
             variantId: item.variantId,
@@ -86,9 +100,12 @@ export class ValidateCartService {
 
         const inventory = inventoryMap.get(item.variantId) ?? null;
         if (inventory?.trackInventory) {
-          const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+          const availableQuantity =
+            inventory.quantity - inventory.reservedQuantity;
           if (availableQuantity < item.quantity) {
-            const translation = product?.translations?.find((t) => t.locale === locale);
+            const translation = product?.translations?.find(
+              (t) => t.locale === locale,
+            );
             issues.push({
               itemId: item.id,
               variantId: item.variantId,

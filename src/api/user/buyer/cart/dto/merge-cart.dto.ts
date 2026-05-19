@@ -12,7 +12,10 @@ export const MergeCartItemSchema = z.object({
 });
 
 export const MergeCartSchema = z.object({
-  guestItems: z.array(MergeCartItemSchema).min(1, 'At least one guest item is required').max(50, 'Cannot merge more than 50 items'),
+  guestItems: z
+    .array(MergeCartItemSchema)
+    .min(1, 'At least one guest item is required')
+    .max(50, 'Cannot merge more than 50 items'),
 });
 
 export class MergeCartDto extends createZodDto(MergeCartSchema) {}

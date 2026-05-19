@@ -11,7 +11,6 @@ import {
   TInventory,
 } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
-import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '@/_repositories/_types/lock.transaction';
 
 @Injectable()
@@ -23,7 +22,7 @@ export class CartRepository {
     transaction?: TLockTransaction,
   ): Promise<TCart | undefined> {
     const executor = this.db.getExecutor(transaction?.tx);
-    let baseQuery = executor
+    const baseQuery = executor
       .select()
       .from(cartsTable)
       .where(eq(cartsTable.userId, userId));
@@ -110,8 +109,11 @@ export class CartRepository {
     });
   }
 
-  async createCart(payload: TNewCart, tx?: DrizzleTx): Promise<TCart> {
-    const executor = this.db.getExecutor(tx);
+  async createCart(
+    payload: TNewCart,
+    transaction?: TLockTransaction,
+  ): Promise<TCart> {
+    const executor = this.db.getExecutor(transaction?.tx);
     const [cart] = await executor
       .insert(cartsTable)
       .values(payload)
@@ -123,10 +125,10 @@ export class CartRepository {
   async getCartItem(
     cartId: string,
     variantId: string,
-    tx?: DrizzleTx,
+    transaction?: TLockTransaction,
   ): Promise<TCartItem | undefined> {
-    const executor = this.db.getExecutor(tx);
-    const [item] = await executor
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
       .select()
       .from(cartItemsTable)
       .where(
@@ -134,25 +136,33 @@ export class CartRepository {
           eq(cartItemsTable.cartId, cartId),
           eq(cartItemsTable.variantId, variantId),
         ),
-      )
-      .execute();
+      );
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [item] = await lockQuery.execute();
     return item;
   }
 
-  async getCartItemById(cartItemId: string): Promise<TCartItem | undefined> {
-    const [item] = await this.db.client
+  async getCartItemById(
+    cartItemId: string,
+    transaction?: TLockTransaction,
+  ): Promise<TCartItem | undefined> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
       .select()
       .from(cartItemsTable)
-      .where(eq(cartItemsTable.id, cartItemId))
-      .execute();
+      .where(eq(cartItemsTable.id, cartItemId));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [item] = await lockQuery.execute();
     return item;
   }
 
   async getCartItemsByCartId(
     cartId: string,
-    tx?: DrizzleTx,
+    transaction?: TLockTransaction,
   ): Promise<TCartItem[]> {
-    const executor = this.db.getExecutor(tx);
+    const executor = this.db.getExecutor(transaction?.tx);
     return await executor
       .select()
       .from(cartItemsTable)
@@ -171,9 +181,9 @@ export class CartRepository {
 
   async createCartItem(
     payload: TNewCartItem,
-    tx?: DrizzleTx,
+    transaction?: TLockTransaction,
   ): Promise<TCartItem> {
-    const executor = this.db.getExecutor(tx);
+    const executor = this.db.getExecutor(transaction?.tx);
     const [item] = await executor
       .insert(cartItemsTable)
       .values(payload)
@@ -185,9 +195,9 @@ export class CartRepository {
   async updateCartItem(
     cartItemId: string,
     data: Partial<Pick<TNewCartItem, 'quantity'>>,
-    tx?: DrizzleTx,
+    transaction?: TLockTransaction,
   ): Promise<TCartItem> {
-    const executor = this.db.getExecutor(tx);
+    const executor = this.db.getExecutor(transaction?.tx);
     const [item] = await executor
       .update(cartItemsTable)
       .set(data)
@@ -197,25 +207,34 @@ export class CartRepository {
     return item;
   }
 
-  async deleteCartItem(cartItemId: string, tx?: DrizzleTx): Promise<void> {
-    const executor = this.db.getExecutor(tx);
+  async deleteCartItem(
+    cartItemId: string,
+    transaction?: TLockTransaction,
+  ): Promise<void> {
+    const executor = this.db.getExecutor(transaction?.tx);
     await executor
       .delete(cartItemsTable)
       .where(eq(cartItemsTable.id, cartItemId))
       .execute();
   }
 
-  async deleteAllCartItems(cartId: string, tx?: DrizzleTx): Promise<void> {
-    const executor = this.db.getExecutor(tx);
+  async deleteAllCartItems(
+    cartId: string,
+    transaction?: TLockTransaction,
+  ): Promise<void> {
+    const executor = this.db.getExecutor(transaction?.tx);
     await executor
       .delete(cartItemsTable)
       .where(eq(cartItemsTable.cartId, cartId))
       .execute();
   }
 
-  async deleteCartItemsByIds(itemIds: string[], tx?: DrizzleTx): Promise<void> {
+  async deleteCartItemsByIds(
+    itemIds: string[],
+    transaction?: TLockTransaction,
+  ): Promise<void> {
     if (itemIds.length === 0) return;
-    const executor = this.db.getExecutor(tx);
+    const executor = this.db.getExecutor(transaction?.tx);
     await executor
       .delete(cartItemsTable)
       .where(inArray(cartItemsTable.id, itemIds))
@@ -242,12 +261,38 @@ export class CartRepository {
     return inventory;
   }
 
+  async getInventoryByVariantIdLocked(
+    variantId: string,
+    transaction?: TLockTransaction,
+  ): Promise<TInventory | undefined> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(inventoryTable)
+      .where(eq(inventoryTable.variantId, variantId));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [inventory] = await lockQuery.execute();
+    return inventory;
+  }
+
+  async deleteCart(
+    cartId: string,
+    transaction?: TLockTransaction,
+  ): Promise<void> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    await executor
+      .delete(cartsTable)
+      .where(eq(cartsTable.id, cartId))
+      .execute();
+  }
+
   async updateCart(
     cartId: string,
     data: Partial<Pick<TNewCart, 'userId' | 'guestToken'>>,
-    tx?: DrizzleTx,
+    transaction?: TLockTransaction,
   ): Promise<TCart> {
-    const executor = this.db.getExecutor(tx);
+    const executor = this.db.getExecutor(transaction?.tx);
     const [cart] = await executor
       .update(cartsTable)
       .set(data)

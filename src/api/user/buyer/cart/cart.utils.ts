@@ -1,19 +1,25 @@
 import type { TInventory } from '@/_db/drizzle/schema';
 import type { StockStatus } from './dto/cart-response.dto';
 
-export function computeStockStatus(
-  inventory: TInventory | null | undefined,
-  requestedQuantity: number,
-): { stockStatus: StockStatus; availableQuantity: number | null; maxQuantity: number } {
+export function computeStockStatus(inventory: TInventory | null | undefined): {
+  stockStatus: StockStatus;
+  availableQuantity: number | null;
+  maxQuantity: number;
+} {
   if (!inventory || !inventory.trackInventory) {
-    return { stockStatus: 'untracked', availableQuantity: null, maxQuantity: 999 };
+    return {
+      stockStatus: 'untracked',
+      availableQuantity: null,
+      maxQuantity: 999,
+    };
   }
   const available = inventory.quantity - inventory.reservedQuantity;
-  const stockStatus: StockStatus = available <= 0
-    ? 'out_of_stock'
-    : available <= inventory.lowStockThreshold
-      ? 'low_stock'
-      : 'in_stock';
+  const stockStatus: StockStatus =
+    available <= 0
+      ? 'out_of_stock'
+      : available <= inventory.lowStockThreshold
+        ? 'low_stock'
+        : 'in_stock';
   return {
     stockStatus,
     availableQuantity: available,
@@ -21,9 +27,14 @@ export function computeStockStatus(
   };
 }
 
-export function computeCartTotals(items: { price: string; quantity: number }[]): { totalQuantity: number; subtotal: string } {
+export function computeCartTotals(
+  items: { price: string; quantity: number }[],
+): { totalQuantity: number; subtotal: string } {
   const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+  const subtotal = items.reduce(
+    (sum, i) => sum + parseFloat(i.price) * i.quantity,
+    0,
+  );
   return {
     totalQuantity,
     subtotal: subtotal.toFixed(2),

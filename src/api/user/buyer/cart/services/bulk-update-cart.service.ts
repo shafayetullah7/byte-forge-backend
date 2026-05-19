@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { CartRepository } from '@/_repositories/user/cart.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productVariantsTable,
-  inventoryTable,
-} from '@/_db/drizzle/schema';
+import { productVariantsTable, TInventory } from '@/_db/drizzle/schema';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { BulkUpdateCartItemsDto } from '../dto/bulk-update-items.dto';
@@ -57,6 +54,7 @@ export class BulkUpdateCartService {
   ): Promise<BulkUpdateCartResult> {
     try {
       return await this.db.transaction(async (tx) => {
+        const lockTx = { tx, lock: true };
         const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
         if (!cart) {
@@ -72,56 +70,97 @@ export class BulkUpdateCartService {
 
         for (const updateItem of dto.items) {
           try {
-            const cartItem = await this.cartRepository.getCartItemById(updateItem.itemId);
+            const cartItem = await this.cartRepository.getCartItemById(
+              updateItem.itemId,
+              lockTx,
+            );
 
             if (!cartItem || cartItem.cartId !== cartId) {
-              errors.push({ itemId: updateItem.itemId, error: 'Cart item not found' });
+              errors.push({
+                itemId: updateItem.itemId,
+                error: 'Cart item not found',
+              });
               continue;
             }
 
             if (updateItem.quantity === 0) {
-              await this.cartRepository.deleteCartItem(updateItem.itemId, tx);
-              removed.push({ itemId: updateItem.itemId, variantId: cartItem.variantId });
+              await this.cartRepository.deleteCartItem(updateItem.itemId, {
+                tx,
+              });
+              removed.push({
+                itemId: updateItem.itemId,
+                variantId: cartItem.variantId,
+              });
               continue;
             }
 
-            const variant = await this.db.client.query.productVariantsTable.findFirst({
-              where: eq(productVariantsTable.id, cartItem.variantId),
-              with: {
-                product: {
-                  columns: { id: true, slug: true, productType: true, status: true, shopId: true, thumbnailId: true },
-                  with: {
-                    thumbnail: { columns: { id: true, url: true } },
-                    translations: { columns: { locale: true, name: true } },
+            const variant =
+              await this.db.client.query.productVariantsTable.findFirst({
+                where: eq(productVariantsTable.id, cartItem.variantId),
+                with: {
+                  product: {
+                    columns: {
+                      id: true,
+                      slug: true,
+                      productType: true,
+                      status: true,
+                      shopId: true,
+                      thumbnailId: true,
+                    },
+                    with: {
+                      thumbnail: { columns: { id: true, url: true } },
+                      translations: { columns: { locale: true, name: true } },
+                    },
+                  },
+                  plantAttributes: {
+                    columns: {
+                      growthStage: true,
+                      plantForm: true,
+                      variegation: true,
+                      leafDensity: true,
+                      containerType: true,
+                      containerSize: true,
+                    },
                   },
                 },
-                plantAttributes: {
-                  columns: { growthStage: true, plantForm: true, variegation: true, leafDensity: true, containerType: true, containerSize: true },
-                },
-              },
-            });
+              });
 
             if (!variant) {
-              errors.push({ itemId: updateItem.itemId, error: 'Product variant not found' });
+              errors.push({
+                itemId: updateItem.itemId,
+                error: 'Product variant not found',
+              });
               continue;
             }
 
             if (!variant.isActive) {
-              errors.push({ itemId: updateItem.itemId, error: 'Product variant is not available' });
+              errors.push({
+                itemId: updateItem.itemId,
+                error: 'Product variant is not available',
+              });
               continue;
             }
 
-            if (variant.product.status !== ProductStatusEnum.ACTIVE) {
-              errors.push({ itemId: updateItem.itemId, error: 'Product is not available for purchase' });
+            if (
+              !variant.product ||
+              variant.product.status !== ProductStatusEnum.ACTIVE
+            ) {
+              errors.push({
+                itemId: updateItem.itemId,
+                error: 'Product is not available for purchase',
+              });
               continue;
             }
 
-            const inventory = await this.db.client.query.inventoryTable.findFirst({
-              where: eq(inventoryTable.variantId, cartItem.variantId),
-            }) ?? null;
+            const inventory =
+              (await this.cartRepository.getInventoryByVariantIdLocked(
+                cartItem.variantId,
+                lockTx,
+              )) ?? null;
 
             if (inventory?.trackInventory) {
-              const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+              const availableQuantity =
+                inventory.quantity - inventory.reservedQuantity;
               if (availableQuantity < updateItem.quantity) {
                 errors.push({
                   itemId: updateItem.itemId,
@@ -134,13 +173,21 @@ export class BulkUpdateCartService {
             const updatedItem = await this.cartRepository.updateCartItem(
               updateItem.itemId,
               { quantity: updateItem.quantity },
-              tx,
+              lockTx,
             );
 
-            const resultItem = this.mapItem(updatedItem, variant, inventory, locale);
+            const resultItem = this.mapItem(
+              updatedItem,
+              variant,
+              inventory,
+              locale,
+            );
             updated.push(resultItem);
           } catch {
-            errors.push({ itemId: updateItem.itemId, error: 'Failed to update item' });
+            errors.push({
+              itemId: updateItem.itemId,
+              error: 'Failed to update item',
+            });
           }
         }
 
@@ -156,23 +203,26 @@ export class BulkUpdateCartService {
     }
   }
 
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
   private mapItem(
     item: { id: string; variantId: string; quantity: number },
-    variant: NonNullable<Awaited<ReturnType<typeof this.fetchVariant>>>,
-    inventory: Awaited<ReturnType<typeof this.fetchInventory>> | null,
+    variant: any,
+    inventory: TInventory | null,
     locale: string,
   ): BulkUpdateCartItemResult {
-    const translation = variant.product?.translations?.find((t) => t.locale === locale);
+    const translation = variant.product?.translations?.find(
+      (t: { locale: string }) => t.locale === locale,
+    );
     const price = variant.price ?? '0.00';
-    const stockInfo = computeStockStatus(inventory, item.quantity);
+    const stockInfo = computeStockStatus(inventory);
 
     const variantAttributes = variant.plantAttributes
       ? {
-          growthStage: variant.plantAttributes.growthStage,
-          plantForm: variant.plantAttributes.plantForm,
-          variegation: variant.plantAttributes.variegation,
-          leafDensity: variant.plantAttributes.leafDensity,
-          containerType: variant.plantAttributes.containerType,
+          growthStage: variant.plantAttributes.growthStage ?? undefined,
+          plantForm: variant.plantAttributes.plantForm ?? undefined,
+          variegation: variant.plantAttributes.variegation ?? undefined,
+          leafDensity: variant.plantAttributes.leafDensity ?? undefined,
+          containerType: variant.plantAttributes.containerType ?? undefined,
           containerSize: variant.plantAttributes.containerSize ?? undefined,
         }
       : null;
@@ -188,7 +238,10 @@ export class BulkUpdateCartService {
       productType: variant.product?.productType ?? '',
       shopId: variant.product?.shopId ?? '',
       thumbnail: variant.product?.thumbnail
-        ? { id: variant.product.thumbnail.id, url: variant.product.thumbnail.url }
+        ? {
+            id: variant.product.thumbnail.id,
+            url: variant.product.thumbnail.url,
+          }
         : null,
       stockStatus: stockInfo.stockStatus,
       availableQuantity: stockInfo.availableQuantity,
@@ -196,28 +249,5 @@ export class BulkUpdateCartService {
       variantAttributes,
     };
   }
-
-  private async fetchVariant(variantId: string) {
-    return this.db.client.query.productVariantsTable.findFirst({
-      where: eq(productVariantsTable.id, variantId),
-      with: {
-        product: {
-          columns: { id: true, slug: true, productType: true, status: true, shopId: true, thumbnailId: true },
-          with: {
-            thumbnail: { columns: { id: true, url: true } },
-            translations: { columns: { locale: true, name: true } },
-          },
-        },
-        plantAttributes: {
-          columns: { growthStage: true, plantForm: true, variegation: true, leafDensity: true, containerType: true, containerSize: true },
-        },
-      },
-    });
-  }
-
-  private async fetchInventory(variantId: string) {
-    return this.db.client.query.inventoryTable.findFirst({
-      where: eq(inventoryTable.variantId, variantId),
-    });
-  }
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 }

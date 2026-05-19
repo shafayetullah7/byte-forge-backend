@@ -12,7 +12,12 @@ export const BulkUpdateCartItemSchema = z.object({
 });
 
 export const BulkUpdateCartItemsSchema = z.object({
-  items: z.array(BulkUpdateCartItemSchema).min(1, 'At least one item is required').max(50, 'Cannot update more than 50 items at once'),
+  items: z
+    .array(BulkUpdateCartItemSchema)
+    .min(1, 'At least one item is required')
+    .max(50, 'Cannot update more than 50 items at once'),
 });
 
-export class BulkUpdateCartItemsDto extends createZodDto(BulkUpdateCartItemsSchema) {}
+export class BulkUpdateCartItemsDto extends createZodDto(
+  BulkUpdateCartItemsSchema,
+) {}

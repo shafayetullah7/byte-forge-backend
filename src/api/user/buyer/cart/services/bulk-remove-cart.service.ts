@@ -24,6 +24,7 @@ export class BulkRemoveCartService {
   ): Promise<BulkRemoveCartResult> {
     try {
       return await this.db.transaction(async (tx) => {
+        const lockTx = { tx, lock: true };
         const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
         if (!cart) {
@@ -37,14 +38,17 @@ export class BulkRemoveCartService {
         let removedCount = 0;
 
         for (const itemId of dto.itemIds) {
-          const cartItem = await this.cartRepository.getCartItemById(itemId);
+          const cartItem = await this.cartRepository.getCartItemById(
+            itemId,
+            lockTx,
+          );
 
           if (!cartItem || cartItem.cartId !== cartId) {
             notFound.push(itemId);
             continue;
           }
 
-          await this.cartRepository.deleteCartItem(itemId, tx);
+          await this.cartRepository.deleteCartItem(itemId, { tx });
           removedCount++;
         }
 

@@ -7,8 +7,6 @@ import {
   Patch,
   Post,
   UseGuards,
-  Req,
-  Res,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
@@ -41,7 +39,6 @@ import {
   MergeCartResultDto,
 } from './dto/cart-response.dto';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { Request, Response } from 'express';
 
 @ApiTags('🛒 Cart Management')
 @Controller({ path: 'cart', version: '1' })
@@ -55,7 +52,8 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get current cart',
-    description: 'Returns the authenticated user\'s cart with all items, totals, stock status, and variant attributes',
+    description:
+      "Returns the authenticated user's cart with all items, totals, stock status, and variant attributes",
   })
   @ApiOkResponseTyped(CartDto, 'Cart retrieved successfully')
   @ApiUnauthorizedResponse()
@@ -83,14 +81,17 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Add item to cart',
-    description: 'Adds a product variant to the user\'s cart. If the variant already exists in the cart, the quantity is incremented.',
+    description:
+      "Adds a product variant to the user's cart. If the variant already exists in the cart, the quantity is incremented.",
   })
   @ApiResponse({
     status: 201,
     description: 'Item added to cart successfully',
     type: CartItemDto,
   })
-  @ApiBadRequestResponse('Validation failed / Insufficient stock / Product unavailable')
+  @ApiBadRequestResponse(
+    'Validation failed / Insufficient stock / Product unavailable',
+  )
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse('Product variant not found')
   @Post('items')
@@ -118,7 +119,9 @@ export class CartController {
     description: 'Cart item updated successfully',
     type: CartItemDto,
   })
-  @ApiBadRequestResponse('Validation failed / Insufficient stock / Product unavailable')
+  @ApiBadRequestResponse(
+    'Validation failed / Insufficient stock / Product unavailable',
+  )
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse('Cart item not found')
   @ApiForbiddenResponse('Permission denied')
@@ -146,7 +149,7 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Remove item from cart',
-    description: 'Removes a specific item from the user\'s cart',
+    description: "Removes a specific item from the user's cart",
   })
   @ApiResponse({
     status: 200,
@@ -173,7 +176,7 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Clear entire cart',
-    description: 'Removes all items from the user\'s cart',
+    description: "Removes all items from the user's cart",
   })
   @ApiResponse({
     status: 200,
@@ -198,7 +201,8 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Validate cart',
-    description: 'Checks if all items in the cart are still available and purchasable. Useful before checkout.',
+    description:
+      'Checks if all items in the cart are still available and purchasable. Useful before checkout.',
   })
   @ApiOkResponseTyped(CartValidationResultDto, 'Cart validated successfully')
   @ApiUnauthorizedResponse()
@@ -219,7 +223,8 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Bulk update cart items',
-    description: 'Updates quantities of multiple cart items in a single request. Set quantity to 0 to remove an item.',
+    description:
+      'Updates quantities of multiple cart items in a single request. Set quantity to 0 to remove an item.',
   })
   @ApiOkResponseTyped(BulkUpdateResultDto, 'Cart items updated successfully')
   @ApiUnauthorizedResponse()
@@ -258,10 +263,7 @@ export class CartController {
     @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
-    const result = await this.cartService.bulkRemoveCartItems(
-      cartContext,
-      dto,
-    );
+    const result = await this.cartService.bulkRemoveCartItems(cartContext, dto);
 
     return this.responseService.success({
       message: this.i18n.t('message.success.cartItemsBulkRemoved', { lang }),
@@ -272,7 +274,8 @@ export class CartController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Merge guest cart items',
-    description: 'Merges guest cart items (from localStorage) into the authenticated user\'s cart',
+    description:
+      "Merges guest cart items (from localStorage) into the authenticated user's cart",
   })
   @ApiOkResponseTyped(MergeCartResultDto, 'Cart merged successfully')
   @ApiUnauthorizedResponse()

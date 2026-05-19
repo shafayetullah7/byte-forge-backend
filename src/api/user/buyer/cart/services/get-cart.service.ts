@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CartRepository } from '@/_repositories/user/cart.repository';
-import { CustomException } from '@/common/exceptions/custom.exception';
-import { computeStockStatus, computeCartTotals, computeLineTotal } from '../cart.utils';
+import {
+  computeStockStatus,
+  computeCartTotals,
+  computeLineTotal,
+} from '../cart.utils';
 
 export type CartItemResult = {
   id: string;
@@ -43,7 +46,10 @@ export class GetCartService {
 
   constructor(private readonly cartRepository: CartRepository) {}
 
-  async executeByCartId(cartId: string, locale: string = 'en'): Promise<CartResult | null> {
+  async executeByCartId(
+    cartId: string,
+    locale: string = 'en',
+  ): Promise<CartResult | null> {
     try {
       const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
@@ -52,26 +58,31 @@ export class GetCartService {
       }
 
       const variantIds = cart.items.map((item) => item.variantId);
-      const inventories = await this.cartRepository.getInventoryByVariantIds(variantIds);
-      const inventoryMap = new Map(inventories.map((inv) => [inv.variantId, inv]));
+      const inventories =
+        await this.cartRepository.getInventoryByVariantIds(variantIds);
+      const inventoryMap = new Map(
+        inventories.map((inv) => [inv.variantId, inv]),
+      );
 
       const items: CartItemResult[] = cart.items.map((item) => {
         const variant = item.variant;
         const product = variant?.product;
-        const translation = product?.translations?.find((t) => t.locale === locale);
+        const translation = product?.translations?.find(
+          (t) => t.locale === locale,
+        );
         const inventory = inventoryMap.get(item.variantId) ?? null;
-        const stockInfo = computeStockStatus(inventory, item.quantity);
+        const stockInfo = computeStockStatus(inventory);
 
         const price = variant?.price ?? '0.00';
         const lineTotal = computeLineTotal(price, item.quantity);
 
         const variantAttributes = variant?.plantAttributes
           ? {
-              growthStage: variant.plantAttributes.growthStage,
-              plantForm: variant.plantAttributes.plantForm,
-              variegation: variant.plantAttributes.variegation,
-              leafDensity: variant.plantAttributes.leafDensity,
-              containerType: variant.plantAttributes.containerType,
+              growthStage: variant.plantAttributes.growthStage ?? undefined,
+              plantForm: variant.plantAttributes.plantForm ?? undefined,
+              variegation: variant.plantAttributes.variegation ?? undefined,
+              leafDensity: variant.plantAttributes.leafDensity ?? undefined,
+              containerType: variant.plantAttributes.containerType ?? undefined,
               containerSize: variant.plantAttributes.containerSize ?? undefined,
             }
           : null;

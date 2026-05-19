@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { CartRepository } from '@/_repositories/user/cart.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productVariantsTable,
-  inventoryTable,
-} from '@/_db/drizzle/schema';
+import { productVariantsTable } from '@/_db/drizzle/schema';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
 import { MergeCartDto } from '../dto/merge-cart.dto';
 import { computeStockStatus, computeLineTotal } from '../cart.utils';
@@ -33,52 +30,80 @@ export class MergeCartService {
   ): Promise<MergeCartResult> {
     try {
       return await this.db.transaction(async (tx) => {
+        const lockTx = { tx, lock: true };
         const cart = await this.cartRepository.getCartWithItemsById(cartId);
 
         if (!cart) {
           throw new Error('Cart not found');
         }
 
-        const mergedCount = 0;
         const failedItems: { variantId: string; reason: string }[] = [];
 
         for (const guestItem of dto.guestItems) {
           try {
-            const variant = await this.db.client.query.productVariantsTable.findFirst({
-              where: eq(productVariantsTable.id, guestItem.variantId),
-              with: {
-                product: {
-                  columns: { id: true, slug: true, productType: true, status: true, shopId: true, thumbnailId: true },
-                  with: {
-                    thumbnail: { columns: { id: true, url: true } },
-                    translations: { columns: { locale: true, name: true } },
+            const variant =
+              await this.db.client.query.productVariantsTable.findFirst({
+                where: eq(productVariantsTable.id, guestItem.variantId),
+                with: {
+                  product: {
+                    columns: {
+                      id: true,
+                      slug: true,
+                      productType: true,
+                      status: true,
+                      shopId: true,
+                      thumbnailId: true,
+                    },
+                    with: {
+                      thumbnail: { columns: { id: true, url: true } },
+                      translations: { columns: { locale: true, name: true } },
+                    },
                   },
                 },
-              },
-            });
+              });
 
             if (!variant) {
-              failedItems.push({ variantId: guestItem.variantId, reason: 'Product variant not found' });
+              failedItems.push({
+                variantId: guestItem.variantId,
+                reason: 'Product variant not found',
+              });
               continue;
             }
 
             if (!variant.isActive) {
-              failedItems.push({ variantId: guestItem.variantId, reason: 'Product variant is not available' });
+              failedItems.push({
+                variantId: guestItem.variantId,
+                reason: 'Product variant is not available',
+              });
               continue;
             }
 
-            if (variant.product.status !== ProductStatusEnum.ACTIVE) {
-              failedItems.push({ variantId: guestItem.variantId, reason: 'Product is not available for purchase' });
+            if (
+              !variant.product ||
+              variant.product.status !== ProductStatusEnum.ACTIVE
+            ) {
+              failedItems.push({
+                variantId: guestItem.variantId,
+                reason: 'Product is not available for purchase',
+              });
               continue;
             }
 
-            const inventory = await this.db.client.query.inventoryTable.findFirst({
-              where: eq(inventoryTable.variantId, guestItem.variantId),
-            }) ?? null;
+            const inventory =
+              (await this.cartRepository.getInventoryByVariantIdLocked(
+                guestItem.variantId,
+                lockTx,
+              )) ?? null;
+
+            const existingItem = await this.cartRepository.getCartItem(
+              cart.id,
+              guestItem.variantId,
+              lockTx,
+            );
 
             if (inventory?.trackInventory) {
-              const availableQuantity = inventory.quantity - inventory.reservedQuantity;
-              const existingItem = await this.cartRepository.getCartItem(cart.id, guestItem.variantId);
+              const availableQuantity =
+                inventory.quantity - inventory.reservedQuantity;
               const currentQuantity = existingItem?.quantity ?? 0;
               if (availableQuantity < currentQuantity + guestItem.quantity) {
                 failedItems.push({
@@ -89,13 +114,11 @@ export class MergeCartService {
               }
             }
 
-            const existingItem = await this.cartRepository.getCartItem(cart.id, guestItem.variantId);
-
             if (existingItem) {
               await this.cartRepository.updateCartItem(
                 existingItem.id,
                 { quantity: existingItem.quantity + guestItem.quantity },
-                tx,
+                lockTx,
               );
             } else {
               await this.cartRepository.createCartItem(
@@ -104,39 +127,50 @@ export class MergeCartService {
                   variantId: guestItem.variantId,
                   quantity: guestItem.quantity,
                 },
-                tx,
+                { tx },
               );
             }
           } catch {
-            failedItems.push({ variantId: guestItem.variantId, reason: 'Failed to merge item' });
+            failedItems.push({
+              variantId: guestItem.variantId,
+              reason: 'Failed to merge item',
+            });
           }
         }
 
-        const updatedCart = await this.cartRepository.getCartWithItemsById(cartId);
+        const updatedCart =
+          await this.cartRepository.getCartWithItemsById(cartId);
         if (!updatedCart) {
           throw new Error('Failed to retrieve cart after merge');
         }
 
         const variantIds = updatedCart.items.map((item) => item.variantId);
-        const inventories = await this.cartRepository.getInventoryByVariantIds(variantIds);
-        const inventoryMap = new Map(inventories.map((inv) => [inv.variantId, inv]));
+        const inventories =
+          await this.cartRepository.getInventoryByVariantIds(variantIds);
+        const inventoryMap = new Map(
+          inventories.map((inv) => [inv.variantId, inv]),
+        );
 
         const items = updatedCart.items.map((item) => {
           const variant = item.variant;
           const product = variant?.product;
-          const translation = product?.translations?.find((t) => t.locale === locale);
+          const translation = product?.translations?.find(
+            (t) => t.locale === locale,
+          );
           const inventory = inventoryMap.get(item.variantId) ?? null;
-          const stockInfo = computeStockStatus(inventory, item.quantity);
+          const stockInfo = computeStockStatus(inventory);
           const price = variant?.price ?? '0.00';
 
           const variantAttributes = variant?.plantAttributes
             ? {
-                growthStage: variant.plantAttributes.growthStage,
-                plantForm: variant.plantAttributes.plantForm,
-                variegation: variant.plantAttributes.variegation,
-                leafDensity: variant.plantAttributes.leafDensity,
-                containerType: variant.plantAttributes.containerType,
-                containerSize: variant.plantAttributes.containerSize ?? undefined,
+                growthStage: variant.plantAttributes.growthStage ?? undefined,
+                plantForm: variant.plantAttributes.plantForm ?? undefined,
+                variegation: variant.plantAttributes.variegation ?? undefined,
+                leafDensity: variant.plantAttributes.leafDensity ?? undefined,
+                containerType:
+                  variant.plantAttributes.containerType ?? undefined,
+                containerSize:
+                  variant.plantAttributes.containerSize ?? undefined,
               }
             : null;
 
@@ -161,7 +195,10 @@ export class MergeCartService {
         });
 
         const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
-        const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+        const subtotal = items.reduce(
+          (sum, i) => sum + parseFloat(i.price) * i.quantity,
+          0,
+        );
 
         return {
           mergedCount: dto.guestItems.length - failedItems.length,
