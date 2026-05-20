@@ -35,6 +35,11 @@ import { BulkUpdateCartItemsDto } from './dto/bulk-update-items.dto';
 import { BulkRemoveCartItemsDto } from './dto/bulk-remove-items.dto';
 import { MergeCartDto } from './dto/merge-cart.dto';
 
+export interface CartCountResult {
+  itemsCount: number;
+  totalQuantity: number;
+}
+
 const isUniqueConstraintError = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) return false;
   const code = (error as { code?: string }).code;
@@ -218,6 +223,30 @@ export class CartService {
   ): Promise<CartResult | null> {
     const resolved = await this.resolveCartContext(context);
     return this.getCartService.executeByCartId(resolved.cartId, locale);
+  }
+
+  async getCartCount(context: CartContext): Promise<CartCountResult> {
+    if (context.userId) {
+      const cart = await this.cartRepository.getCartByUserId(context.userId);
+      if (!cart) {
+        return { itemsCount: 0, totalQuantity: 0 };
+      }
+      const itemsCount = await this.cartRepository.getCartItemsCount(cart.id);
+      const totalQuantity = await this.cartRepository.getCartTotalQuantity(cart.id);
+      return { itemsCount, totalQuantity };
+    }
+
+    if (context.guestToken) {
+      const cart = await this.cartRepository.getCartByGuestToken(context.guestToken);
+      if (!cart) {
+        return { itemsCount: 0, totalQuantity: 0 };
+      }
+      const itemsCount = await this.cartRepository.getCartItemsCount(cart.id);
+      const totalQuantity = await this.cartRepository.getCartTotalQuantity(cart.id);
+      return { itemsCount, totalQuantity };
+    }
+
+    return { itemsCount: 0, totalQuantity: 0 };
   }
 
   async addToCart(

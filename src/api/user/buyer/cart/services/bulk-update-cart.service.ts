@@ -19,7 +19,7 @@ export type BulkUpdateCartItemResult = {
   productType: string;
   shopId: string;
   thumbnail: { id: string; url: string } | null;
-  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' | 'untracked';
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
   availableQuantity: number | null;
   maxQuantity: number;
   variantAttributes: {
@@ -30,6 +30,8 @@ export type BulkUpdateCartItemResult = {
     containerType?: string;
     containerSize?: string;
   } | null;
+  variantTitle?: string;
+  sku?: string;
 };
 
 export type BulkUpdateCartResult = {
@@ -97,6 +99,11 @@ export class BulkUpdateCartService {
             const variant =
               await this.db.client.query.productVariantsTable.findFirst({
                 where: eq(productVariantsTable.id, cartItem.variantId),
+                columns: {
+                  sku: true,
+                  price: true,
+                  isActive: true,
+                },
                 with: {
                   product: {
                     columns: {
@@ -121,6 +128,9 @@ export class BulkUpdateCartService {
                       containerType: true,
                       containerSize: true,
                     },
+                  },
+                  translations: {
+                    columns: { locale: true, title: true },
                   },
                 },
               });
@@ -213,6 +223,9 @@ export class BulkUpdateCartService {
     const translation = variant.product?.translations?.find(
       (t: { locale: string }) => t.locale === locale,
     );
+    const variantTranslation = variant.translations?.find(
+      (t: { locale: string }) => t.locale === locale,
+    );
     const price = variant.price ?? '0.00';
     const stockInfo = computeStockStatus(inventory);
 
@@ -247,6 +260,8 @@ export class BulkUpdateCartService {
       availableQuantity: stockInfo.availableQuantity,
       maxQuantity: stockInfo.maxQuantity,
       variantAttributes,
+      variantTitle: variantTranslation?.title ?? undefined,
+      sku: variant.sku ?? undefined,
     };
   }
   /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */

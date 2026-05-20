@@ -1,8 +1,7 @@
 export type StockStatus =
   | 'in_stock'
   | 'low_stock'
-  | 'out_of_stock'
-  | 'untracked';
+  | 'out_of_stock';
 
 export class CartItemDto {
   id: string;
@@ -26,6 +25,8 @@ export class CartItemDto {
     containerType?: string;
     containerSize?: string;
   } | null;
+  variantTitle?: string;
+  sku?: string;
 }
 
 export class CartDto {
@@ -36,6 +37,11 @@ export class CartDto {
   items: CartItemDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+export class CartCountDto {
+  itemsCount: number;
+  totalQuantity: number;
 }
 
 export class CartValidationIssueDto {

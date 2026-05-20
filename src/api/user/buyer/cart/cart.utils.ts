@@ -8,7 +8,7 @@ export function computeStockStatus(inventory: TInventory | null | undefined): {
 } {
   if (!inventory || !inventory.trackInventory) {
     return {
-      stockStatus: 'untracked',
+      stockStatus: 'in_stock',
       availableQuantity: null,
       maxQuantity: 999,
     };

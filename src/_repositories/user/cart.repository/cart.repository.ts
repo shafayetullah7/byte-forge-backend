@@ -1,4 +1,4 @@
-import { eq, and, count, inArray } from 'drizzle-orm';
+import { eq, and, count, inArray, sum } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   cartsTable,
@@ -68,6 +68,11 @@ export class CartRepository {
         items: {
           with: {
             variant: {
+              columns: {
+                sku: true,
+                price: true,
+                isActive: true,
+              },
               with: {
                 product: {
                   columns: {
@@ -99,6 +104,12 @@ export class CartRepository {
                     leafDensity: true,
                     containerType: true,
                     containerSize: true,
+                  },
+                },
+                translations: {
+                  columns: {
+                    locale: true,
+                    title: true,
                   },
                 },
               },
@@ -177,6 +188,15 @@ export class CartRepository {
       .where(eq(cartItemsTable.cartId, cartId))
       .execute();
     return Number(total);
+  }
+
+  async getCartTotalQuantity(cartId: string): Promise<number> {
+    const result = await this.db.client
+      .select({ total: sum(cartItemsTable.quantity) })
+      .from(cartItemsTable)
+      .where(eq(cartItemsTable.cartId, cartId))
+      .execute();
+    return Number(result[0]?.total ?? 0);
   }
 
   async createCartItem(
@@ -309,6 +329,11 @@ export class CartRepository {
         items: {
           with: {
             variant: {
+              columns: {
+                sku: true,
+                price: true,
+                isActive: true,
+              },
               with: {
                 product: {
                   columns: {
@@ -340,6 +365,12 @@ export class CartRepository {
                     leafDensity: true,
                     containerType: true,
                     containerSize: true,
+                  },
+                },
+                translations: {
+                  columns: {
+                    locale: true,
+                    title: true,
                   },
                 },
               },
@@ -357,6 +388,11 @@ export class CartRepository {
         items: {
           with: {
             variant: {
+              columns: {
+                sku: true,
+                price: true,
+                isActive: true,
+              },
               with: {
                 product: {
                   columns: {
@@ -388,6 +424,12 @@ export class CartRepository {
                     leafDensity: true,
                     containerType: true,
                     containerSize: true,
+                  },
+                },
+                translations: {
+                  columns: {
+                    locale: true,
+                    title: true,
                   },
                 },
               },

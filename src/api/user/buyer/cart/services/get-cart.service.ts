@@ -17,7 +17,7 @@ export type CartItemResult = {
   productType: string;
   shopId: string;
   thumbnail: { id: string; url: string } | null;
-  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' | 'untracked';
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
   availableQuantity: number | null;
   maxQuantity: number;
   variantAttributes: {
@@ -28,6 +28,8 @@ export type CartItemResult = {
     containerType?: string;
     containerSize?: string;
   } | null;
+  variantTitle?: string;
+  sku?: string;
 };
 
 export type CartResult = {
@@ -70,6 +72,9 @@ export class GetCartService {
         const translation = product?.translations?.find(
           (t) => t.locale === locale,
         );
+        const variantTranslation = variant?.translations?.find(
+          (t) => t.locale === locale,
+        );
         const inventory = inventoryMap.get(item.variantId) ?? null;
         const stockInfo = computeStockStatus(inventory);
 
@@ -104,6 +109,8 @@ export class GetCartService {
           availableQuantity: stockInfo.availableQuantity,
           maxQuantity: stockInfo.maxQuantity,
           variantAttributes,
+          variantTitle: variantTranslation?.title ?? undefined,
+          sku: variant?.sku ?? undefined,
         };
       });
 

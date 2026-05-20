@@ -157,6 +157,9 @@ export class MergeCartService {
           const translation = product?.translations?.find(
             (t) => t.locale === locale,
           );
+          const variantTranslation = variant?.translations?.find(
+            (t) => t.locale === locale,
+          );
           const inventory = inventoryMap.get(item.variantId) ?? null;
           const stockInfo = computeStockStatus(inventory);
           const price = variant?.price ?? '0.00';
@@ -191,6 +194,8 @@ export class MergeCartService {
             availableQuantity: stockInfo.availableQuantity,
             maxQuantity: stockInfo.maxQuantity,
             variantAttributes,
+            variantTitle: variantTranslation?.title ?? undefined,
+            sku: variant?.sku ?? undefined,
           };
         });
 
