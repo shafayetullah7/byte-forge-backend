@@ -38,6 +38,7 @@ import {
   BulkRemoveResultDto,
   MergeCartResultDto,
   CartCountDto,
+  CartSummaryDto,
 } from './dto/cart-response.dto';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 
@@ -100,6 +101,28 @@ export class CartController {
     return this.responseService.success({
       message: this.i18n.t('message.success.cartRetrieved', { lang }),
       data: count,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get cart summary',
+    description:
+      'Returns a lightweight cart summary with item count and total quantity. Used for cart previews and checkout.',
+  })
+  @ApiOkResponseTyped(CartSummaryDto, 'Cart summary retrieved successfully')
+  @ApiUnauthorizedResponse()
+  @Get('summary')
+  @UseGuards(CartAccessGuard)
+  async getCartSummary(
+    @CartContextParam() cartContext: CartContextType,
+    @I18nLang() lang: string,
+  ) {
+    const summary = await this.cartService.getCartCount(cartContext);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.cartRetrieved', { lang }),
+      data: summary,
     });
   }
 
