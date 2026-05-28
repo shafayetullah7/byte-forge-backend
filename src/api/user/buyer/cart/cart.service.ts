@@ -62,14 +62,20 @@ export class CartService {
     private readonly db: DrizzleService,
   ) {}
 
+  async mergeGuestCart(
+    userId: string,
+    guestToken: string,
+  ): Promise<void> {
+    if (!userId || !guestToken) {
+      return;
+    }
+    await this.handleAutoMerge(userId, guestToken);
+  }
+
   private async resolveCartContext(
     context: CartContext,
   ): Promise<{ userId?: string; guestToken?: string; cartId: string }> {
-    const { userId, guestToken, pendingMerge } = context;
-
-    if (pendingMerge && userId && guestToken) {
-      return await this.handleAutoMerge(userId, guestToken);
-    }
+    const { userId, guestToken } = context;
 
     if (userId) {
       return await this.resolveUserCart(userId);

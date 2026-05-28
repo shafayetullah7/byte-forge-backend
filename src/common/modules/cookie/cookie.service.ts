@@ -165,4 +165,16 @@ export class CookieService {
     res.clearCookie('userRefreshToken', options);
     res.clearCookie('userXsrfToken', { ...options, httpOnly: false });
   }
+
+  clearGuestTokenCookie(res: Response) {
+    const isProduction = this.configService.nodeEnv === 'production';
+
+    res.clearCookie('guestToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      domain: isProduction ? this.configService.cookieDomain : undefined,
+      path: '/',
+    });
+  }
 }

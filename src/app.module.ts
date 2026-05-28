@@ -31,6 +31,7 @@ import { UserAuthJWtGuardModule } from './common/guards/user-auth-jwt-guard/user
 import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 import { CartAccessGuardModule } from './common/guards/cart-access-guard/cart-access-guard.module';
+import { EventsModule } from './common/modules/events/events.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -77,6 +78,7 @@ import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware
     VerifiedUserAuthGuardModule,
     AdminAuthGuardModule,
     CartAccessGuardModule,
+    EventsModule,
     AppEnvModule,
   ],
   controllers: [],

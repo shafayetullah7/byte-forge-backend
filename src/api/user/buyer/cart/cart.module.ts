@@ -10,9 +10,11 @@ import { ValidateCartService } from './services/validate-cart.service';
 import { BulkUpdateCartService } from './services/bulk-update-cart.service';
 import { BulkRemoveCartService } from './services/bulk-remove-cart.service';
 import { MergeCartService } from './services/merge-cart.service';
+import { CartMergeListener } from './listeners/cart-merge.listener';
 import { CartRepositoryModule } from '@/_repositories/user/cart.repository/cart.repository.module';
 import { UserAuthGuardModule } from '@/common/guards/user-auth-guard/user-auth-guard.module';
 import { CartAccessGuardModule } from '@/common/guards/cart-access-guard/cart-access-guard.module';
+import { EventsModule } from '@/common/modules/events/events.module';
 
 @Module({
   controllers: [CartController],
@@ -27,8 +29,14 @@ import { CartAccessGuardModule } from '@/common/guards/cart-access-guard/cart-ac
     BulkUpdateCartService,
     BulkRemoveCartService,
     MergeCartService,
+    CartMergeListener,
   ],
-  imports: [CartRepositoryModule, UserAuthGuardModule, CartAccessGuardModule],
+  imports: [
+    CartRepositoryModule,
+    UserAuthGuardModule,
+    CartAccessGuardModule,
+    EventsModule,
+  ],
   exports: [CartService],
 })
 export class CartModule {}

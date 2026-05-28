@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthV2Service } from './user-auth-v2.service';
 import { Request, Response } from 'express';
@@ -28,6 +29,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
+import { UserLoggedInEvent } from '@/common/modules/events/events';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
@@ -47,6 +49,7 @@ export class UserAuthController {
     private readonly cookieService: CookieService,
     private readonly i18n: I18nService,
     private readonly responseService: ResponseService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @ApiOperation({
@@ -98,6 +101,18 @@ export class UserAuthController {
     });
 
     this.cookieService.setSessionCookie(res, result.id);
+
+    const guestToken = (
+      req as Request & { guestToken: string }
+    ).guestToken;
+
+    this.eventEmitter.emit(
+      'auth.user.loggedin',
+      {
+        userId: userAuth.user.id,
+        guestToken,
+      } as UserLoggedInEvent,
+    );
 
     return this.responseService.success({
       message: this.i18n.t('message.success.userLoggedIn', { lang }),

@@ -44,11 +44,6 @@ export class CartCountDto {
   totalQuantity: number;
 }
 
-export class CartSummaryDto {
-  itemsCount: number;
-  totalQuantity: number;
-}
-
 export class CartValidationIssueDto {
   itemId: string;
   variantId: string;
