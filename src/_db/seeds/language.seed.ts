@@ -60,6 +60,14 @@ export async function seedLanguages() {
       .where(notInArray(schema.categoryTranslationsTable.locale, allowedCodes));
 
     await db
+      .delete(schema.divisionTranslationsTable)
+      .where(notInArray(schema.divisionTranslationsTable.locale, allowedCodes));
+
+    await db
+      .delete(schema.districtTranslationsTable)
+      .where(notInArray(schema.districtTranslationsTable.locale, allowedCodes));
+
+    await db
       .delete(schema.languagesTable)
       .where(notInArray(schema.languagesTable.code, allowedCodes));
 

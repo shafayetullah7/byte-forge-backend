@@ -491,6 +491,13 @@
       "when": 1779174981179,
       "tag": "0071_purple_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1779976839380,
+      "tag": "0072_wise_tigra",
+      "breakpoints": true
     }
   ]
 }
