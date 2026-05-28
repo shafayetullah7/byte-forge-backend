@@ -55,13 +55,12 @@
     "@nestjs/platform-express": "^11.1.8",
     "@nestjs/swagger": "^11.2.6",
     "bcrypt": "^6.0.0",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.2",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "drizzle-seed": "^0.3.1",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nestjs-i18n": "^10.6.0",
     "nestjs-zod": "^5.1.1",
@@ -126,5 +125,11 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.44.7"
+    }
   }
+  
 }

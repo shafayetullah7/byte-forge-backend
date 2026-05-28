@@ -1,4 +1,12 @@
-import { pgTable, uuid, varchar, integer, boolean, decimal, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  integer,
+  boolean,
+  decimal,
+  index,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productVariantsTable } from './product-variants.schema';
 
@@ -20,12 +28,16 @@ export const fertilizerVariantAttributesTable = pgTable(
   (t) => [
     index('fertilizer_variant_attributes_variant_id_idx').on(t.variantId),
     index('fertilizer_variant_attributes_volume_idx').on(t.volumeMl),
-    index('fertilizer_variant_attributes_concentration_idx').on(t.concentration),
+    index('fertilizer_variant_attributes_concentration_idx').on(
+      t.concentration,
+    ),
   ],
 );
 
-export type TFertilizerVariantAttributes = typeof fertilizerVariantAttributesTable.$inferSelect;
-export type TNewFertilizerVariantAttributes = typeof fertilizerVariantAttributesTable.$inferInsert;
+export type TFertilizerVariantAttributes =
+  typeof fertilizerVariantAttributesTable.$inferSelect;
+export type TNewFertilizerVariantAttributes =
+  typeof fertilizerVariantAttributesTable.$inferInsert;
 
 export const fertilizerVariantAttributesRelations = relations(
   fertilizerVariantAttributesTable,

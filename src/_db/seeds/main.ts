@@ -1,6 +1,7 @@
 import { seedAdmin } from './admin.seed';
 import { seedLanguages } from './language.seed';
 import { seedCategories } from './category.seed';
+import { seedTags } from './tag.seed';
 
 async function main() {
   console.log('🚀 Starting master seeding process...');
@@ -9,6 +10,7 @@ async function main() {
     await seedLanguages();
     await seedAdmin();
     await seedCategories();
+    await seedTags();
     // Add other seeders here
 
     console.log('✨ Master seeding completed successfully!');

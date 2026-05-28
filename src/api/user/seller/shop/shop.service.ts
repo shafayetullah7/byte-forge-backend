@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { DrizzleTx } from '@/_db/drizzle/types';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { ShopVerificationRepository } from '@/_repositories/business/shop.verification.repository/shop.verification.repository';
 import { ApplySellerDto } from './dto/apply.seller.dto';
@@ -8,7 +9,11 @@ import { MediaRepository } from '@/_repositories/providers/media/media.repositor
 import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
-import { ShopVerificationStatusEnum } from '@/_db/drizzle/enum';
+import {
+  ShopVerificationStatusEnum,
+  ShopVerificationActionEnum,
+} from '@/_db/drizzle/enum';
+import { ShopVerificationHistoryRepository } from '@/_repositories/business/shop.verification.history.repository/shop.verification.history.repository';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateShopContactDto } from './dto/update-shop-contact.dto';
@@ -33,6 +38,7 @@ export class ShopService {
     private readonly db: DrizzleService,
     private readonly shopRepository: ShopRepository,
     private readonly shopVerificationRepository: ShopVerificationRepository,
+    private readonly shopVerificationHistoryRepository: ShopVerificationHistoryRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly i18n: I18nService,
   ) {}
@@ -303,7 +309,7 @@ export class ShopService {
   private async updateShopSection(
     shopId: string,
     lang: string,
-    updateFn: (tx: any, shop: { ownerId: string }) => Promise<void>,
+    updateFn: (tx: DrizzleTx, shop: { ownerId: string }) => Promise<void>,
   ) {
     return this.db.transaction(async (tx) => {
       // 1. Fetch and Lock
@@ -349,7 +355,7 @@ export class ShopService {
           }),
           ...(dto.whatsapp !== undefined && { whatsapp: dto.whatsapp }),
           ...(dto.telegram !== undefined && { telegram: dto.telegram }),
-          
+
           // Social Media
           ...(dto.facebook !== undefined && { facebook: dto.facebook }),
           ...(dto.instagram !== undefined && { instagram: dto.instagram }),
@@ -368,11 +374,11 @@ export class ShopService {
     return this.updateShopSection(shopId, lang, async (tx) => {
       // 1. Upsert main address (non-translatable fields)
       const addressPayload: Partial<typeof shopAddressTable.$inferInsert> = {};
-      
+
       if (dto.postalCode !== undefined) {
         addressPayload.postalCode = dto.postalCode;
       }
-      
+
       if (dto.latitude !== undefined && dto.latitude !== '') {
         // Convert string to decimal with 10 decimal places precision
         const lat = parseFloat(dto.latitude);
@@ -380,14 +386,14 @@ export class ShopService {
           addressPayload.latitude = lat.toFixed(10);
         }
       }
-      
+
       if (dto.longitude !== undefined && dto.longitude !== '') {
         const lng = parseFloat(dto.longitude);
         if (!isNaN(lng)) {
           addressPayload.longitude = lng.toFixed(10);
         }
       }
-      
+
       if (dto.googleMapsLink !== undefined) {
         addressPayload.googleMapsLink = dto.googleMapsLink;
       }
@@ -396,7 +402,9 @@ export class ShopService {
       // we still need to upsert the address record with minimal data
       const address = await this.shopRepository.upsertShopAddress(
         shopId,
-        Object.keys(addressPayload).length > 0 ? addressPayload : { postalCode: '' },
+        Object.keys(addressPayload).length > 0
+          ? addressPayload
+          : { postalCode: '' },
         tx,
       );
 
@@ -435,11 +443,7 @@ export class ShopService {
    * Update shop info (branding + translations) with media counting
    * Handles logo/banner upload count increment/decrement
    */
-  async upsertMyShopInfo(
-    shopId: string,
-    dto: UpdateShopInfoDto,
-    lang: string,
-  ) {
+  async upsertMyShopInfo(shopId: string, dto: UpdateShopInfoDto, lang: string) {
     return this.db.transaction(async (tx) => {
       // 1. Fetch and lock shop data
       const shop = await this.shopRepository.getShopById(shopId, {
@@ -510,7 +514,7 @@ export class ShopService {
       // 5. Handle media counting for logo (only if logoId is explicitly provided)
       if (dto.branding && dto.branding.logoId !== undefined) {
         const newLogoId = dto.branding.logoId ?? null;
-        
+
         if (newLogoId !== shop.logoId) {
           // Decrement old logo count
           if (shop.logoId) {
@@ -526,7 +530,7 @@ export class ShopService {
       // 6. Handle media counting for banner (only if bannerId is explicitly provided)
       if (dto.branding && dto.branding.bannerId !== undefined) {
         const newBannerId = dto.branding.bannerId ?? null;
-        
+
         if (newBannerId !== shop.bannerId) {
           // Decrement old banner count
           if (shop.bannerId) {
@@ -541,10 +545,10 @@ export class ShopService {
 
       // 7. Update shop table (branding + slug) - only update fields that are provided
       if (dto.branding || dto.slug) {
-        const updatePayload: any = {
+        const updatePayload: Record<string, string | null | undefined> = {
           ...(dto.slug && { slug: dto.slug }),
         };
-        
+
         // Only update branding fields that are explicitly provided
         if (dto.branding) {
           if (dto.branding.logoId !== undefined) {
@@ -563,7 +567,7 @@ export class ShopService {
             updatePayload.accentColor = dto.branding.accentColor;
           }
         }
-        
+
         await this.shopRepository.update(shopId, updatePayload, tx);
       }
 
@@ -609,9 +613,11 @@ export class ShopService {
   private mapToLocalizedShopDetails(
     shop: TShopWithBranding & {
       shopContactTable?: typeof shopContactTable.$inferSelect | null;
-      shopAddressTable?: (typeof shopAddressTable.$inferSelect & {
-        translations: typeof shopAddressTranslationsTable.$inferSelect[];
-      }) | null;
+      shopAddressTable?:
+        | (typeof shopAddressTable.$inferSelect & {
+            translations: (typeof shopAddressTranslationsTable.$inferSelect)[];
+          })
+        | null;
     },
     lang: string,
   ): LocalizedShopDetails {
@@ -671,13 +677,14 @@ export class ShopService {
             longitude: shop.shopAddressTable.longitude,
             googleMapsLink: shop.shopAddressTable.googleMapsLink,
             isVerified: shop.shopAddressTable.isVerified,
-            translations: shop.shopAddressTable.translations?.map((t) => ({
-              locale: t.locale,
-              country: t.country,
-              division: t.division,
-              district: t.district,
-              street: t.street,
-            })) || [],
+            translations:
+              shop.shopAddressTable.translations?.map((t) => ({
+                locale: t.locale,
+                country: t.country,
+                division: t.division,
+                district: t.district,
+                street: t.street,
+              })) || [],
           }
         : null,
     };
@@ -712,15 +719,37 @@ export class ShopService {
       return null;
     }
 
+    // Fetch media details for all documents in one query
+    const mediaIds = [
+      verification.tradeLicenseDocumentId,
+      verification.tinDocumentId,
+      verification.utilityBillDocumentId,
+    ].filter(Boolean) as string[];
+
+    let mediaMap: Map<string, any> = new Map();
+    if (mediaIds.length > 0) {
+      const medias = await this.mediaRepository.findMediaDetailsByIds(mediaIds);
+      medias.forEach(media => mediaMap.set(media.media.id, media.media));
+    }
+
     return {
       id: verification.id,
       shopId: verification.shopId,
       status: verification.status,
       tradeLicenseNumber: verification.tradeLicenseNumber,
       tinNumber: verification.tinNumber,
-      tradeLicenseDocumentId: verification.tradeLicenseDocument,
-      tinDocumentId: verification.tinDocument,
-      utilityBillDocumentId: verification.utilityBillDocument,
+      tradeLicenseDocumentId: verification.tradeLicenseDocumentId,
+      tinDocumentId: verification.tinDocumentId,
+      utilityBillDocumentId: verification.utilityBillDocumentId,
+      tradeLicenseDocument: verification.tradeLicenseDocumentId 
+        ? mediaMap.get(verification.tradeLicenseDocumentId) 
+        : null,
+      tinDocument: verification.tinDocumentId 
+        ? mediaMap.get(verification.tinDocumentId) 
+        : null,
+      utilityBillDocument: verification.utilityBillDocumentId 
+        ? mediaMap.get(verification.utilityBillDocumentId) 
+        : null,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,
       createdAt: verification.createdAt,
@@ -783,16 +812,106 @@ export class ShopService {
         await this.mediaRepository.incrementMediaUsage(mediaIds, tx);
       }
 
-      // 3. Get existing verification record
-      const existingVerification =
-        await this.shopVerificationRepository.findOne({ shopId });
+      // 3. Get or create verification record (create if doesn't exist)
+      let verification = await this.shopVerificationRepository.findOne({
+        shopId,
+      });
 
-      if (!existingVerification) {
-        throw new CustomException({
-          message: this.i18n.t('message.error.verificationNotFound', { lang }),
-          statusCode: HttpStatus.NOT_FOUND,
-          errorCode: ErrorCode.NOT_FOUND,
-        });
+      if (!verification) {
+        // Create verification record on first submission
+        verification = await this.shopVerificationRepository.create(
+          {
+            shopId,
+            status: ShopVerificationStatusEnum.PENDING,
+          },
+          tx,
+        );
+      } else {
+        // EDGE CASE: Prevent resubmission if already PENDING (spam prevention)
+        if (
+          verification.status === ShopVerificationStatusEnum.PENDING ||
+          verification.status === ShopVerificationStatusEnum.REVIEWING
+        ) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.verificationAlreadyPending', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
+        // EDGE CASE: Prevent resubmission if APPROVED (should use different flow)
+        if (verification.status === ShopVerificationStatusEnum.APPROVED) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.shopAlreadyVerified', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
+        // EDGE CASE: Prevent identical resubmissions (no changes made)
+        const hasDocumentChanges =
+          (dto.tradeLicenseDocumentId &&
+            dto.tradeLicenseDocumentId !== verification.tradeLicenseDocumentId) ||
+          (dto.tinDocumentId &&
+            dto.tinDocumentId !== verification.tinDocumentId) ||
+          (dto.utilityBillDocumentId &&
+            dto.utilityBillDocumentId !== verification.utilityBillDocumentId);
+
+        const hasNumberChanges =
+          (dto.tradeLicenseNumber !== undefined &&
+            dto.tradeLicenseNumber !== verification.tradeLicenseNumber) ||
+          (dto.tinNumber !== undefined &&
+            dto.tinNumber !== verification.tinNumber);
+
+        if (!hasDocumentChanges && !hasNumberChanges) {
+          // Decrement media usage since we're not proceeding
+          if (mediaIds.length > 0) {
+            await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
+          }
+          throw new CustomException({
+            message: this.i18n.t('message.error.noChangesInResubmission', { lang }),
+            statusCode: HttpStatus.BAD_REQUEST,
+            errorCode: ErrorCode.BAD_REQUEST,
+          });
+        }
+
+        // 3.5 Decrement old media if replaced
+        const oldMediaIdsToDecrement: string[] = [];
+        if (
+          dto.tradeLicenseDocumentId &&
+          verification.tradeLicenseDocumentId &&
+          dto.tradeLicenseDocumentId !== verification.tradeLicenseDocumentId
+        ) {
+          oldMediaIdsToDecrement.push(verification.tradeLicenseDocumentId);
+        }
+        if (
+          dto.tinDocumentId &&
+          verification.tinDocumentId &&
+          dto.tinDocumentId !== verification.tinDocumentId
+        ) {
+          oldMediaIdsToDecrement.push(verification.tinDocumentId);
+        }
+        if (
+          dto.utilityBillDocumentId &&
+          verification.utilityBillDocumentId &&
+          dto.utilityBillDocumentId !== verification.utilityBillDocumentId
+        ) {
+          oldMediaIdsToDecrement.push(verification.utilityBillDocumentId);
+        }
+        if (oldMediaIdsToDecrement.length > 0) {
+          await this.mediaRepository.decrementMediaUsage(
+            oldMediaIdsToDecrement,
+            tx,
+          );
+        }
       }
 
       // 4. Update verification record
@@ -802,16 +921,16 @@ export class ShopService {
         updatePayload.tradeLicenseNumber = dto.tradeLicenseNumber;
       }
       if (dto.tradeLicenseDocumentId !== undefined) {
-        updatePayload.tradeLicenseDocument = dto.tradeLicenseDocumentId;
+        updatePayload.tradeLicenseDocumentId = dto.tradeLicenseDocumentId;
       }
       if (dto.tinNumber !== undefined) {
         updatePayload.tinNumber = dto.tinNumber;
       }
       if (dto.tinDocumentId !== undefined) {
-        updatePayload.tinDocument = dto.tinDocumentId;
+        updatePayload.tinDocumentId = dto.tinDocumentId;
       }
       if (dto.utilityBillDocumentId !== undefined) {
-        updatePayload.utilityBillDocument = dto.utilityBillDocumentId;
+        updatePayload.utilityBillDocumentId = dto.utilityBillDocumentId;
       }
 
       // Reset status to PENDING if any document is updated
@@ -822,6 +941,14 @@ export class ShopService {
       ) {
         updatePayload.status = ShopVerificationStatusEnum.PENDING;
         updatePayload.rejectionReason = null;
+        
+        // CRITICAL: Also update shop status to PENDING_VERIFICATION
+        // This ensures consistency between shop status and verification status
+        await this.shopRepository.update(
+          shopId,
+          { status: 'PENDING_VERIFICATION' },
+          tx,
+        );
       }
 
       await this.shopVerificationRepository.update(
@@ -836,28 +963,70 @@ export class ShopService {
   }
 
   async submitForReview(shopId: string, dto: UpdateShopDto, lang: string) {
-    // Update shop with major changes
-    // Note: This is a simplified implementation
-    // Full implementation would update translations and log to history
-    console.log('Submit for review:', shopId, dto);
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch and Lock
+      const shop = await this.shopRepository.getShopById(shopId, {
+        tx,
+        lock: true,
+      });
+
+      if (!shop) {
+        throw new CustomException({
+          message: this.i18n.t('message.error.shopNotFound', { lang }),
+          statusCode: HttpStatus.NOT_FOUND,
+          errorCode: ErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 2. Update shop status in shop table
+      await this.shopRepository.update(
+        shopId,
+        { status: 'PENDING_VERIFICATION' },
+        tx,
+      );
+
+      // 3. Optional updates from dto
+      // (Simplified: full implementation could include translation updates if dto carries them)
+
+      // 4. Log verification history
+      await this.shopVerificationHistoryRepository.create(
+        {
+          shopId,
+          action: ShopVerificationActionEnum.SUBMITTED,
+          previousStatus: shop.status,
+          newStatus: 'PENDING_VERIFICATION',
+          reason: 'Shop submitted for review by seller',
+        },
+        tx,
+      );
+
+      const updatedShop = await this.shopRepository.getShopByOwnerBranding(
+        shop.ownerId,
+      );
+      return this.mapToLocalizedShopDetails(updatedShop!, lang);
+    });
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async uploadImages(
-    shopId: string,
-    files: { logo?: Express.Multer.File; banner?: Express.Multer.File },
+    shopId: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+    files: { logo?: Express.Multer.File; banner?: Express.Multer.File }, // eslint-disable-line @typescript-eslint/no-unused-vars
   ) {
     const result: { logoId?: string; bannerId?: string } = {};
     // Placeholder for image upload logic
     return result;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
   async deleteShop(shopId: string, lang: string) {
     // Placeholder - full implementation needs orders module
     console.log('Delete shop:', shopId);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getVerificationHistory(shopId: string, lang: string) {
-    // Placeholder - returns empty array for now
-    return [];
+    return this.shopVerificationHistoryRepository.findByShopId(shopId, {
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

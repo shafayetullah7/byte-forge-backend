@@ -25,6 +25,17 @@ export type TShopWithRelations = TShop & {
 };
 
 /**
+ * Media information for verification documents
+ */
+export type VerificationMedia = {
+  id: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+};
+
+/**
  * Verification status returned to users
  * Excludes sensitive admin notes
  */
@@ -37,6 +48,9 @@ export type VerificationStatus = {
   tradeLicenseDocumentId: string | null;
   tinDocumentId: string | null;
   utilityBillDocumentId: string | null;
+  tradeLicenseDocument: VerificationMedia | null;
+  tinDocument: VerificationMedia | null;
+  utilityBillDocument: VerificationMedia | null;
   rejectionReason: string | null;
   verifiedAt: Date | null;
   createdAt: Date;

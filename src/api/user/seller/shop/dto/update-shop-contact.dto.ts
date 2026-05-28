@@ -26,7 +26,7 @@ export const updateShopContactSchema = z
       .string()
       .max(50, { message: 'message.validation.maxLength' })
       .optional(),
-    
+
     // Social Media
     facebook: z
       .string()

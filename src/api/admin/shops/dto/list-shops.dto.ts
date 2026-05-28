@@ -1,29 +1,11 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 import { ShopStatusEnum } from '../../../../_db/drizzle/enum';
+import { PaginationParamsSchema } from '@/common/schemas/pagination.schema';
 
-export class ListShopsDto {
-  @IsOptional()
-  @IsEnum(ShopStatusEnum)
-  status?: keyof typeof ShopStatusEnum;
+const listShopsSchema = PaginationParamsSchema.extend({
+  status: z.nativeEnum(ShopStatusEnum).optional(),
+  division: z.string().optional(),
+});
 
-  @IsOptional()
-  @IsString()
-  division?: string;
-
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Type(() => Number)
-  page?: number = 1;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Type(() => Number)
-  limit?: number = 20;
-}
+export class ListShopsDto extends createZodDto(listShopsSchema) {}

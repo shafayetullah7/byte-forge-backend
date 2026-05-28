@@ -226,7 +226,7 @@ export class MediaRepository implements IMediaRepository {
     incrementBy: number = 1,
   ) {
     if (mediaIds.length === 0) return;
-    await tx
+    const updatedMedia = await tx
       .update(mediaTable)
       .set({ usesCount: sql`${mediaTable.usesCount} + ${incrementBy}` })
       .where(inArray(mediaTable.id, mediaIds))
@@ -256,7 +256,7 @@ export class MediaRepository implements IMediaRepository {
     tx: DrizzleTx,
   ): Promise<boolean> {
     if (mediaIds.length === 0) return true;
-    
+
     const executor = this.getExecutor(tx);
     const ownedMedia = await executor
       .select({ mediaId: userUploadMediaTable.mediaId })
@@ -267,7 +267,7 @@ export class MediaRepository implements IMediaRepository {
           inArray(userUploadMediaTable.mediaId, mediaIds),
         ),
       );
-    
+
     const ownedIds = new Set(ownedMedia.map((m) => m.mediaId));
     return mediaIds.every((id) => ownedIds.has(id));
   }
@@ -280,16 +280,16 @@ export class MediaRepository implements IMediaRepository {
     tx: DrizzleTx,
   ): Promise<{ valid: boolean; invalidIds: string[] }> {
     if (mediaIds.length === 0) return { valid: true, invalidIds: [] };
-    
+
     const executor = this.getExecutor(tx);
     const existingMedia = await executor
       .select({ id: mediaTable.id })
       .from(mediaTable)
       .where(inArray(mediaTable.id, mediaIds));
-    
+
     const existingIds = new Set(existingMedia.map((m) => m.id));
     const invalidIds = mediaIds.filter((id) => !existingIds.has(id));
-    
+
     return {
       valid: invalidIds.length === 0,
       invalidIds,

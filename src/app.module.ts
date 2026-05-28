@@ -11,12 +11,11 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
 import { envSchema } from './_config/env.schema';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
-// import { ZodValidationPipe } from './common/pipes/zod.validation.pipe';
 import { UserApiModule } from './api/user/user-api.module';
 import { HashingModule } from './common/modules/hashing/hashing.module';
 import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
-import { TreeCategoriesModule } from './api/library/tree-categories/tree-categories.module';
+import { PublicApiModule } from './api/public/public.module';
 import { AdminApiModule } from './api/admin/admin-api.module';
 import { ShopApiModule } from './api/shop/shop-api.module';
 
@@ -31,11 +30,12 @@ import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-g
 import { UserAuthJWtGuardModule } from './common/guards/user-auth-jwt-guard/user-auth-jwt-guard.module';
 import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
+import { CartAccessGuardModule } from './common/guards/cart-access-guard/cart-access-guard.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
-
-import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { JwtModule } from '@nestjs/jwt';
+import * as morgan from 'morgan';
+import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware';
 
 @Module({
   imports: [
@@ -63,7 +63,7 @@ import { JwtModule } from '@nestjs/jwt';
     UserApiModule,
     AdminApiModule,
     ShopApiModule,
-    TreeCategoriesModule,
+    PublicApiModule,
     MediaModule,
     HashingModule,
     CookieModule,
@@ -76,6 +76,7 @@ import { JwtModule } from '@nestjs/jwt';
     UserAuthJWtGuardModule,
     VerifiedUserAuthGuardModule,
     AdminAuthGuardModule,
+    CartAccessGuardModule,
     AppEnvModule,
   ],
   controllers: [],
@@ -104,6 +105,22 @@ import { JwtModule } from '@nestjs/jwt';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*path');
+    consumer
+      .apply(GuestTokenMiddleware)
+      .forRoutes('*path');
+
+    consumer
+      .apply(
+        morgan(':date[iso] :method :url :status :response-time ms - :res[content-length]', {
+          // Skip logging successful responses in production to reduce noise
+          skip: (req, res) => {
+            if (process.env.NODE_ENV === 'production') {
+              return res.statusCode < 400; // Only log errors in production
+            }
+            return false; // Log everything in development
+          },
+        }),
+      )
+      .forRoutes('*path');
   }
 }

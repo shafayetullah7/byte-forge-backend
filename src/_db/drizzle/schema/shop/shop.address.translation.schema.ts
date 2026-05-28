@@ -8,9 +8,9 @@ import { languagesTable } from '../i18n/language.schema';
  *
  * Stores bilingual content (country, division, district, street) for shop addresses.
  * Each address has one row per locale (en, bn).
- * 
+ *
  * Pattern: Matches product_translations and shop_translations
- * 
+ *
  * Translatable fields: country, division, district, street
  * Non-translatable fields (in main table): postalCode, latitude, longitude, googleMapsLink
  */

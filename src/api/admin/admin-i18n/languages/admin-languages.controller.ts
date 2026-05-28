@@ -11,17 +11,12 @@ import { ResponseService } from '@/common/modules/response/response.service';
 import { AdminLanguagesService } from './admin-languages.service';
 import { CreateLanguageDto } from './dto/create-language.dto';
 import { UpdateLanguageDto } from './dto/update-language.dto';
+import { LanguageCodeParamDto } from './dto/language-code-param.dto';
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 
@@ -64,10 +59,10 @@ export class AdminLanguagesController {
   @ApiNotFoundResponse('Language')
   @Patch(':code')
   async update(
-    @Param('code') code: string,
+    @Param() param: LanguageCodeParamDto,
     @Body() updateDto: UpdateLanguageDto,
   ) {
-    const data = await this.languagesService.update(code, updateDto);
+    const data = await this.languagesService.update(param.code, updateDto);
     return this.responseService.success({
       data,
       message: 'Language updated successfully',

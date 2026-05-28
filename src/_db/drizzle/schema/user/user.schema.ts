@@ -10,7 +10,6 @@ import { sql } from 'drizzle-orm';
 
 export const userTable = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  // .default(sql`gen_random_uuid()`),
   firstName: varchar('first_name', { length: 50 }).notNull(),
   lastName: varchar('last_name', { length: 50 }).notNull(),
   userName: varchar('user_name', { length: 50 }).unique().notNull(),

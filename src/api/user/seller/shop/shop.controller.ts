@@ -3,12 +3,10 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
   Patch,
   Post,
   Put,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import {
@@ -33,12 +31,7 @@ import { SellerShopGuard } from '@/common/guards/seller-shop-guard/seller-shop.g
 import { ResponseService } from '@/common/modules/response/response.service';
 import { SuccessResponse } from '@/common/modules/response/dto/success.response.dto';
 import { TShop } from '@/_db/drizzle/schema';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import { ApiConsumes } from '@nestjs/swagger';
@@ -197,9 +190,10 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update shop info (branding + translations)',
-    description: 'Updates shop branding (logo, banner, colors) and bilingual translations (name, description, business hours). Handles media usage counting automatically.'
+    description:
+      'Updates shop branding (logo, banner, colors) and bilingual translations (name, description, business hours). Handles media usage counting automatically.',
   })
   @ApiResponse({ status: 200, description: 'Shop info updated' })
   @ApiBadRequestResponse()
@@ -223,9 +217,10 @@ export class ShopController {
   }
 
   @ApiAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Upsert shop contact information (contact + social media)',
-    description: 'Updates or inserts shop contact information including email, phone, messaging apps, and social media links. Partial updates supported - only provided fields will be updated.'
+    description:
+      'Updates or inserts shop contact information including email, phone, messaging apps, and social media links. Partial updates supported - only provided fields will be updated.',
   })
   @ApiResponse({ status: 200, description: 'Contact info upserted' })
   @ApiBadRequestResponse()

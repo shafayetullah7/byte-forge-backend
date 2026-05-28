@@ -1,4 +1,12 @@
-import { pgTable, uuid, varchar, integer, boolean, decimal, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  integer,
+  boolean,
+  decimal,
+  index,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productVariantsTable } from './product-variants.schema';
 
@@ -29,8 +37,10 @@ export const potVariantAttributesTable = pgTable(
   ],
 );
 
-export type TPotVariantAttributes = typeof potVariantAttributesTable.$inferSelect;
-export type TNewPotVariantAttributes = typeof potVariantAttributesTable.$inferInsert;
+export type TPotVariantAttributes =
+  typeof potVariantAttributesTable.$inferSelect;
+export type TNewPotVariantAttributes =
+  typeof potVariantAttributesTable.$inferInsert;
 
 export const potVariantAttributesRelations = relations(
   potVariantAttributesTable,

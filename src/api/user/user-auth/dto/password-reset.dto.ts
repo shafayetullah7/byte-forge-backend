@@ -1,35 +1,28 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class ForgotPasswordDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-}
+const forgotPasswordSchema = z.object({
+  email: z.string().email().min(1),
+});
 
-export class VerifyResetOtpDto {
-  @IsString()
-  @IsNotEmpty()
-  token: string;
+export class ForgotPasswordDto extends createZodDto(forgotPasswordSchema) {}
 
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  otp: string;
-}
+const verifyResetOtpSchema = z.object({
+  token: z.string().min(1),
+  otp: z.string().min(6),
+});
 
-export class ResendResetOtpDto {
-  @IsString()
-  @IsNotEmpty()
-  token: string;
-}
+export class VerifyResetOtpDto extends createZodDto(verifyResetOtpSchema) {}
 
-export class ResetPasswordDto {
-  @IsString()
-  @IsNotEmpty()
-  token: string;
+const resendResetOtpSchema = z.object({
+  token: z.string().min(1),
+});
 
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
-}
+export class ResendResetOtpDto extends createZodDto(resendResetOtpSchema) {}
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
+});
+
+export class ResetPasswordDto extends createZodDto(resetPasswordSchema) {}

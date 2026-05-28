@@ -8,43 +8,49 @@ const addressTranslationSchema = z.object({
   street: z.string().min(5).max(255),
 });
 
-export const updateShopAddressSchema = z.object({
-  // Non-translatable fields (optional for partial updates)
-  postalCode: z.string()
-    .min(4, { message: 'message.validation.minLength' })
-    .max(20, { message: 'message.validation.maxLength' })
-    .optional(),
-  
-  latitude: z.string()
-    .optional(),
-  
-  longitude: z.string()
-    .optional(),
-  
-  googleMapsLink: z.string()
-    .url({ message: 'message.validation.invalidUrl' })
-    .max(500, { message: 'message.validation.maxLength' })
-    .optional(),
-  
-  // Translations object (both languages required for complete address)
-  translations: z.object({
-    en: addressTranslationSchema,
-    bn: addressTranslationSchema,
-  }).optional(),
-}).refine(
-  (data) => {
-    // At least one field must be provided
-    return (
-      !!data.postalCode ||
-      !!data.latitude ||
-      !!data.longitude ||
-      !!data.googleMapsLink ||
-      !!data.translations
-    );
-  },
-  {
-    message: 'message.validation.atLeastOne',
-  }
-);
+export const updateShopAddressSchema = z
+  .object({
+    // Non-translatable fields (optional for partial updates)
+    postalCode: z
+      .string()
+      .min(4, { message: 'message.validation.minLength' })
+      .max(20, { message: 'message.validation.maxLength' })
+      .optional(),
 
-export class UpdateShopAddressDto extends createZodDto(updateShopAddressSchema) {}
+    latitude: z.string().optional(),
+
+    longitude: z.string().optional(),
+
+    googleMapsLink: z
+      .string()
+      .url({ message: 'message.validation.invalidUrl' })
+      .max(500, { message: 'message.validation.maxLength' })
+      .optional(),
+
+    // Translations object (both languages required for complete address)
+    translations: z
+      .object({
+        en: addressTranslationSchema,
+        bn: addressTranslationSchema,
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // At least one field must be provided
+      return (
+        !!data.postalCode ||
+        !!data.latitude ||
+        !!data.longitude ||
+        !!data.googleMapsLink ||
+        !!data.translations
+      );
+    },
+    {
+      message: 'message.validation.atLeastOne',
+    },
+  );
+
+export class UpdateShopAddressDto extends createZodDto(
+  updateShopAddressSchema,
+) {}

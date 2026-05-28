@@ -5,7 +5,7 @@ import { languagesTable } from '../i18n/language.schema';
 
 /**
  * Product Translations Table
- * 
+ *
  * Stores bilingual content (name, description) for products.
  * Each product has one row per locale (en, bn).
  */
@@ -27,7 +27,8 @@ export const productTranslationsTable = pgTable(
 );
 
 export type TProductTranslation = typeof productTranslationsTable.$inferSelect;
-export type TNewProductTranslation = typeof productTranslationsTable.$inferInsert;
+export type TNewProductTranslation =
+  typeof productTranslationsTable.$inferInsert;
 
 export const productTranslationsRelations = relations(
   productTranslationsTable,

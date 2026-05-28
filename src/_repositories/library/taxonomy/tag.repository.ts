@@ -176,4 +176,64 @@ export class TagRepository {
       })
       .where(eq(tagsTable.id, id));
   }
+
+  async incrementUsageCount(
+    id: string,
+    amount = 1,
+    tx?: DrizzleTx,
+  ): Promise<void> {
+    const executor = this.db.getExecutor(tx);
+    await executor
+      .update(tagsTable)
+      .set({
+        usageCount: sql`${tagsTable.usageCount} + ${amount}`,
+      })
+      .where(eq(tagsTable.id, id));
+  }
+
+  async findByIds(
+    ids: string[],
+    transaction?: TLockTransaction,
+  ): Promise<TTag[]> {
+    if (ids.length === 0) return [];
+    
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(tagsTable)
+      .where(and(inArray(tagsTable.id, ids), isNull(tagsTable.deletedAt)));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    return await lockQuery.execute();
+  }
+
+  async incrementUsageCountBatch(
+    tagIds: string[],
+    amount = 1,
+    tx?: DrizzleTx,
+  ): Promise<void> {
+    if (tagIds.length === 0) return;
+    
+    const executor = this.db.getExecutor(tx);
+    await executor
+      .update(tagsTable)
+      .set({
+        usageCount: sql`${tagsTable.usageCount} + ${amount}`,
+      })
+      .where(inArray(tagsTable.id, tagIds));
+  }
+
+  async decrementUsageCount(
+    id: string,
+    amount = 1,
+    tx?: DrizzleTx,
+  ): Promise<void> {
+    const executor = this.db.getExecutor(tx);
+    await executor
+      .update(tagsTable)
+      .set({
+        usageCount: sql`GREATEST(${tagsTable.usageCount} - ${amount}, 0)`,
+      })
+      .where(eq(tagsTable.id, id));
+  }
 }

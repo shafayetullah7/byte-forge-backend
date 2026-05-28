@@ -31,15 +31,15 @@ export const shopVerificationTable = pgTable('shop_verification', {
 
   // Shop-specific documents
   tradeLicenseNumber: varchar('trade_license_number', { length: 100 }),
-  tradeLicenseDocument: uuid('trade_license_document').references(
+  tradeLicenseDocumentId: uuid('trade_license_document_id').references(
     () => mediaTable.id,
     { onDelete: 'no action' },
   ),
   tinNumber: varchar('tin_number', { length: 100 }),
-  tinDocument: uuid('tin_document').references(() => mediaTable.id, {
+  tinDocumentId: uuid('tin_document_id').references(() => mediaTable.id, {
     onDelete: 'no action',
   }),
-  utilityBillDocument: uuid('utility_bill_document').references(
+  utilityBillDocumentId: uuid('utility_bill_document_id').references(
     () => mediaTable.id,
     { onDelete: 'no action' },
   ),
@@ -69,6 +69,18 @@ export const shopVerificationRelations = relations(
     shop: one(shopTable, {
       fields: [shopVerificationTable.shopId],
       references: [shopTable.id],
+    }),
+    tradeLicenseMedia: one(mediaTable, {
+      fields: [shopVerificationTable.tradeLicenseDocumentId],
+      references: [mediaTable.id],
+    }),
+    tinMedia: one(mediaTable, {
+      fields: [shopVerificationTable.tinDocumentId],
+      references: [mediaTable.id],
+    }),
+    utilityBillMedia: one(mediaTable, {
+      fields: [shopVerificationTable.utilityBillDocumentId],
+      references: [mediaTable.id],
     }),
   }),
 );
