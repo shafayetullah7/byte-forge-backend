@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { ShippingRatesService, ShippingRate } from './shipping-rates.service';
+import { GetShippingRatesService, ShippingRateResponse } from './services/get-shipping-rates.service';
 import { BulkUpdateShippingRatesDto } from './dto/update-shipping-rates.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { TAuthorizedShop } from '@/common/types';
@@ -19,6 +20,7 @@ import {
 @Controller({ path: 'user/seller/shipping-rates', version: '1' })
 export class ShippingRatesController {
   constructor(
+    private readonly getShippingRatesService: GetShippingRatesService,
     private readonly shippingRatesService: ShippingRatesService,
     private readonly responseService: ResponseService,
     private readonly i18n: I18nService,
@@ -28,7 +30,7 @@ export class ShippingRatesController {
   @ApiOperation({
     summary: 'Get shipping rates per district',
     description:
-      "Returns all district shipping rates configured for the seller's shop",
+      "Returns all district shipping rates configured for the seller's shop. Districts without a rate default to 0.",
   })
   @ApiResponse({ status: 200, description: 'Shipping rates retrieved' })
   @ApiUnauthorizedResponse()
@@ -37,8 +39,8 @@ export class ShippingRatesController {
   async getShippingRates(
     @AuthenticShop() shop: TAuthorizedShop,
     @I18nLang() lang: string,
-  ): Promise<SuccessResponse<ShippingRate[]>> {
-    const rates = await this.shippingRatesService.getShippingRates(shop.id);
+  ): Promise<SuccessResponse<ShippingRateResponse[]>> {
+    const rates = await this.getShippingRatesService.execute(shop.id, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.shippingRatesRetrieved', { lang }),
       data: rates,

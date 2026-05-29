@@ -6,13 +6,16 @@ import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 
+export type BulkShippingRateItem = {
+  districtId: string;
+  cost: string;
+};
+
 export type ShippingRate = {
   id: string;
   shopId: string;
   districtId: string;
   cost: string;
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 @Injectable()
@@ -24,21 +27,9 @@ export class ShippingRatesService {
     private readonly i18n: I18nService,
   ) {}
 
-  async getShippingRates(shopId: string): Promise<ShippingRate[]> {
-    const rates = await this.shopShippingRatesRepository.findByShop(shopId);
-    return rates.map((r) => ({
-      id: r.id,
-      shopId: r.shopId,
-      districtId: r.districtId,
-      cost: r.cost,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    }));
-  }
-
   async bulkUpdateShippingRates(
     shopId: string,
-    rates: { districtId: string; cost: string }[],
+    rates: BulkShippingRateItem[],
     lang: string,
   ): Promise<ShippingRate[]> {
     return this.db.transaction(async (tx) => {
@@ -66,8 +57,6 @@ export class ShippingRatesService {
         shopId: r.shopId,
         districtId: r.districtId,
         cost: r.cost,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
       }));
     });
   }
