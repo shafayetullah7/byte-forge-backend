@@ -9,6 +9,7 @@ import { shopAddressTable } from './shop.address.schema';
 import { shopBusinessTable } from './shop.business.schema';
 import { shopTranslationsTable } from './shop.translation.schema';
 import { shopContactTable } from './shop.contact.schema';
+import { shopShippingRatesTable } from './shop.shipping-rates.schema';
 
 export const shopStatusEnum = pgEnum('shop_status_enum', [
   ShopStatusEnum.DRAFT,
@@ -81,6 +82,7 @@ export const shopRelations = relations(shopTable, ({ one, many }) => ({
     fields: [shopTable.id],
     references: [shopContactTable.shopId],
   }),
+  shippingRates: many(shopShippingRatesTable),
 }));
 
 export type TShop = typeof shopTable.$inferSelect;

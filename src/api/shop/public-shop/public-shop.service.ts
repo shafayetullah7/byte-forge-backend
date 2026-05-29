@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
+import { ShopShippingRatesRepository } from '@/_repositories/business/shop.shipping-rates.repository/shop.shipping-rates.repository';
 import { ShopStatusEnum } from '@/_db/drizzle/enum';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class PublicShopService {
-  constructor(private readonly shopRepository: ShopRepository) {}
+  constructor(
+    private readonly shopRepository: ShopRepository,
+    private readonly shopShippingRatesRepository: ShopShippingRatesRepository,
+  ) {}
 
   async getPublicShopBySlug(slug: string, lang: string) {
     const shop = await this.shopRepository.getShopBySlug(slug);
@@ -44,6 +48,25 @@ export class PublicShopService {
         : null,
       address: shop.shopAddressTable ?? null,
       createdAt: shop.createdAt,
+    };
+  }
+
+  async getShippingRate(shopId: string, districtId: string) {
+    const rates = await this.shopShippingRatesRepository.findByShopAndDistricts(
+      shopId,
+      [districtId],
+    );
+
+    const rate = rates.find((r) => r.districtId === districtId);
+
+    if (!rate) {
+      return null;
+    }
+
+    return {
+      shopId: rate.shopId,
+      districtId: rate.districtId,
+      cost: rate.cost,
     };
   }
 }
