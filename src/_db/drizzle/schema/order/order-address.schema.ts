@@ -25,6 +25,7 @@ export const orderAddressTable = pgTable(
     state: varchar('state', { length: 100 }),
     postalCode: varchar('postal_code', { length: 20 }),
     country: varchar('country', { length: 100 }).notNull().default('Bangladesh'),
+    companyName: varchar('company_name', { length: 255 }),
     deliveryInstructions: text('delivery_instructions'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()

@@ -5,12 +5,20 @@ import {
   timestamp,
   boolean,
   json,
+  pgEnum,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user/user.schema';
+import { PaymentMethodEnum } from '../../enum';
 
-export const paymentMethodType = varchar('type', { length: 20 });
+export const paymentMethodTypeEnum = pgEnum('payment_method_type_enum', [
+  PaymentMethodEnum.COD,
+  PaymentMethodEnum.CARD,
+  PaymentMethodEnum.BKASH,
+  PaymentMethodEnum.NAGAD,
+  PaymentMethodEnum.SSLCOMMERCE,
+]);
 
 export const paymentMethodsTable = pgTable(
   'payment_methods',
@@ -19,7 +27,7 @@ export const paymentMethodsTable = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => userTable.id, { onDelete: 'cascade' }),
-    type: varchar('type', { length: 20 }).notNull(),
+    type: paymentMethodTypeEnum('type').notNull(),
     lastFour: varchar('last_four', { length: 4 }),
     expiry: varchar('expiry', { length: 7 }),
     isDefault: boolean('is_default').default(false).notNull(),

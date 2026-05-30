@@ -4,10 +4,22 @@ import {
   varchar,
   timestamp,
   text,
+  pgEnum,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shipmentsTable } from './shipments.schema';
+import { ShippingStatusEnum } from '../../enum';
+
+export const shipmentStatusEnum = pgEnum('shipping_status_enum', [
+  ShippingStatusEnum.PENDING,
+  ShippingStatusEnum.PICKED_UP,
+  ShippingStatusEnum.IN_TRANSIT,
+  ShippingStatusEnum.OUT_FOR_DELIVERY,
+  ShippingStatusEnum.DELIVERED,
+  ShippingStatusEnum.RETURNED,
+  ShippingStatusEnum.FAILED,
+]);
 
 export const shipmentStatusHistoryTable = pgTable(
   'shipment_status_history',
@@ -16,7 +28,7 @@ export const shipmentStatusHistoryTable = pgTable(
     shipmentId: uuid('shipment_id')
       .notNull()
       .references(() => shipmentsTable.id, { onDelete: 'cascade' }),
-    status: varchar('status', { length: 50 }).notNull(),
+    status: shipmentStatusEnum('status').notNull(),
     location: varchar('location', { length: 100 }),
     notes: text('notes'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })

@@ -505,6 +505,13 @@
       "when": 1780067298792,
       "tag": "0073_brief_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1780149931832,
+      "tag": "0074_public_the_executioner",
+      "breakpoints": true
     }
   ]
 }
