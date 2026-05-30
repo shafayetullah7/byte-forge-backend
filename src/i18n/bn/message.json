@@ -123,7 +123,13 @@
     "statRetrieved": "পরিসংখ্যান পুনরুদ্ধার করা হয়েছে",
     "languageRetrieved": "ভাষা পুনরুদ্ধার করা হয়েছে",
     "languageCreated": "ভাষা সফলভাবে তৈরি হয়েছে",
-    "languageUpdated": "ভাষা সফলভাবে আপডেট করা হয়েছে"
+    "languageUpdated": "ভাষা সফলভাবে আপডেট করা হয়েছে",
+    "addressCreated": "ঠিকানা সফলভাবে তৈরি হয়েছে",
+    "addressUpdated": "ঠিকানা সফলভাবে আপডেট করা হয়েছে",
+    "addressDeleted": "ঠিকানা সফলভাবে মুছে ফেলা হয়েছে",
+    "addressRetrieved": "ঠিকানা পুনরুদ্ধার করা হয়েছে",
+    "addressesRetrieved": "ঠিকানাগুলি সফলভাবে পুনরুদ্ধার করা হয়েছে",
+    "addressSetDefault": "ডিফল্ট ঠিকানা সফলভাবে সেট করা হয়েছে"
   },
   "email": {
     "verification": {

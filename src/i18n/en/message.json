@@ -123,7 +123,13 @@
     "statRetrieved": "Statistics retrieved successfully",
     "languageRetrieved": "Languages retrieved successfully",
     "languageCreated": "Language created successfully",
-    "languageUpdated": "Language updated successfully"
+    "languageUpdated": "Language updated successfully",
+    "addressCreated": "Address created successfully",
+    "addressUpdated": "Address updated successfully",
+    "addressDeleted": "Address deleted successfully",
+    "addressRetrieved": "Address retrieved successfully",
+    "addressesRetrieved": "Addresses retrieved successfully",
+    "addressSetDefault": "Default address set successfully"
   },
   "email": {
     "verification": {
