@@ -66,7 +66,6 @@ export class ShippingRatesController {
     const rates = await this.shippingRatesService.bulkUpdateShippingRates(
       shop.id,
       dto.rates,
-      lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.shippingRatesUpdated', { lang }),

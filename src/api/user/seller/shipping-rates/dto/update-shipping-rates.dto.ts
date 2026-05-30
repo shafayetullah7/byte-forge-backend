@@ -21,23 +21,6 @@ export const bulkUpdateShippingRatesSchema = z.object({
   }),
 });
 
-export const setAllShippingRatesSchema = z.object({
-  cost: z
-    .union([z.string(), z.number()])
-    .transform((val) => String(val))
-    .refine(
-      (val) => {
-        const num = parseFloat(val);
-        return !isNaN(num) && num >= 0 && num <= 999999.99;
-      },
-      { message: 'message.validation.invalidShippingCost' },
-    ),
-});
-
 export class BulkUpdateShippingRatesDto extends createZodDto(
   bulkUpdateShippingRatesSchema,
-) {}
-
-export class SetAllShippingRatesDto extends createZodDto(
-  setAllShippingRatesSchema,
 ) {}
