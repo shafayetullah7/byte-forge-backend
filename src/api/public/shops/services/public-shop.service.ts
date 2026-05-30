@@ -18,7 +18,6 @@ export class PublicShopService {
       throw new NotFoundException('Shop not found');
     }
 
-    // Only return active shops to public
     if (shop.status !== ShopStatusEnum.ACTIVE) {
       throw new NotFoundException('Shop not found');
     }
@@ -51,22 +50,5 @@ export class PublicShopService {
     };
   }
 
-  async getShippingRate(shopId: string, districtId: string) {
-    const rates = await this.shopShippingRatesRepository.findByShopAndDistricts(
-      shopId,
-      [districtId],
-    );
 
-    const rate = rates.find((r) => r.districtId === districtId);
-
-    if (!rate) {
-      return null;
-    }
-
-    return {
-      shopId: rate.shopId,
-      districtId: rate.districtId,
-      cost: rate.cost,
-    };
-  }
 }

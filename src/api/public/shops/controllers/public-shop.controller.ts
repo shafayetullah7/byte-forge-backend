@@ -1,13 +1,14 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { PublicShopService } from './public-shop.service';
+import { PublicShopService } from '../services/public-shop.service';
 import { ResponseService } from '@/common/modules/response/response.service';
-import { PublicShopSlugDto } from './dto/public-shop-slug.dto';
+import { PublicShopSlugDto } from '../dto/public-shop-slug.dto';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
 
 @ApiTags('🏪 Public - Shops')
-@Controller('public/shops')
+@Controller({ path: 'shops', version: '1' })
 export class PublicShopController {
   constructor(
     private readonly publicShopService: PublicShopService,
@@ -15,6 +16,7 @@ export class PublicShopController {
     private readonly i18n: I18nService,
   ) {}
 
+  @ApiAuth()
   @ApiOperation({
     summary: 'Get public shop by slug',
     description: 'Retrieves public shop information without authentication.',
@@ -36,23 +38,4 @@ export class PublicShopController {
     });
   }
 
-  @ApiOperation({
-    summary: 'Get shipping rate for a shop and district',
-    description:
-      'Retrieves the shipping cost for a specific shop delivering to a specific district. Returns null if no rate is configured.',
-  })
-  @ApiResponse({ status: 200, description: 'Shipping rate retrieved' })
-  @Get(':shopId/shipping-rate/:districtId')
-  async getShippingRate(
-    @Param() params: { shopId: string; districtId: string },
-  ) {
-    const rate = await this.publicShopService.getShippingRate(
-      params.shopId,
-      params.districtId,
-    );
-    return this.responseService.success({
-      message: 'Shipping rate retrieved',
-      data: rate,
-    });
-  }
 }

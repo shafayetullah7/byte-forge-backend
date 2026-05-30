@@ -17,7 +17,6 @@ import { CookieModule } from './common/modules/cookie/cookie.module';
 import { ResponseModule } from './common/modules/response/response.module';
 import { PublicApiModule } from './api/public/public.module';
 import { AdminApiModule } from './api/admin/admin-api.module';
-import { ShopApiModule } from './api/shop/shop-api.module';
 
 import { EmailModule } from './common/modules/email/email.module';
 import { AppConfigModule } from './common/modules/app-config/app-config.module';
@@ -63,7 +62,6 @@ import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware
     }),
     UserApiModule,
     AdminApiModule,
-    ShopApiModule,
     PublicApiModule,
     MediaModule,
     HashingModule,
