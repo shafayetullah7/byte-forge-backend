@@ -44,8 +44,8 @@ export const UpdateAddressSchema = z.object({
     .max(100)
     .optional(),
   companyName: z.string().trim().max(255).optional().nullable(),
-  deliveryInstructions: z.string().optional().nullable(),
-  billingNotes: z.string().optional().nullable(),
+  deliveryInstructions: z.string().trim().max(1000).optional().nullable(),
+  billingNotes: z.string().trim().max(1000).optional().nullable(),
   isDefault: z.boolean().optional(),
 });
 

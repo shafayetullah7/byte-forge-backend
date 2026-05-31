@@ -41,8 +41,8 @@ export const CreateAddressSchema = z.object({
     .max(100)
     .default('Bangladesh'),
   companyName: z.string().trim().max(255).optional(),
-  deliveryInstructions: z.string().optional(),
-  billingNotes: z.string().optional(),
+  deliveryInstructions: z.string().trim().max(1000, "Delivery instructions cannot exceed 1000 characters").optional(),
+  billingNotes: z.string().trim().max(1000, "Billing notes cannot exceed 1000 characters").optional(),
   isDefault: z.boolean().default(false),
 });
 
