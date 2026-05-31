@@ -38,7 +38,6 @@ export const userAddressesTable = pgTable(
     postalCode: varchar('postal_code', { length: 20 }),
     country: varchar('country', { length: 100 }).notNull().default('Bangladesh'),
     companyName: varchar('company_name', { length: 255 }),
-    gstin: varchar('gstin', { length: 20 }),
     deliveryInstructions: text('delivery_instructions'),
     billingNotes: text('billing_notes'),
     isDefault: boolean('is_default').default(false).notNull(),

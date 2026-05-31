@@ -51,7 +51,6 @@ export class GetAddressByIdService {
       postalCode: address.postalCode,
       country: address.country,
       companyName: address.companyName,
-      gstin: address.gstin,
       deliveryInstructions: address.deliveryInstructions,
       billingNotes: address.billingNotes,
       isDefault: address.isDefault,

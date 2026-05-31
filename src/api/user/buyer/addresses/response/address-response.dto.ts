@@ -11,7 +11,6 @@ export class AddressResponseDto {
   postalCode: string | null;
   country: string;
   companyName: string | null;
-  gstin: string | null;
   deliveryInstructions: string | null;
   billingNotes: string | null;
   isDefault: boolean;

@@ -41,7 +41,6 @@ export const CreateAddressSchema = z.object({
     .max(100)
     .default('Bangladesh'),
   companyName: z.string().trim().max(255).optional(),
-  gstin: z.string().trim().max(20).optional(),
   deliveryInstructions: z.string().optional(),
   billingNotes: z.string().optional(),
   isDefault: z.boolean().default(false),
