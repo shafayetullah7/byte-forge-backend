@@ -28,7 +28,7 @@
     "docker:test": "NODE_ENV=test docker compose --env-file .env.test up --abort-on-container-exit --exit-code-from app",
     "docker:test:build": "NODE_ENV=test docker compose --env-file .env.test build",
     "docker:test:down": "NODE_ENV=test docker compose --env-file .env.test down",
-    "docker:prod": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose --env-file .env.production up -d --remove-orphans",
+    "docker:prod": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose --env-file .env.production up --remove-orphans",
     "docker:prod:build": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose --env-file .env.production build --no-cache",
     "docker:prod:down": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose --env-file .env.production down",
     "docker:down": "NODE_ENV=development docker compose --env-file .env.development down",
