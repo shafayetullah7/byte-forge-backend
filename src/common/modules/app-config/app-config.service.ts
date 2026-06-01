@@ -55,6 +55,9 @@ export class AppConfigService {
   }
 
   // === Cloudinary ===
+  get cloudinaryCloudName(): AppEnv['CLOUDINARY_CLOUD_NAME'] {
+    return this.configService.getOrThrow('CLOUDINARY_CLOUD_NAME');
+  }
   get cloudinaryApiKey(): AppEnv['CLOUDINARY_API_KEY'] {
     return this.configService.getOrThrow('CLOUDINARY_API_KEY');
   }
