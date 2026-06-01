@@ -54,20 +54,7 @@ export class AppConfigService {
     return this.configService.getOrThrow('SALT_ROUNDS');
   }
 
-  // === Email ===
-  get gmailUser(): AppEnv['GMAIL_USER'] {
-    return this.configService.get('GMAIL_USER');
-  }
-  get gmailAppPassword(): AppEnv['GMAIL_APP_PASSWORD'] {
-    return this.configService.get('GMAIL_APP_PASSWORD');
-  }
-  get defaultFromEmail(): AppEnv['DEFAULT_FROM_EMAIL'] {
-    return this.configService.get('DEFAULT_FROM_EMAIL');
-  }
-
-  get cloudinaryCloudName(): AppEnv['CLOUDINARY_CLOUD_NAME'] {
-    return this.configService.getOrThrow('CLOUDINARY_CLOUD_NAME');
-  }
+  // === Cloudinary ===
   get cloudinaryApiKey(): AppEnv['CLOUDINARY_API_KEY'] {
     return this.configService.getOrThrow('CLOUDINARY_API_KEY');
   }
@@ -85,10 +72,10 @@ export class AppConfigService {
 
   // === Session & Cookie ===
   get sessionMaxAge(): AppEnv['SESSION_MAX_AGE'] {
-    return this.configService.get('SESSION_MAX_AGE') || 604800000;
+    return this.configService.getOrThrow('SESSION_MAX_AGE');
   }
   get cookieDomain(): AppEnv['COOKIE_DOMAIN'] {
-    return this.configService.get('COOKIE_DOMAIN');
+    return this.configService.getOrThrow('COOKIE_DOMAIN');
   }
 
   // === Mail ===

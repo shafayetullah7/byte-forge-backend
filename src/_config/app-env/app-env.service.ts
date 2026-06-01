@@ -94,19 +94,6 @@ export class AppEnvService {
     return this.configService.get('MAIL_FROM_EMAIL', { infer: true });
   }
 
-  // === Legacy SMTP ===
-  get GMAIL_USER() {
-    return this.configService.get('GMAIL_USER', { infer: true });
-  }
-
-  get GMAIL_APP_PASSWORD() {
-    return this.configService.get('GMAIL_APP_PASSWORD', { infer: true });
-  }
-
-  get DEFAULT_FROM_EMAIL() {
-    return this.configService.get('DEFAULT_FROM_EMAIL', { infer: true });
-  }
-
   // === Cloudinary ===
   get CLOUDINARY_CLOUD_NAME() {
     return this.configService.get('CLOUDINARY_CLOUD_NAME', { infer: true });

@@ -32,11 +32,7 @@ export const envSchema = z
     MAIL_FROM_NAME: z.string(),
     MAIL_FROM_EMAIL: z.string().email(),
 
-    // Legacy SMTP (kept for backwards compatibility)
-    GMAIL_USER: z.string().optional(),
-    GMAIL_APP_PASSWORD: z.string().optional(),
-    DEFAULT_FROM_EMAIL: z.string().email().optional(),
-
+    // === Cloudinary ===
     CLOUDINARY_CLOUD_NAME: z.string().nonempty().max(255),
     CLOUDINARY_API_KEY: z.string().nonempty().max(255),
     CLOUDINARY_API_SECRET: z.string().nonempty().max(255),
@@ -46,8 +42,8 @@ export const envSchema = z
     JWT_SECRET_RESET_ACCESS: z.string().min(32),
 
     // === Session & Cookie ===
-    SESSION_MAX_AGE: z.coerce.number().optional(),
-    COOKIE_DOMAIN: z.string().optional(),
+    SESSION_MAX_AGE: z.coerce.number(),
+    COOKIE_DOMAIN: z.string(),
 
     // === Admin JWT ===
     JWT_ADMIN_ACCESS_SECRET: z.string().min(32),
