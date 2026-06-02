@@ -41,7 +41,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio:docker": "NODE_ENV=${NODE_ENV:-development} docker compose --env-file .env.${NODE_ENV:-development} exec app pnpm run db:studio",
     "db:migrate:docker": "NODE_ENV=${NODE_ENV:-development} docker compose --env-file .env.${NODE_ENV:-development} exec app pnpm run db:migrate",
-    "db:seed": "ts-node -r tsconfig-paths/register src/_db/seeds/main.ts",
+    "db:seed": "node -r tsconfig-paths/register dist/_db/seeds/main.js",
     "db:seed:docker": "NODE_ENV=${NODE_ENV:-development} docker compose --env-file .env.${NODE_ENV:-development} exec app pnpm run db:seed",
     "preinstall": "npx only-allow pnpm"
   },
