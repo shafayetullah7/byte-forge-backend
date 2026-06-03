@@ -1,3 +1,5 @@
+DELETE FROM user_addresses;
+
 ALTER TABLE "user_addresses" ADD COLUMN "district_id" uuid NOT NULL;--> statement-breakpoint
 ALTER TABLE "user_addresses" ADD COLUMN "division_id" uuid NOT NULL;--> statement-breakpoint
 ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_district_id_districts_id_fk" FOREIGN KEY ("district_id") REFERENCES "public"."districts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
