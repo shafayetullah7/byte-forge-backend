@@ -22,9 +22,11 @@ import { ApiAuth, ApiOkResponseTyped, ApiCreatedResponseTyped, ApiPaginatedRespo
 import { ApiBadRequestResponse, ApiUnauthorizedResponse, ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
+import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 
 @ApiTags('📍 User Addresses')
 @Controller({ path: 'user/buyer/addresses', version: '1' })
+@UseGuards(UserAuthGuard)
 export class AddressesController {
   constructor(
     private readonly addressesService: AddressesService,
@@ -43,11 +45,15 @@ export class AddressesController {
     @Body() dto: CreateAddressDto,
     @I18nLang() lang: string,
   ) {
+    console.log('[Address Create] Request DTO:', JSON.stringify(dto, null, 2));
     const result = await this.addressesService.create(authUser.user.id, dto);
-    return this.responseService.success({
+    console.log('[Address Create] Result:', JSON.stringify(result, null, 2));
+    const response = this.responseService.success({
       message: this.i18n.t('message.success.addressCreated', { lang }),
       data: result,
     });
+    console.log('[Address Create] Full Response:', JSON.stringify(response, null, 2));
+    return response;
   }
 
   @ApiAuth()
