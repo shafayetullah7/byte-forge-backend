@@ -35,7 +35,8 @@ export const CreateAddressSchema = z.object({
     .string()
     .trim()
     .max(255, 'Address line 2 cannot exceed 255 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   districtId: z
     .string()
     .uuid('District ID is required'),
@@ -47,7 +48,8 @@ export const CreateAddressSchema = z.object({
     .trim()
     .max(20, 'Postal code cannot exceed 20 characters')
     .regex(POSTAL_CODE_PATTERN, 'Postal code must contain only digits')
-    .optional(),
+    .optional()
+    .nullable(),
   country: z
     .string()
     .trim()
@@ -58,17 +60,20 @@ export const CreateAddressSchema = z.object({
     .string()
     .trim()
     .max(255, 'Company name cannot exceed 255 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   deliveryInstructions: z
     .string()
     .trim()
     .max(1000, 'Delivery instructions cannot exceed 1000 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   billingNotes: z
     .string()
     .trim()
     .max(1000, 'Billing notes cannot exceed 1000 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   isDefault: z.boolean().default(false),
 });
 
