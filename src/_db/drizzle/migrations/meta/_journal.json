@@ -519,6 +519,13 @@
       "when": 1780202409478,
       "tag": "0075_cloudy_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1780457514376,
+      "tag": "0076_giant_iron_lad",
+      "breakpoints": true
     }
   ]
 }

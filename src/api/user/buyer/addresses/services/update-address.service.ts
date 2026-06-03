@@ -1,9 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import {
+  districtsTable,
+  divisionsTable,
+  userAddressesTable,
+} from '@/_db/drizzle/schema';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import { AddressResponseDto } from '../response/address-response.dto';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class UpdateAddressService {
@@ -18,6 +25,7 @@ export class UpdateAddressService {
     addressId: string,
     userId: string,
     dto: UpdateAddressDto,
+    locale: string = 'en',
   ): Promise<AddressResponseDto> {
     try {
       return await this.db.transaction(async (tx) => {
@@ -31,6 +39,23 @@ export class UpdateAddressService {
             message: 'Address not found',
             details: 'No address found with the given ID for this user',
           });
+        }
+
+        if (dto.districtId || dto.divisionId) {
+          const targetDistrictId = dto.districtId ?? existing.districtId;
+          const targetDivisionId = dto.divisionId ?? existing.divisionId;
+
+          const [district, division] = await Promise.all([
+            this.validateDistrict(targetDistrictId),
+            this.validateDivision(targetDivisionId),
+          ]);
+
+          if (district.divisionId !== division.id) {
+            throw CustomException.badRequest({
+              message: 'Invalid location',
+              details: 'The selected district does not belong to the selected division',
+            });
+          }
         }
 
         const effectiveType = dto.type ?? existing.type;
@@ -55,7 +80,7 @@ export class UpdateAddressService {
           });
         }
 
-        return this.mapToResponse(updated);
+        return this.mapToResponse(updated.id, locale);
       });
     } catch (error) {
       if (error instanceof CustomException) throw error;
@@ -67,7 +92,59 @@ export class UpdateAddressService {
     }
   }
 
-  private mapToResponse(address: any): AddressResponseDto {
+  private async validateDistrict(districtId: string) {
+    const district = await this.db.client.query.districtsTable.findFirst({
+      where: eq(districtsTable.id, districtId),
+      columns: { id: true, divisionId: true },
+    });
+
+    if (!district) {
+      throw CustomException.badRequest({
+        message: 'Invalid district',
+        details: `District with ID "${districtId}" does not exist`,
+      });
+    }
+
+    return district;
+  }
+
+  private async validateDivision(divisionId: string) {
+    const division = await this.db.client.query.divisionsTable.findFirst({
+      where: eq(divisionsTable.id, divisionId),
+      columns: { id: true },
+    });
+
+    if (!division) {
+      throw CustomException.badRequest({
+        message: 'Invalid division',
+        details: `Division with ID "${divisionId}" does not exist`,
+      });
+    }
+
+    return division;
+  }
+
+  private async mapToResponse(
+    addressId: string,
+    locale: string,
+  ): Promise<AddressResponseDto> {
+    const address = await this.db.client.query.userAddressesTable.findFirst({
+      where: eq(userAddressesTable.id, addressId),
+      with: {
+        district: { with: { translations: true } },
+        division: { with: { translations: true } },
+      },
+    });
+
+    if (!address) {
+      throw CustomException.databaseError({
+        message: 'Updated address not found',
+      });
+    }
+
+    const districtTranslation = resolveTranslation(address.district?.translations, locale);
+    const divisionTranslation = resolveTranslation(address.division?.translations, locale);
+
     return {
       id: address.id,
       type: address.type,
@@ -76,16 +153,16 @@ export class UpdateAddressService {
       phone: address.phone,
       addressLine1: address.addressLine1,
       addressLine2: address.addressLine2,
-      city: address.city,
-      state: address.state,
+      city: districtTranslation?.name ?? '',
+      state: divisionTranslation?.name ?? null,
       postalCode: address.postalCode,
       country: address.country,
       companyName: address.companyName,
       deliveryInstructions: address.deliveryInstructions,
       billingNotes: address.billingNotes,
       isDefault: address.isDefault,
-      createdAt: address.createdAt?.toISOString?.() ?? String(address.createdAt),
-      updatedAt: address.updatedAt?.toISOString?.() ?? String(address.updatedAt),
+      createdAt: address.createdAt.toISOString(),
+      updatedAt: address.updatedAt.toISOString(),
     };
   }
 }

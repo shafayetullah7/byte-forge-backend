@@ -45,14 +45,11 @@ export class AddressesController {
     @Body() dto: CreateAddressDto,
     @I18nLang() lang: string,
   ) {
-    console.log('[Address Create] Request DTO:', JSON.stringify(dto, null, 2));
-    const result = await this.addressesService.create(authUser.user.id, dto);
-    console.log('[Address Create] Result:', JSON.stringify(result, null, 2));
+    const result = await this.addressesService.create(authUser.user.id, dto, lang);
     const response = this.responseService.success({
       message: this.i18n.t('message.success.addressCreated', { lang }),
       data: result,
     });
-    console.log('[Address Create] Full Response:', JSON.stringify(response, null, 2));
     return response;
   }
 
@@ -66,10 +63,13 @@ export class AddressesController {
     @Query() query: AddressPaginationDto,
     @I18nLang() lang: string,
   ) {
+    console.log('[GET /addresses] params:', JSON.stringify(query, null, 2));
     const { addresses, total } = await this.addressesService.findAll(
       authUser.user.id,
+      lang,
       query,
     );
+    console.log('[GET /addresses] total:', total, 'data:', JSON.stringify(addresses, null, 2));
     return this.responseService.paginated({
       message: this.i18n.t('message.success.addressesRetrieved', { lang }),
       data: addresses,
@@ -92,7 +92,7 @@ export class AddressesController {
     @AuthenticUser() authUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const result = await this.addressesService.findById(params.id, authUser.user.id);
+    const result = await this.addressesService.findById(params.id, authUser.user.id, lang);
     return this.responseService.success({
       message: this.i18n.t('message.success.addressRetrieved', { lang }),
       data: result,
@@ -116,6 +116,7 @@ export class AddressesController {
       params.id,
       authUser.user.id,
       dto,
+      lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.addressUpdated', { lang }),
@@ -155,6 +156,7 @@ export class AddressesController {
     const result = await this.addressesService.setDefault(
       params.id,
       authUser.user.id,
+      lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.addressSetDefault', { lang }),

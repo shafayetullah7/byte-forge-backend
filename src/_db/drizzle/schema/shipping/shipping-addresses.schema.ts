@@ -10,6 +10,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user/user.schema';
+import { districtsTable } from '../location/district.schema';
+import { divisionsTable } from '../location/division.schema';
 import { AddressTypeEnum } from '../../enum';
 
 export const addressTypeEnum = pgEnum('address_type_enum', [
@@ -33,8 +35,12 @@ export const userAddressesTable = pgTable(
     phone: varchar('phone', { length: 20 }).notNull(),
     addressLine1: varchar('address_line1', { length: 255 }).notNull(),
     addressLine2: varchar('address_line2', { length: 255 }),
-    city: varchar('city', { length: 100 }).notNull(),
-    state: varchar('state', { length: 100 }),
+    districtId: uuid('district_id')
+      .notNull()
+      .references(() => districtsTable.id, { onDelete: 'restrict' }),
+    divisionId: uuid('division_id')
+      .notNull()
+      .references(() => divisionsTable.id, { onDelete: 'restrict' }),
     postalCode: varchar('postal_code', { length: 20 }),
     country: varchar('country', { length: 100 }).notNull().default('Bangladesh'),
     companyName: varchar('company_name', { length: 255 }),
@@ -53,6 +59,8 @@ export const userAddressesTable = pgTable(
     index('user_addresses_user_id_idx').on(t.userId),
     index('user_addresses_type_idx').on(t.userId, t.type),
     index('user_addresses_is_default_idx').on(t.userId, t.isDefault),
+    index('user_addresses_district_id_idx').on(t.districtId),
+    index('user_addresses_division_id_idx').on(t.divisionId),
   ],
 );
 
@@ -65,6 +73,14 @@ export const userAddressesRelations = relations(
     user: one(userTable, {
       fields: [userAddressesTable.userId],
       references: [userTable.id],
+    }),
+    district: one(districtsTable, {
+      fields: [userAddressesTable.districtId],
+      references: [districtsTable.id],
+    }),
+    division: one(divisionsTable, {
+      fields: [userAddressesTable.divisionId],
+      references: [divisionsTable.id],
     }),
   }),
 );

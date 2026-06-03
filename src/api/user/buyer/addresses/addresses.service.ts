@@ -24,30 +24,34 @@ export class AddressesService {
   async create(
     userId: string,
     dto: CreateAddressDto,
+    locale: string = 'en',
   ): Promise<AddressResponseDto> {
-    return this.createAddressService.execute(userId, dto);
+    return this.createAddressService.execute(userId, dto, locale);
   }
 
   async findAll(
     userId: string,
+    locale: string,
     pagination?: PaginationParams & { type?: 'shipping' | 'billing' | 'both' },
   ): Promise<{ addresses: AddressResponseDto[]; total: number }> {
-    return this.getAddressesService.execute(userId, pagination);
+    return this.getAddressesService.execute(userId, locale, pagination);
   }
 
   async findById(
     addressId: string,
     userId: string,
+    locale: string = 'en',
   ): Promise<AddressResponseDto> {
-    return this.getAddressByIdService.execute(addressId, userId);
+    return this.getAddressByIdService.execute(addressId, userId, locale);
   }
 
   async update(
     addressId: string,
     userId: string,
     dto: UpdateAddressDto,
+    locale: string = 'en',
   ): Promise<AddressResponseDto> {
-    return this.updateAddressService.execute(addressId, userId, dto);
+    return this.updateAddressService.execute(addressId, userId, dto, locale);
   }
 
   async delete(addressId: string, userId: string): Promise<void> {
@@ -57,7 +61,8 @@ export class AddressesService {
   async setDefault(
     addressId: string,
     userId: string,
+    locale: string = 'en',
   ): Promise<AddressResponseDto> {
-    return this.setDefaultAddressService.execute(addressId, userId);
+    return this.setDefaultAddressService.execute(addressId, userId, locale);
   }
 }
