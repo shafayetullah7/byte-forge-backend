@@ -74,6 +74,8 @@ export class GetAddressesService {
       phone: string;
       addressLine1: string;
       addressLine2: string | null;
+      districtId: string;
+      divisionId: string;
       postalCode: string | null;
       country: string;
       companyName: string | null;
@@ -105,6 +107,8 @@ export class GetAddressesService {
       phone: row.phone,
       addressLine1: row.addressLine1,
       addressLine2: row.addressLine2 ?? null,
+      districtId: row.districtId,
+      divisionId: row.divisionId,
       city: districtTranslation?.name ?? '',
       state: divisionTranslation?.name ?? null,
       postalCode: row.postalCode ?? null,

@@ -45,7 +45,7 @@ export class AddressesController {
     @Body() dto: CreateAddressDto,
     @I18nLang() lang: string,
   ) {
-    const result = await this.addressesService.create(authUser.user.id, dto, lang);
+    const result = await this.addressesService.create(authUser.user.id, dto);
     const response = this.responseService.success({
       message: this.i18n.t('message.success.addressCreated', { lang }),
       data: result,
@@ -116,7 +116,6 @@ export class AddressesController {
       params.id,
       authUser.user.id,
       dto,
-      lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.addressUpdated', { lang }),
@@ -156,7 +155,6 @@ export class AddressesController {
     const result = await this.addressesService.setDefault(
       params.id,
       authUser.user.id,
-      lang,
     );
     return this.responseService.success({
       message: this.i18n.t('message.success.addressSetDefault', { lang }),

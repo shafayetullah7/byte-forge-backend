@@ -56,6 +56,8 @@ export class GetAddressByIdService {
       phone: string;
       addressLine1: string;
       addressLine2: string | null;
+      districtId: string;
+      divisionId: string;
       postalCode: string | null;
       country: string;
       companyName: string | null;
@@ -80,6 +82,8 @@ export class GetAddressByIdService {
       phone: address.phone,
       addressLine1: address.addressLine1,
       addressLine2: address.addressLine2,
+      districtId: address.districtId,
+      divisionId: address.divisionId,
       city: districtTranslation?.name ?? '',
       state: divisionTranslation?.name ?? null,
       postalCode: address.postalCode,

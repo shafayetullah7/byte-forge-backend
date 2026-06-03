@@ -6,6 +6,8 @@ export class AddressResponseDto {
   phone: string;
   addressLine1: string;
   addressLine2: string | null;
+  districtId: string;
+  divisionId: string;
   city: string;
   state: string | null;
   postalCode: string | null;

@@ -8,6 +8,7 @@ import { SetDefaultAddressService } from './services/set-default-address.service
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { AddressResponseDto } from './response/address-response.dto';
+import { TUserAddress } from '@/_db/drizzle/schema';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
 
 @Injectable()
@@ -24,9 +25,8 @@ export class AddressesService {
   async create(
     userId: string,
     dto: CreateAddressDto,
-    locale: string = 'en',
-  ): Promise<AddressResponseDto> {
-    return this.createAddressService.execute(userId, dto, locale);
+  ): Promise<TUserAddress> {
+    return this.createAddressService.execute(userId, dto);
   }
 
   async findAll(
@@ -49,9 +49,8 @@ export class AddressesService {
     addressId: string,
     userId: string,
     dto: UpdateAddressDto,
-    locale: string = 'en',
-  ): Promise<AddressResponseDto> {
-    return this.updateAddressService.execute(addressId, userId, dto, locale);
+  ): Promise<TUserAddress> {
+    return this.updateAddressService.execute(addressId, userId, dto);
   }
 
   async delete(addressId: string, userId: string): Promise<void> {
@@ -61,8 +60,7 @@ export class AddressesService {
   async setDefault(
     addressId: string,
     userId: string,
-    locale: string = 'en',
-  ): Promise<AddressResponseDto> {
-    return this.setDefaultAddressService.execute(addressId, userId, locale);
+  ): Promise<TUserAddress> {
+    return this.setDefaultAddressService.execute(addressId, userId);
   }
 }
