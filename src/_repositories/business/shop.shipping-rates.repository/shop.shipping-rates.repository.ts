@@ -35,6 +35,7 @@ export class ShopShippingRatesRepository {
         target: [shopShippingRatesTable.shopId, shopShippingRatesTable.districtId],
         set: {
           cost: sql`EXCLUDED.cost`,
+          costPerKg: sql`EXCLUDED.cost_per_kg`,
         },
       })
       .returning();
