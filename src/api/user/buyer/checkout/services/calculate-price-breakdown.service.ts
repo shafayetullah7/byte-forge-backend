@@ -1,5 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CartRepository } from '@/_repositories/user/cart.repository';
+import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { shopShippingRatesTable } from '@/_db/drizzle/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -48,15 +49,31 @@ export class CalculatePriceBreakdownService {
 
   constructor(
     private readonly cartRepository: CartRepository,
+    private readonly addressRepository: UserAddressRepository,
     private readonly db: DrizzleService,
   ) {}
 
   async executeByCartId(
     cartId: string,
-    districtId: string,
+    addressId: string,
+    itemIds: string[],
     locale: string = 'en',
   ): Promise<PriceBreakdownResult> {
     try {
+      // Look up address to get district
+      const address = await this.addressRepository.findById(addressId);
+      if (!address) {
+        return {
+          subtotal: '0',
+          shipping: '0',
+          tax: '0',
+          total: '0',
+          shopBreakdowns: [],
+        };
+      }
+
+      const districtId = address.districtId;
+
       const cart = await this.cartRepository.getCartWithItemsAndShopById(cartId);
 
       if (!cart || cart.items.length === 0) {
@@ -69,7 +86,21 @@ export class CalculatePriceBreakdownService {
         };
       }
 
-      const variantIds = cart.items.map((item) => item.variantId);
+      // Filter to only selected items
+      const itemIdSet = new Set(itemIds);
+      const selectedItems = cart.items.filter((item) => itemIdSet.has(item.id));
+
+      if (selectedItems.length === 0) {
+        return {
+          subtotal: '0',
+          shipping: '0',
+          tax: '0',
+          total: '0',
+          shopBreakdowns: [],
+        };
+      }
+
+      const variantIds = selectedItems.map((item) => item.variantId);
       const inventories =
         await this.cartRepository.getInventoryByVariantIds(variantIds);
       const inventoryMap = new Map(
@@ -77,7 +108,7 @@ export class CalculatePriceBreakdownService {
       );
 
       // Build cart items with shop names
-      const items: CheckoutCartItem[] = cart.items.map((item) => {
+      const items: CheckoutCartItem[] = selectedItems.map((item) => {
         const variant = item.variant;
         const product = variant?.product;
         const shop = product?.shop;

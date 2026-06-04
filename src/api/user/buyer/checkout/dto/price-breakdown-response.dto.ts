@@ -1,9 +1,4 @@
-export type StockStatus =
-  | 'in_stock'
-  | 'low_stock'
-  | 'out_of_stock';
-
-export class CheckoutCartItemDto {
+export class PriceBreakdownItemDto {
   id: string;
   variantId: string;
   quantity: number;
@@ -14,7 +9,7 @@ export class CheckoutCartItemDto {
   shopId: string;
   shopName: string;
   thumbnail: { id: string; url: string } | null;
-  stockStatus: StockStatus;
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
   availableQuantity: number | null;
   variantTitle?: string;
   sku?: string;
@@ -23,7 +18,7 @@ export class CheckoutCartItemDto {
 export class ShopPriceBreakdownDto {
   shopId: string;
   shopName: string;
-  items: CheckoutCartItemDto[];
+  items: PriceBreakdownItemDto[];
   itemsSubtotal: string;
   shippingCost: string;
 }

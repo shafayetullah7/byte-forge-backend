@@ -1,12 +1,12 @@
 import {
   Controller,
-  Get,
-  Query,
+  Post,
+  Body,
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
 import { CalculatePriceBreakdownService } from './services/calculate-price-breakdown.service';
-import { CalculatePriceBreakdownQueryDto } from './dto/calculate-price-breakdown-query.dto';
+import { CalculatePriceBreakdownBodyDto } from './dto/calculate-price-breakdown-body.dto';
 import { PriceBreakdownResponseDto } from './dto/price-breakdown-response.dto';
 import { CartAccessGuard } from '@/common/guards/cart-access-guard/cart-access.guard';
 import { CartContextParam } from '@/common/decorators/cart-context.decorator';
@@ -39,23 +39,24 @@ export class CheckoutController {
   @ApiOperation({
     summary: 'Calculate price breakdown',
     description:
-      'Calculates the complete price breakdown for the current cart including items subtotal, per-shop shipping costs, tax, and total based on the delivery district.',
+      'Calculates the complete price breakdown for selected cart items including items subtotal, per-shop shipping costs, tax, and total based on the shipping address district.',
   })
   @ApiOkResponseTyped(PriceBreakdownResponseDto, 'Price breakdown calculated successfully')
   @ApiUnauthorizedResponse()
-  @ApiBadRequestResponse('Invalid district ID or empty cart')
+  @ApiBadRequestResponse('Invalid address ID, empty itemIds, or validation failed')
   @ApiNotFoundResponse('Cart not found')
-  @Get('price-breakdown')
+  @Post('price-breakdown')
   @UseGuards(CartAccessGuard)
   async calculatePriceBreakdown(
-    @Query() query: CalculatePriceBreakdownQueryDto,
+    @Body() body: CalculatePriceBreakdownBodyDto,
     @CartContextParam() cartContext: CartContextType,
     @I18nLang() lang: string,
   ) {
     const resolved = await this.resolveCartContext(cartContext);
     const breakdown = await this.calculatePriceBreakdownService.executeByCartId(
       resolved.cartId,
-      query.districtId,
+      body.addressId,
+      body.itemIds,
       lang,
     );
 
