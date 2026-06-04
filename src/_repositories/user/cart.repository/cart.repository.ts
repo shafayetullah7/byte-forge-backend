@@ -439,4 +439,76 @@ export class CartRepository {
       },
     });
   }
+
+  async getCartWithItemsAndShopById(cartId: string) {
+    return await this.db.client.query.cartsTable.findFirst({
+      where: eq(cartsTable.id, cartId),
+      with: {
+        items: {
+          with: {
+            variant: {
+              columns: {
+                sku: true,
+                price: true,
+                isActive: true,
+              },
+              with: {
+                product: {
+                  columns: {
+                    id: true,
+                    slug: true,
+                    productType: true,
+                    status: true,
+                    shopId: true,
+                    thumbnailId: true,
+                  },
+                  with: {
+                    thumbnail: {
+                      columns: { id: true, url: true },
+                    },
+                    translations: {
+                      columns: {
+                        locale: true,
+                        name: true,
+                        shortDescription: true,
+                      },
+                    },
+                    shop: {
+                      columns: {
+                        id: true,
+                      },
+                      with: {
+                        translations: {
+                          columns: {
+                            locale: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                plantAttributes: {
+                  columns: {
+                    growthStage: true,
+                    plantForm: true,
+                    variegation: true,
+                    leafDensity: true,
+                    containerType: true,
+                    containerSize: true,
+                  },
+                },
+                translations: {
+                  columns: {
+                    locale: true,
+                    title: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }

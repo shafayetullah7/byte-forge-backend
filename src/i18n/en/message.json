@@ -129,7 +129,17 @@
     "addressDeleted": "Address deleted successfully",
     "addressRetrieved": "Address retrieved successfully",
     "addressesRetrieved": "Addresses retrieved successfully",
-    "addressSetDefault": "Default address set successfully"
+    "addressSetDefault": "Default address set successfully",
+    "cartRetrieved": "Cart retrieved successfully",
+    "itemAddedToCart": "Item added to cart successfully",
+    "cartItemUpdated": "Cart item updated successfully",
+    "cartItemRemoved": "Cart item removed successfully",
+    "cartCleared": "Cart cleared successfully",
+    "cartValidated": "Cart validated successfully",
+    "cartItemsBulkUpdated": "Cart items updated successfully",
+    "cartItemsBulkRemoved": "Cart items removed successfully",
+    "cartMerged": "Cart merged successfully",
+    "priceBreakdownCalculated": "Price breakdown calculated successfully"
   },
   "email": {
     "verification": {

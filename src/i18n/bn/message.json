@@ -129,7 +129,17 @@
     "addressDeleted": "ঠিকানা সফলভাবে মুছে ফেলা হয়েছে",
     "addressRetrieved": "ঠিকানা পুনরুদ্ধার করা হয়েছে",
     "addressesRetrieved": "ঠিকানাগুলি সফলভাবে পুনরুদ্ধার করা হয়েছে",
-    "addressSetDefault": "ডিফল্ট ঠিকানা সফলভাবে সেট করা হয়েছে"
+    "addressSetDefault": "ডিফল্ট ঠিকানা সফলভাবে সেট করা হয়েছে",
+    "cartRetrieved": "কার্ট সফলভাবে পুনরুদ্ধার করা হয়েছে",
+    "itemAddedToCart": "আইটেম সফলভাবে কার্টে যোগ করা হয়েছে",
+    "cartItemUpdated": "কার্ট আইটেম সফলভাবে আপডেট করা হয়েছে",
+    "cartItemRemoved": "কার্ট আইটেম সফলভাবে মুছে ফেলা হয়েছে",
+    "cartCleared": "কার্ট সফলভাবে খালি করা হয়েছে",
+    "cartValidated": "কার্ট সফলভাবে যাচাই করা হয়েছে",
+    "cartItemsBulkUpdated": "কার্ট আইটেমগুলি সফলভাবে আপডেট করা হয়েছে",
+    "cartItemsBulkRemoved": "কার্ট আইটেমগুলি সফলভাবে মুছে ফেলা হয়েছে",
+    "cartMerged": "কার্ট সফলভাবে একত্রিত করা হয়েছে",
+    "priceBreakdownCalculated": "মূল্যের বিবরণ সফলভাবে গণনা করা হয়েছে"
   },
   "email": {
     "verification": {
