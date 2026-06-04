@@ -5,6 +5,7 @@ import { ShopShippingRatesRepository } from '@/_repositories/business/shop.shipp
 export type BulkShippingRateItem = {
   districtId: string;
   cost: string;
+  costPerKg?: string;
 };
 
 export type ShippingRate = {
@@ -12,6 +13,7 @@ export type ShippingRate = {
   shopId: string;
   districtId: string;
   cost: string;
+  costPerKg: string;
 };
 
 @Injectable()
@@ -37,6 +39,7 @@ export class ShippingRatesService {
         shopId: r.shopId,
         districtId: r.districtId,
         cost: r.cost,
+        costPerKg: r.costPerKg,
       }));
     });
   }

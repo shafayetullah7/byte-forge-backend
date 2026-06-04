@@ -13,6 +13,17 @@ export const bulkShippingRateItemSchema = z.object({
       },
       { message: 'message.validation.invalidShippingCost' },
     ),
+  costPerKg: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => (val !== undefined ? String(val) : '0'))
+    .refine(
+      (val) => {
+        const num = parseFloat(val);
+        return !isNaN(num) && num >= 0 && num <= 999999.99;
+      },
+      { message: 'message.validation.invalidShippingCostPerKg' },
+    ),
 });
 
 export const bulkUpdateShippingRatesSchema = z.object({

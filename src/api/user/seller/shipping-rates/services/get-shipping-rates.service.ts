@@ -9,6 +9,7 @@ export type ShippingRateResponse = {
   districtName: string;
   divisionName: string;
   cost: string;
+  costPerKg: string;
 };
 
 @Injectable()
@@ -32,20 +33,22 @@ export class GetShippingRatesService {
       where: and(eq(shopShippingRatesTable.shopId, shopId)),
     });
 
-    const rateMap = new Map<string, string>();
+    const rateMap = new Map<string, { cost: string; costPerKg: string }>();
     for (const rate of rates) {
-      rateMap.set(rate.districtId, rate.cost);
+      rateMap.set(rate.districtId, { cost: rate.cost, costPerKg: rate.costPerKg });
     }
 
     return districts.map((district) => {
       const districtTranslation = resolveTranslation(district.translations, lang);
       const divisionTranslation = resolveTranslation(district.division.translations, lang);
+      const rate = rateMap.get(district.id);
 
       return {
         districtId: district.id,
         districtName: districtTranslation?.name ?? 'Unnamed District',
         divisionName: divisionTranslation?.name ?? 'Unnamed Division',
-        cost: rateMap.get(district.id) ?? '0',
+        cost: rate?.cost ?? '0',
+        costPerKg: rate?.costPerKg ?? '0',
       };
     });
   }

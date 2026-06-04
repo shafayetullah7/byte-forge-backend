@@ -20,6 +20,7 @@ export const shopShippingRatesTable = pgTable(
       .notNull()
       .references(() => districtsTable.id, { onDelete: 'cascade' }),
     cost: decimal('cost', { precision: 10, scale: 2 }).notNull(),
+    costPerKg: decimal('cost_per_kg', { precision: 10, scale: 2 }).notNull().default('0'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),

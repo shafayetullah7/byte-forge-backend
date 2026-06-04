@@ -14,7 +14,7 @@ export class ShopShippingRatesRepository {
 
   async upsertBulk(
     shopId: string,
-    rates: { districtId: string; cost: string }[],
+    rates: { districtId: string; cost: string; costPerKg?: string }[],
     tx?: DrizzleTx,
   ): Promise<TShopShippingRate[]> {
     const executor = this.db.getExecutor(tx);
@@ -23,6 +23,7 @@ export class ShopShippingRatesRepository {
       shopId,
       districtId: r.districtId,
       cost: r.cost,
+      costPerKg: r.costPerKg ?? '0',
     }));
 
     if (values.length === 0) return [];
