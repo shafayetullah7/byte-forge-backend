@@ -1,0 +1,1 @@
+ALTER TABLE "shop_shipping_rates" ADD COLUMN "cost_per_kg" numeric(10, 2) DEFAULT '0' NOT NULL;
