@@ -28,7 +28,6 @@ import {
   ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
 
 @ApiTags('💳 Checkout')
 @Controller({ path: 'user/buyer/checkout', version: '1' })
@@ -74,9 +73,9 @@ export class CheckoutController {
 
   @ApiAuth()
   @ApiOperation({
-    summary: 'Place order (Cash on Delivery)',
+    summary: 'Place order',
     description:
-      'Creates orders for selected cart items with Cash on Delivery payment method. Groups items by shop into separate orders under one order group.',
+      'Creates orders for selected cart items with the specified payment method. Groups items by shop into separate orders under one order group.',
   })
   @ApiOkResponseTyped(PlaceOrderResponseDto, 'Order placed successfully')
   @ApiUnauthorizedResponse()
@@ -100,7 +99,7 @@ export class CheckoutController {
       cartContext.userId,
       body.addressId,
       body.itemIds,
-      PaymentMethodEnum.COD,
+      body.paymentMethod,
       body.notes,
     );
 

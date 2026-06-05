@@ -3,8 +3,8 @@ import { CartRepository } from '@/_repositories/user/cart.repository';
 import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { shopShippingRatesTable, districtsTable, districtTranslationsTable, orderGroupsTable } from '@/_db/drizzle/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { shopShippingRatesTable, districtsTable, districtTranslationsTable, orderGroupsTable, ordersTable } from '@/_db/drizzle/schema';
+import { eq, and, inArray, desc, like } from 'drizzle-orm';
 import { OrderStatusEnum, PaymentStatusEnum } from '@/_db/drizzle/enum';
 import type { TPaymentMethod } from '@/_db/drizzle/enum/payment-method.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
@@ -179,7 +179,22 @@ export class PlaceOrderService {
         { tx },
       );
 
-      let orderCounter = 0;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const prefix = `BF-${year}-${month}-`;
+
+      const lastOrder = await this.db.client
+        .select({ orderNumber: ordersTable.orderNumber })
+        .from(ordersTable)
+        .where(like(ordersTable.orderNumber, `${prefix}%`))
+        .orderBy(desc(ordersTable.orderNumber))
+        .limit(1)
+        .execute();
+
+      let orderCounter = lastOrder.length > 0
+        ? parseInt(lastOrder[0].orderNumber.split('-').pop() ?? '0', 10)
+        : 0;
 
       for (const [shopId, shopItems] of shopGroups) {
         const itemsSubtotal = shopItems.reduce(
@@ -193,8 +208,7 @@ export class PlaceOrderService {
         groupTotal += shopTotal;
         orderCounter++;
 
-        const now = new Date();
-        const orderNumber = `BF-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(orderCounter).padStart(4, '0')}`;
+        const orderNumber = `${prefix}${String(orderCounter).padStart(4, '0')}`;
 
         const order = await this.orderRepository.createOrder(
           {

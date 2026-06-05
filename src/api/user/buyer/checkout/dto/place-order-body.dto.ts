@@ -7,7 +7,7 @@ export const PlaceOrderBodySchema = z.object({
   itemIds: z
     .array(UUIDSchema)
     .min(1, 'At least one item must be selected'),
-  paymentMethod: z.enum(['COD']).default('COD'),
+  paymentMethod: z.enum(['COD', 'CARD', 'BKASH', 'NAGAD', 'SSLCOMMERCE']).default('COD'),
   notes: z.string().max(1000).optional(),
 });
 
