@@ -1,17 +1,18 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetOrdersService } from './services/get-orders.service';
 import { GetOrderStatsService } from './services/get-order-stats.service';
 import { OrdersFilterDto } from './dto/orders-pagination.dto';
-import { GetOrdersResponseDto, OrderStatsResponseDto } from './response/orders-response.dto';
+import {
+  GetOrdersResponseDto,
+  OrderStatsResponseDto,
+} from './response/orders-response.dto';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { ApiAuth, ApiOkResponseTyped } from '@/common/decorators/swagger.decorators';
+import {
+  ApiAuth,
+  ApiOkResponseTyped,
+} from '@/common/decorators/swagger.decorators';
 import { ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
@@ -42,7 +43,12 @@ export class OrdersController {
     @Query() query: OrdersFilterDto,
     @I18nLang() lang: string,
   ) {
-    const result = await this.getOrdersService.execute(authUser.user.id, query);
+    console.log({ lang });
+    const result = await this.getOrdersService.execute(
+      authUser.user.id,
+      query,
+      lang,
+    );
 
     return this.responseService.success({
       message: this.i18n.t('message.success.ordersRetrieved', { lang }),
@@ -63,7 +69,10 @@ export class OrdersController {
     description:
       'Returns aggregated order statistics (total, active, delivered, cancelled, total spent) for the authenticated buyer.',
   })
-  @ApiOkResponseTyped(OrderStatsResponseDto, 'Order statistics retrieved successfully')
+  @ApiOkResponseTyped(
+    OrderStatsResponseDto,
+    'Order statistics retrieved successfully',
+  )
   @ApiUnauthorizedResponse()
   @Get('stats')
   async getOrderStats(

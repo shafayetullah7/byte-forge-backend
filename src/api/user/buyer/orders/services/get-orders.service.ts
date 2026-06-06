@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrdersFilterDto } from '../dto/orders-pagination.dto';
+import { TShopTranslation, TProductTranslation } from '@/_db/drizzle/schema';
+import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 @Injectable()
 export class GetOrdersService {
@@ -9,6 +11,7 @@ export class GetOrdersService {
   async execute(
     userId: string,
     filters: OrdersFilterDto,
+    lang: string = 'en',
   ) {
     const result = await this.orderRepository.getBuyerOrderGroupsPaginated({
       userId,
@@ -19,6 +22,7 @@ export class GetOrdersService {
       orderStatus: filters.orderStatus,
       paymentStatus: filters.paymentStatus,
       search: filters.search,
+      lang,
     });
 
     return {
@@ -27,7 +31,8 @@ export class GetOrdersService {
         totalAmount: group.totalAmount,
         createdAt: group.createdAt,
         orders: group.orders.map((order: any) => {
-          const shopName = order.shop?.translations?.[0]?.name ?? 'Unknown Shop';
+          const shopTranslation = resolveTranslation<TShopTranslation>(order.shop?.translations, lang);
+          const shopName = shopTranslation?.name ?? 'Unknown Shop';
           const shopLogo = order.shop?.logo?.url ?? null;
           return {
             id: order.id,
@@ -39,16 +44,19 @@ export class GetOrdersService {
             paymentStatus: order.paymentStatus,
             total: order.total,
             createdAt: order.createdAt,
-            items: order.items.map((item: any) => ({
-              id: item.id,
-              productName: item.productName,
-              variantTitle: item.variantTitle,
-              quantity: item.quantity,
-              total: (parseFloat(item.unitPrice) * item.quantity).toFixed(2),
-              thumbnail: item.product?.thumbnail
-                ? { id: item.product.thumbnail.id, url: item.product.thumbnail.url }
-                : null,
-            })),
+            items: order.items.map((item: any) => {
+              const productTranslation = resolveTranslation<TProductTranslation>(item.product?.translations, lang);
+              return {
+                id: item.id,
+                productName: productTranslation?.name ?? item.productName,
+                variantTitle: item.variantTitle,
+                quantity: item.quantity,
+                total: (parseFloat(item.unitPrice) * item.quantity).toFixed(2),
+                thumbnail: item.product?.thumbnail
+                  ? { id: item.product.thumbnail.id, url: item.product.thumbnail.url }
+                  : null,
+              };
+            }),
           };
         }),
       })),

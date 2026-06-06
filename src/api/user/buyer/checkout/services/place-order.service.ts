@@ -60,6 +60,7 @@ export class PlaceOrderService {
     itemIds: string[],
     paymentMethod: TPaymentMethod,
     notes?: string,
+    lang: string = 'en',
   ): Promise<PlaceOrderResult> {
     if (paymentMethod !== PaymentMethodEnum.COD) {
       throw new BadRequestException('Only Cash on Delivery (COD) is currently supported');
@@ -94,9 +95,9 @@ export class PlaceOrderService {
       const variant = item.variant;
       const product = variant?.product;
       const shop = product?.shop;
-      const translation = product?.translations?.find((t) => t.locale === 'en');
-      const variantTranslation = variant?.translations?.find((t) => t.locale === 'en');
-      const shopTranslation = resolveTranslation(shop?.translations ?? null, 'en');
+      const translation = product?.translations?.find((t) => t.locale === lang);
+      const variantTranslation = variant?.translations?.find((t) => t.locale === lang);
+      const shopTranslation = resolveTranslation(shop?.translations ?? null, lang);
 
       return {
         id: item.id,
@@ -160,7 +161,7 @@ export class PlaceOrderService {
       .leftJoin(districtTranslationsTable, eq(districtsTable.id, districtTranslationsTable.districtId))
       .where(and(
         eq(districtsTable.id, districtId),
-        eq(districtTranslationsTable.locale, 'en'),
+        eq(districtTranslationsTable.locale, lang),
       ))
       .execute();
 

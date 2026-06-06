@@ -37,6 +37,7 @@ export interface GetBuyerOrderGroupsParams {
   orderStatus?: string;
   paymentStatus?: string;
   search?: string;
+  lang?: string;
 }
 
 @Injectable()
@@ -182,6 +183,7 @@ export class OrderRepository {
       orderStatus,
       paymentStatus,
       search,
+      lang = 'en',
     } = params;
 
     const offset = (page - 1) * limit;
@@ -212,7 +214,7 @@ export class OrderRepository {
               SELECT 1 FROM shop_translations st
               JOIN shops s ON st.shop_id = s.id
               WHERE s.id = ${ordersTable.shopId}
-              AND st.locale = 'en'
+              AND st.locale = ${lang}
               AND LOWER(st.name) LIKE ${searchLower}
             )`,
             sql`EXISTS (
@@ -266,6 +268,9 @@ export class OrderRepository {
                 product: {
                   with: {
                     thumbnail: true,
+                    translations: {
+                      where: (t: any) => eq(t.locale, lang),
+                    },
                   },
                 },
               },
@@ -277,7 +282,7 @@ export class OrderRepository {
             shop: {
               with: {
                 translations: {
-                  where: (t: any) => eq(t.locale, 'en'),
+                  where: (t: any) => eq(t.locale, lang),
                 },
                 logo: true,
               },

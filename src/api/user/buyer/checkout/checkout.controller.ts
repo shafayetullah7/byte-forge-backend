@@ -101,6 +101,7 @@ export class CheckoutController {
       body.itemIds,
       body.paymentMethod,
       body.notes,
+      lang,
     );
 
     return this.responseService.success({
