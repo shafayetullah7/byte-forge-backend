@@ -139,7 +139,8 @@
     "cartItemsBulkUpdated": "কার্ট আইটেমগুলি সফলভাবে আপডেট করা হয়েছে",
     "cartItemsBulkRemoved": "কার্ট আইটেমগুলি সফলভাবে মুছে ফেলা হয়েছে",
     "cartMerged": "কার্ট সফলভাবে একত্রিত করা হয়েছে",
-    "priceBreakdownCalculated": "মূল্যের বিবরণ সফলভাবে গণনা করা হয়েছে"
+    "priceBreakdownCalculated": "মূল্যের বিবরণ সফলভাবে গণনা করা হয়েছে",
+    "ordersRetrieved": "অর্ডারগুলি সফলভাবে পুনরুদ্ধার করা হয়েছে"
   },
   "email": {
     "verification": {

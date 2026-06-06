@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, count, desc, and, or, like, sql } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ordersTable,
@@ -19,6 +19,25 @@ import {
 } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
 import { TLockTransaction } from '@/_repositories/_types/lock.transaction';
+
+export interface BuyerOrderStats {
+  total: number;
+  active: number;
+  delivered: number;
+  cancelled: number;
+  totalSpent: string;
+}
+
+export interface GetBuyerOrderGroupsParams {
+  userId: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  orderStatus?: string;
+  paymentStatus?: string;
+  search?: string;
+}
 
 @Injectable()
 export class OrderRepository {
@@ -124,5 +143,156 @@ export class OrderRepository {
       },
     });
     return orders;
+  }
+
+  async getBuyerOrderStats(userId: string): Promise<BuyerOrderStats> {
+    const allGroups = await this.db.client.query.orderGroupsTable.findMany({
+      where: eq(orderGroupsTable.userId, userId),
+      with: {
+        orders: true,
+      },
+    });
+
+    const activeStatuses = ['PENDING_PAYMENT', 'CONFIRMED', 'PROCESSING', 'SHIPPED'];
+
+    return {
+      total: allGroups.length,
+      active: allGroups.filter((g) => g.orders.some((o) => activeStatuses.includes(o.status))).length,
+      delivered: allGroups.filter((g) => g.orders.some((o) => o.status === 'DELIVERED')).length,
+      cancelled: allGroups.filter((g) => g.orders.some((o) => o.status === 'CANCELLED')).length,
+      totalSpent: allGroups
+        .filter((g) => g.orders.some((o) => o.status === 'DELIVERED'))
+        .reduce((sum, g) => sum + parseFloat(g.totalAmount), 0)
+        .toFixed(0),
+    };
+  }
+
+  async getBuyerOrderGroupsPaginated(
+    params: GetBuyerOrderGroupsParams,
+  ): Promise<{
+    groups: (TOrderGroup & { orders: (TOrder & { items: TOrderItem[]; address: TOrderAddress | undefined; statusHistory: TOrderStatusHistory[] })[] })[];
+    total: number;
+  }> {
+    const {
+      userId,
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      orderStatus,
+      paymentStatus,
+      search,
+    } = params;
+
+    const offset = (page - 1) * limit;
+
+    // Build base where for user
+    const userWhere = eq(orderGroupsTable.userId, userId);
+
+    // If filtering by order status or payment status, we need to find groupIds that match
+    let filteredGroupIds: string[] | undefined;
+
+    if (orderStatus || paymentStatus || search) {
+      const orderConditions: any[] = [eq(ordersTable.userId, userId)];
+
+      if (orderStatus) {
+        orderConditions.push(eq(ordersTable.status, orderStatus as any));
+      }
+
+      if (paymentStatus) {
+        orderConditions.push(eq(ordersTable.paymentStatus, paymentStatus as any));
+      }
+
+      if (search) {
+        const searchLower = `%${search.toLowerCase()}%`;
+        orderConditions.push(
+          or(
+            like(ordersTable.orderNumber, searchLower),
+            sql`EXISTS (
+              SELECT 1 FROM shop_translations st
+              JOIN shops s ON st.shop_id = s.id
+              WHERE s.id = ${ordersTable.shopId}
+              AND st.locale = 'en'
+              AND LOWER(st.name) LIKE ${searchLower}
+            )`,
+            sql`EXISTS (
+              SELECT 1 FROM ${orderItemsTable} oi
+              WHERE oi.order_id = ${ordersTable.id}
+              AND LOWER(oi.product_name) LIKE ${searchLower}
+            )`,
+          ),
+        );
+      }
+
+      const matchingOrders = await this.db.client
+        .select({ groupId: ordersTable.groupId })
+        .from(ordersTable)
+        .where(and(...orderConditions))
+        .execute();
+
+      filteredGroupIds = matchingOrders
+        .map((o) => o.groupId)
+        .filter((id): id is string => id !== null);
+
+      if (filteredGroupIds.length === 0) {
+        return { groups: [], total: 0 };
+      }
+    }
+
+    // Build group where
+    const groupWhere = filteredGroupIds
+      ? and(userWhere, inArray(orderGroupsTable.id, filteredGroupIds))
+      : userWhere;
+
+    // Count total matching groups
+    const totalResult = await this.db.client
+      .select({ count: count() })
+      .from(orderGroupsTable)
+      .where(groupWhere)
+      .execute();
+
+    // Order by
+    const orderByField = sortBy === 'createdAt' ? orderGroupsTable.createdAt : orderGroupsTable.totalAmount;
+    const orderByFn = sortOrder === 'desc' ? desc : (field: any) => field;
+
+    // Fetch groups with orders
+    const groups = await this.db.client.query.orderGroupsTable.findMany({
+      where: groupWhere,
+      with: {
+        orders: {
+          with: {
+            items: {
+              with: {
+                product: {
+                  with: {
+                    thumbnail: true,
+                  },
+                },
+              },
+            },
+            address: true,
+            statusHistory: {
+              orderBy: orderStatusHistoryTable.createdAt,
+            },
+            shop: {
+              with: {
+                translations: {
+                  where: (t: any) => eq(t.locale, 'en'),
+                },
+                logo: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: orderByFn(orderByField),
+      limit,
+      offset,
+    });
+
+    return {
+      groups,
+      total: totalResult[0]?.count ?? 0,
+    };
   }
 }

@@ -139,7 +139,8 @@
     "cartItemsBulkUpdated": "Cart items updated successfully",
     "cartItemsBulkRemoved": "Cart items removed successfully",
     "cartMerged": "Cart merged successfully",
-    "priceBreakdownCalculated": "Price breakdown calculated successfully"
+    "priceBreakdownCalculated": "Price breakdown calculated successfully",
+    "ordersRetrieved": "Orders retrieved successfully"
   },
   "email": {
     "verification": {
