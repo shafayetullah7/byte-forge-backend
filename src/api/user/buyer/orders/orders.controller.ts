@@ -6,8 +6,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetOrdersService } from './services/get-orders.service';
+import { GetOrderStatsService } from './services/get-order-stats.service';
 import { OrdersFilterDto } from './dto/orders-pagination.dto';
-import { GetOrdersResponseDto, OrderGroupResponseDto } from './response/orders-response.dto';
+import { GetOrdersResponseDto, OrderStatsResponseDto } from './response/orders-response.dto';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiAuth, ApiOkResponseTyped } from '@/common/decorators/swagger.decorators';
@@ -22,6 +23,7 @@ import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
 export class OrdersController {
   constructor(
     private readonly getOrdersService: GetOrdersService,
+    private readonly getOrderStatsService: GetOrderStatsService,
     private readonly responseService: ResponseService,
     private readonly i18n: I18nService,
   ) {}
@@ -30,7 +32,7 @@ export class OrdersController {
   @ApiOperation({
     summary: 'Get buyer orders',
     description:
-      'Returns all orders grouped by order group for the authenticated buyer with pagination, filtering, and stats.',
+      'Returns all orders grouped by order group for the authenticated buyer with pagination and filtering.',
   })
   @ApiOkResponseTyped(GetOrdersResponseDto, 'Orders retrieved successfully')
   @ApiUnauthorizedResponse()
@@ -46,13 +48,33 @@ export class OrdersController {
       message: this.i18n.t('message.success.ordersRetrieved', { lang }),
       data: {
         groups: result.groups,
-        stats: result.stats,
         meta: {
           page: query.page ?? 1,
           limit: query.limit ?? 10,
           total: result.total,
         },
       },
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get order statistics',
+    description:
+      'Returns aggregated order statistics (total, active, delivered, cancelled, total spent) for the authenticated buyer.',
+  })
+  @ApiOkResponseTyped(OrderStatsResponseDto, 'Order statistics retrieved successfully')
+  @ApiUnauthorizedResponse()
+  @Get('stats')
+  async getOrderStats(
+    @AuthenticUser() authUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    const stats = await this.getOrderStatsService.execute(authUser.user.id);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.orderStatsRetrieved', { lang }),
+      data: stats,
     });
   }
 }

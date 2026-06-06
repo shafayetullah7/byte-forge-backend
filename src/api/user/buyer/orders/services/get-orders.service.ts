@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OrderRepository, BuyerOrderStats } from '@/_repositories/user/order.repository';
+import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrdersFilterDto } from '../dto/orders-pagination.dto';
 
 @Injectable()
@@ -10,19 +10,16 @@ export class GetOrdersService {
     userId: string,
     filters: OrdersFilterDto,
   ) {
-    const [result, stats] = await Promise.all([
-      this.orderRepository.getBuyerOrderGroupsPaginated({
-        userId,
-        page: filters.page ?? 1,
-        limit: filters.limit ?? 10,
-        sortBy: filters.sortBy ?? 'createdAt',
-        sortOrder: filters.sortOrder ?? 'desc',
-        orderStatus: filters.orderStatus,
-        paymentStatus: filters.paymentStatus,
-        search: filters.search,
-      }),
-      this.orderRepository.getBuyerOrderStats(userId),
-    ]);
+    const result = await this.orderRepository.getBuyerOrderGroupsPaginated({
+      userId,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 10,
+      sortBy: filters.sortBy ?? 'createdAt',
+      sortOrder: filters.sortOrder ?? 'desc',
+      orderStatus: filters.orderStatus,
+      paymentStatus: filters.paymentStatus,
+      search: filters.search,
+    });
 
     return {
       groups: result.groups.map((group) => ({
@@ -56,7 +53,6 @@ export class GetOrdersService {
         }),
       })),
       total: result.total,
-      stats,
     };
   }
 }

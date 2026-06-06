@@ -37,7 +37,6 @@ export class OrderStatsResponseDto {
 
 export class GetOrdersResponseDto {
   groups: OrderGroupResponseDto[];
-  stats: OrderStatsResponseDto;
   meta: {
     page: number;
     limit: number;
