@@ -1,8 +1,9 @@
-import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetOrdersService } from './services/get-orders.service';
 import { GetOrderStatsService } from './services/get-order-stats.service';
 import { GetOrderGroupService } from './services/get-order-group.service';
+import { CancelOrderService } from './services/cancel-order.service';
 import { OrdersFilterDto } from './dto/orders-pagination.dto';
 import {
   GetOrdersResponseDto,
@@ -15,7 +16,7 @@ import {
   ApiAuth,
   ApiOkResponseTyped,
 } from '@/common/decorators/swagger.decorators';
-import { ApiUnauthorizedResponse, ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+import { ApiUnauthorizedResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
@@ -28,6 +29,7 @@ export class OrdersController {
     private readonly getOrdersService: GetOrdersService,
     private readonly getOrderStatsService: GetOrderStatsService,
     private readonly getOrderGroupService: GetOrderGroupService,
+    private readonly cancelOrderService: CancelOrderService,
     private readonly responseService: ResponseService,
     private readonly i18n: I18nService,
   ) {}
@@ -112,6 +114,34 @@ export class OrdersController {
     return this.responseService.success({
       message: this.i18n.t('message.success.orderGroupRetrieved', { lang }),
       data,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Cancel an order',
+    description:
+      'Cancels an order if it is in a cancellable status (PENDING_PAYMENT, CONFIRMED, or PROCESSING). Records the cancellation in status history.',
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse()
+  @ApiBadRequestResponse('Order cannot be cancelled in current status')
+  @Post(':orderId/cancel')
+  async cancelOrder(
+    @AuthenticUser() authUser: TAuthenticUser,
+    @Param('orderId') orderId: string,
+    @Body() body: { reason?: string },
+    @I18nLang() lang: string,
+  ) {
+    await this.cancelOrderService.execute(
+      authUser.user.id,
+      orderId,
+      body.reason,
+    );
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.orderCancelled', { lang }),
+      data: null,
     });
   }
 }

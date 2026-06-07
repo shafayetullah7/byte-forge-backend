@@ -142,7 +142,8 @@
     "priceBreakdownCalculated": "মূল্যের বিবরণ সফলভাবে গণনা করা হয়েছে",
     "ordersRetrieved": "অর্ডারগুলি সফলভাবে পুনরুদ্ধার করা হয়েছে",
     "orderStatsRetrieved": "অর্ডার পরিসংখ্যান সফলভাবে পুনরুদ্ধার করা হয়েছে",
-    "orderGroupRetrieved": "অর্ডার গ্রুপের বিবরণ সফলভাবে পুনরুদ্ধার করা হয়েছে"
+    "orderGroupRetrieved": "অর্ডার গ্রুপের বিবরণ সফলভাবে পুনরুদ্ধার করা হয়েছে",
+    "orderCancelled": "অর্ডার সফলভাবে বাতিল করা হয়েছে"
   },
   "email": {
     "verification": {

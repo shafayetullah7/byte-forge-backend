@@ -142,7 +142,8 @@
     "priceBreakdownCalculated": "Price breakdown calculated successfully",
     "ordersRetrieved": "Orders retrieved successfully",
     "orderStatsRetrieved": "Order statistics retrieved successfully",
-    "orderGroupRetrieved": "Order group details retrieved successfully"
+    "orderGroupRetrieved": "Order group details retrieved successfully",
+    "orderCancelled": "Order cancelled successfully"
   },
   "email": {
     "verification": {

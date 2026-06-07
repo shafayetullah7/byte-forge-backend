@@ -63,6 +63,39 @@ export class OrderRepository {
     return order;
   }
 
+  async getOrderByIdAndUserId(
+    id: string,
+    userId: string,
+    transaction?: TLockTransaction,
+  ): Promise<TOrder | undefined> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(ordersTable)
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId)));
+
+    const lockQuery = transaction?.lock
+      ? baseQuery.for('update')
+      : baseQuery;
+    const [order] = await lockQuery.execute();
+    return order;
+  }
+
+  async updateOrder(
+    id: string,
+    data: Partial<TOrder>,
+    transaction?: TLockTransaction,
+  ): Promise<TOrder> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const [order] = await executor
+      .update(ordersTable)
+      .set(data)
+      .where(eq(ordersTable.id, id))
+      .returning()
+      .execute();
+    return order;
+  }
+
   async getOrdersByGroupId(groupId: string): Promise<TOrder[]> {
     return await this.db.client
       .select()
