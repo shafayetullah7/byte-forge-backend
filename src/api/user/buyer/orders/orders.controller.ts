@@ -50,15 +50,13 @@ export class OrdersController {
       lang,
     );
 
-    return this.responseService.success({
+    return this.responseService.paginated({
       message: this.i18n.t('message.success.ordersRetrieved', { lang }),
-      data: {
-        groups: result.groups,
-        meta: {
-          page: query.page ?? 1,
-          limit: query.limit ?? 10,
-          total: result.total,
-        },
+      data: result.groups,
+      meta: {
+        page: query.page ?? 1,
+        limit: query.limit ?? 10,
+        total: result.total,
       },
     });
   }

@@ -36,10 +36,11 @@ export class OrderStatsResponseDto {
 }
 
 export class GetOrdersResponseDto {
-  groups: OrderGroupResponseDto[];
+  data: OrderGroupResponseDto[];
   meta: {
     page: number;
     limit: number;
     total: number;
+    pages: number;
   };
 }
