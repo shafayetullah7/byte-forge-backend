@@ -1,11 +1,13 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetOrdersService } from './services/get-orders.service';
 import { GetOrderStatsService } from './services/get-order-stats.service';
+import { GetOrderGroupService } from './services/get-order-group.service';
 import { OrdersFilterDto } from './dto/orders-pagination.dto';
 import {
   GetOrdersResponseDto,
   OrderStatsResponseDto,
+  GetOrderGroupResponseDto,
 } from './response/orders-response.dto';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { I18nLang, I18nService } from 'nestjs-i18n';
@@ -13,7 +15,7 @@ import {
   ApiAuth,
   ApiOkResponseTyped,
 } from '@/common/decorators/swagger.decorators';
-import { ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
+import { ApiUnauthorizedResponse, ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
@@ -25,6 +27,7 @@ export class OrdersController {
   constructor(
     private readonly getOrdersService: GetOrdersService,
     private readonly getOrderStatsService: GetOrderStatsService,
+    private readonly getOrderGroupService: GetOrderGroupService,
     private readonly responseService: ResponseService,
     private readonly i18n: I18nService,
   ) {}
@@ -82,6 +85,33 @@ export class OrdersController {
     return this.responseService.success({
       message: this.i18n.t('message.success.orderStatsRetrieved', { lang }),
       data: stats,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Get order group detail',
+    description:
+      'Returns full details for a specific order group including all orders, items, addresses, payment info, and status history. Translations are resolved based on the locale parameter.',
+  })
+  @ApiOkResponseTyped(GetOrderGroupResponseDto, 'Order group details retrieved successfully')
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse()
+  @Get(':groupId')
+  async getOrderGroup(
+    @AuthenticUser() authUser: TAuthenticUser,
+    @Param('groupId') groupId: string,
+    @I18nLang() lang: string,
+  ) {
+    const data = await this.getOrderGroupService.execute(
+      authUser.user.id,
+      groupId,
+      lang,
+    );
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.orderGroupRetrieved', { lang }),
+      data,
     });
   }
 }
