@@ -5,6 +5,7 @@ import { IEmailProvider } from '../interfaces/email-provider.interface';
 export class ConsoleProvider implements IEmailProvider {
   private readonly logger = new Logger(ConsoleProvider.name);
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async sendEmail(options: {
     to: string;
     subject: string;

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { HashingService } from '../hashing/hashing.service';
-import { otpTable, TOtp } from '@/_db/drizzle/schema';
-import { DrizzleClient, DrizzleTx } from '@/_db/drizzle/types';
+import { otpTable } from '@/_db/drizzle/schema';
+import { DrizzleTx } from '@/_db/drizzle/types';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
 import { and, eq, gt } from 'drizzle-orm';
 import { CustomException } from '@/common/exceptions/custom.exception';
