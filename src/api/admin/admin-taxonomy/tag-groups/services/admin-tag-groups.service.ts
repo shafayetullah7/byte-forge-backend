@@ -18,7 +18,6 @@ import { eq, and, isNull, sql, asc, desc, ilike, exists } from 'drizzle-orm';
 import {
   tagsTable,
   tagGroupTranslationsTable,
-  tagTranslationsTable,
 } from '@/_db/drizzle/schema/taxonomy';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { paginate } from '@/common/utils/pagination.util';
@@ -119,9 +118,9 @@ export class AdminTagGroupsService {
 
         return group;
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catch concurrent-insert race that slips past the pre-checks
-      if (error.code === '23505') {
+      if ((error as { code?: string }).code === '23505') {
         throw new BadRequestException(
           'A slug conflict occurred — the group or one of its tag slugs may already be in use.',
         );

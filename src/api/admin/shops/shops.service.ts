@@ -6,7 +6,6 @@ import {
 } from '../../../_db/drizzle/schema/shop';
 import { shopVerificationHistoryTable } from '../../../_db/drizzle/schema/shop/shop.verification.history.schema';
 import { ListShopsDto } from './dto/list-shops.dto';
-import { ApproveShopDto } from './dto/approve-shop.dto';
 import { RejectShopDto } from './dto/reject-shop.dto';
 import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { eq, and, like, or, desc, count } from 'drizzle-orm';
@@ -101,7 +100,7 @@ export class ShopsService {
     return shop;
   }
 
-  async approve(id: string, dto: ApproveShopDto) {
+  async approve(id: string) {
     const [shop] = await this.db.client
       .select()
       .from(shopTable)

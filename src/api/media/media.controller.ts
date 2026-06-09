@@ -23,7 +23,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiConsumes,
 } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';

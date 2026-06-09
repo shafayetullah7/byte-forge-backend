@@ -68,9 +68,9 @@ export class AdminTagsService {
 
         return tag;
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catch concurrent-insert race that slips past the pre-check
-      if (error.code === '23505') {
+      if ((error as { code?: string }).code === '23505') {
         throw new BadRequestException(
           `Tag with slug '${createTagDto.slug}' already exists.`,
         );
@@ -231,8 +231,8 @@ export class AdminTagsService {
           updatedAt: new Date(),
         });
       }
-    } catch (error: any) {
-      if (error.code === '23505') {
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === '23505') {
         throw new BadRequestException(
           `Tag with slug '${updateTagDto.slug}' already exists.`,
         );
