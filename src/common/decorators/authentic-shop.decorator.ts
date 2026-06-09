@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AccessUserAuth, TAuthorizedShop } from '../types';
+import { TAuthorizedShop } from '../types';
 
 /**
  * Extracts the shop from req.user.shop (populated by VerifiedUserAuthGuard).
@@ -13,7 +13,9 @@ import { AccessUserAuth, TAuthorizedShop } from '../types';
  */
 export const AuthenticShop = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): TAuthorizedShop => {
-    const req = ctx.switchToHttp().getRequest();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { user?: { shop?: TAuthorizedShop } }>();
     const auth = req.user;
 
     if (!auth?.shop) {
