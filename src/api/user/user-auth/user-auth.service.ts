@@ -1,10 +1,9 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { UserAuth } from './types/user-auth.type';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { UserLocalAuthService } from './user-local-auth.service';
 import { UserService } from '../user/user.service';
-import { DeviceInfo, TSession, userTable } from '@/_db/drizzle/schema';
+import { DeviceInfo, TSession, TUser, userTable } from '@/_db/drizzle/schema';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import { OtpService } from '@/common/modules/otp/otp.service';
@@ -19,7 +18,6 @@ import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.re
 
 import { HashingService } from '@/common/modules/hashing/hashing.service';
 import { I18nService } from 'nestjs-i18n';
-import { AccessUserAuth } from '@/common/types';
 
 @Injectable()
 export class UserAuthService {
@@ -136,7 +134,7 @@ export class UserAuthService {
   }
 
   async login(payload: {
-    user: any;
+    user: TUser;
     deviceInfo: DeviceInfo;
     ip: string;
   }): Promise<TSession> {

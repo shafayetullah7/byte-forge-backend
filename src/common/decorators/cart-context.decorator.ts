@@ -4,7 +4,9 @@ import { CartContext as CartContextType } from '@/common/types/cart-context.type
 
 export const CartContextParam = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): CartContextType => {
-    const req = ctx.switchToHttp().getRequest();
-    return (req as Request & { cartContext: CartContextType }).cartContext;
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { cartContext: CartContextType }>();
+    return req.cartContext;
   },
 );

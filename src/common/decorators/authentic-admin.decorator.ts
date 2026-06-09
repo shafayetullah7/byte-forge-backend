@@ -10,7 +10,7 @@ export const AuthenticAdminUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthenticAdmin => {
     const req = ctx.switchToHttp().getRequest();
 
-    const auth = req.user as AccessAdminAuth | undefined;
+    const auth = req.user;
     if (!auth) {
       throw new UnauthorizedException('Unauthorized access');
     }

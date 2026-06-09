@@ -6,12 +6,7 @@ import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ResponseService } from '@/common/modules/response/response.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import { ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
 

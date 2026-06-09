@@ -68,8 +68,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // 3. Drizzle Database Errors
-    if (exception instanceof DrizzleError || (exception as any).code) {
-      const error = exception as any;
+    if (
+      exception instanceof DrizzleError ||
+      (exception as { code?: string }).code
+    ) {
+      const error = exception as {
+        code?: string;
+        originalError?: { code?: string };
+        message?: string;
+        stack?: string;
+        detail?: string;
+      };
       const pgCode = error.code || error.originalError?.code;
 
       this.logger.error(
@@ -272,11 +281,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const error = zodError.getZodError() as ZodError;
     // console.log('zodError', zodError);
     return error.issues.map((issue) => {
-      let args: any = {};
+      let args: Record<string, number> = {};
       if (issue.code === 'too_small') {
-        args = { count: (issue as any).minimum };
+        args = { count: (issue as { minimum?: number }).minimum! };
       } else if (issue.code === 'too_big') {
-        args = { count: (issue as any).maximum };
+        args = { count: (issue as { maximum?: number }).maximum! };
       }
 
       return {

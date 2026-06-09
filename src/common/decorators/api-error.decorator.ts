@@ -1,9 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import {
-  ApiResponse,
-  ApiResponseOptions,
-  getSchemaPath,
-} from '@nestjs/swagger';
+import { ApiResponse } from '@nestjs/swagger';
 
 /**
  * Generic error response decorator

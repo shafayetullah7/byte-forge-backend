@@ -14,7 +14,7 @@ import { AccessUserAuth, TAuthorizedShop } from '../types';
 export const AuthenticShop = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): TAuthorizedShop => {
     const req = ctx.switchToHttp().getRequest();
-    const auth = req.user as AccessUserAuth | undefined;
+    const auth = req.user;
 
     if (!auth?.shop) {
       throw new NotFoundException('Shop not found');

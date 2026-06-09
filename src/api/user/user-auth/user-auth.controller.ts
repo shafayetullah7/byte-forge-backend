@@ -22,14 +22,8 @@ import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { AccessUserAuth } from '@/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
-import { UserLoggedInEvent } from '@/common/modules/events/events';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
@@ -37,7 +31,6 @@ import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
-  ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 
 @ApiTags('👤 User Auth')
@@ -77,7 +70,7 @@ export class UserAuthController {
   @ApiUnauthorizedResponse()
   @Post('login')
   async login(
-    @Body() payload: any, // Will refine DTO later if needed
+    @Body() payload: { email: string; password: string },
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -211,13 +204,13 @@ export class UserAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.userRefreshToken;
+    const refreshToken = req.cookies?.userRefreshToken as string | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
 
     try {
-      const { tokens, user, session } =
+      const { tokens, user } =
         await this.userAuthV2Service.refreshTokens(refreshToken);
 
       // Set new access token (rotated)
