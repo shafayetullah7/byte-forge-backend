@@ -13,10 +13,7 @@ export class SetDefaultAddressService {
     private readonly db: DrizzleService,
   ) {}
 
-  async execute(
-    addressId: string,
-    userId: string,
-  ): Promise<TUserAddress> {
+  async execute(addressId: string, userId: string): Promise<TUserAddress> {
     try {
       return await this.db.transaction(async (tx) => {
         const address = await this.addressRepository.findOne(

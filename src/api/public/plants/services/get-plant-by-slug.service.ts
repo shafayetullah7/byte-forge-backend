@@ -1,10 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productsTable,
-  productSeoTable,
-} from '@/_db/drizzle/schema';
+import { productsTable, productSeoTable } from '@/_db/drizzle/schema';
 import { shopTable } from '@/_db/drizzle/schema/shop';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
@@ -339,10 +336,8 @@ export class GetPlantBySlugService {
           id: product.plantDetails.category.id,
           slug: product.plantDetails.category.slug,
           name:
-            resolveTranslation(
-              product.plantDetails.category.translations,
-              lang,
-            )?.name ?? null,
+            resolveTranslation(product.plantDetails.category.translations, lang)
+              ?.name ?? null,
         }
       : null;
 
@@ -367,8 +362,10 @@ export class GetPlantBySlugService {
             {
               locale: 'en' as const,
               lightInstructions: product.careInstructions.lightInstructions,
-              wateringInstructions: product.careInstructions.wateringInstructions,
-              humidityInstructions: product.careInstructions.humidityInstructions,
+              wateringInstructions:
+                product.careInstructions.wateringInstructions,
+              humidityInstructions:
+                product.careInstructions.humidityInstructions,
               fertilizerSchedule: product.careInstructions.fertilizerSchedule,
               repottingFrequency: product.careInstructions.repottingFrequency,
               pruningNotes: product.careInstructions.pruningNotes,
@@ -397,9 +394,7 @@ export class GetPlantBySlugService {
           slug: shop.slug,
           name: resolveTranslation(shop.translations, lang)?.name ?? 'Shop',
           isVerified: shop.isVerified,
-          logo: shop.logo
-            ? { id: shop.logo.id, url: shop.logo.url }
-            : null,
+          logo: shop.logo ? { id: shop.logo.id, url: shop.logo.url } : null,
           primaryColor: shop.primaryColor,
           secondaryColor: shop.secondaryColor,
         }
@@ -421,7 +416,9 @@ export class GetPlantBySlugService {
       shortDescription: translation?.shortDescription ?? null,
       scientificName: product.plantDetails?.scientificName ?? null,
       commonNames:
-        careTranslation?.commonNames ?? product.plantDetails?.commonNames ?? null,
+        careTranslation?.commonNames ??
+        product.plantDetails?.commonNames ??
+        null,
       price: baseVariant?.price ?? null,
       inventoryCount: baseVariant?.inventoryCount ?? 0,
       inStock: (baseVariant?.inventoryCount ?? 0) > 0,
@@ -442,8 +439,7 @@ export class GetPlantBySlugService {
       growthRate: product.plantDetails?.growthRate ?? null,
       matureHeight: product.plantDetails?.matureHeight ?? null,
       matureSpread: product.plantDetails?.matureSpread ?? null,
-      origin:
-        careTranslation?.origin ?? product.plantDetails?.origin ?? null,
+      origin: careTranslation?.origin ?? product.plantDetails?.origin ?? null,
       toxicityInfo:
         careTranslation?.toxicityInfo ??
         product.plantDetails?.toxicityInfo ??

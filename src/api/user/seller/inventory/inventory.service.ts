@@ -54,14 +54,14 @@ export class InventoryService {
     lang: string,
   ) {
     const shop = await this.resolveShop(userId, lang);
-    const result =  await this.getStockMovementsService.execute(
+    const result = await this.getStockMovementsService.execute(
       shop.id,
       productId,
       filters,
       page,
       limit,
     );
-    console.log(result)
+    console.log(result);
     return result;
   }
 

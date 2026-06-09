@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  timestamp,
-  decimal,
-  index,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, timestamp, decimal, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user/user.schema';
 import { ordersTable } from '../order/orders.schema';

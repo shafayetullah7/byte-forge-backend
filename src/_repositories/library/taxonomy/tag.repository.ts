@@ -196,7 +196,7 @@ export class TagRepository {
     transaction?: TLockTransaction,
   ): Promise<TTag[]> {
     if (ids.length === 0) return [];
-    
+
     const executor = this.db.getExecutor(transaction?.tx);
     const baseQuery = executor
       .select()
@@ -213,7 +213,7 @@ export class TagRepository {
     tx?: DrizzleTx,
   ): Promise<void> {
     if (tagIds.length === 0) return;
-    
+
     const executor = this.db.getExecutor(tx);
     await executor
       .update(tagsTable)

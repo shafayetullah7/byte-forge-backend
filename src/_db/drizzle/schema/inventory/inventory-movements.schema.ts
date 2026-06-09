@@ -74,10 +74,7 @@ export const inventoryMovementsTable = pgTable(
       t.inventoryId,
       t.createdAt,
     ),
-    index('inventory_movements_shop_created_at_idx').on(
-      t.shopId,
-      t.createdAt,
-    ),
+    index('inventory_movements_shop_created_at_idx').on(t.shopId, t.createdAt),
     index('inventory_movements_reference_idx').on(
       t.referenceType,
       t.referenceId,

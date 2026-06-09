@@ -16,7 +16,6 @@ import {
 import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
 import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.repository';
 import { paginate } from '@/common/utils/pagination.util';
-import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { isUuid } from '@/common/utils/is-uuid.util';
 
 @Injectable()

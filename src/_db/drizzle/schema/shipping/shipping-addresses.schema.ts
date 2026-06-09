@@ -27,9 +27,7 @@ export const userAddressesTable = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => userTable.id, { onDelete: 'cascade' }),
-    type: addressTypeEnum('type')
-      .notNull()
-      .default(AddressTypeEnum.SHIPPING),
+    type: addressTypeEnum('type').notNull().default(AddressTypeEnum.SHIPPING),
     label: varchar('label', { length: 50 }).notNull(),
     recipientName: varchar('recipient_name', { length: 100 }).notNull(),
     phone: varchar('phone', { length: 20 }).notNull(),
@@ -42,7 +40,9 @@ export const userAddressesTable = pgTable(
       .notNull()
       .references(() => divisionsTable.id, { onDelete: 'restrict' }),
     postalCode: varchar('postal_code', { length: 20 }),
-    country: varchar('country', { length: 100 }).notNull().default('Bangladesh'),
+    country: varchar('country', { length: 100 })
+      .notNull()
+      .default('Bangladesh'),
     companyName: varchar('company_name', { length: 255 }),
     deliveryInstructions: text('delivery_instructions'),
     billingNotes: text('billing_notes'),

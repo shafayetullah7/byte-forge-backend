@@ -56,7 +56,7 @@ export type PublicPlantListItem = {
   wateringFrequency: string | null;
   humidityLevel: string | null;
   growthRate: string | null;
-        shop: {
+  shop: {
     id: string;
     slug: string;
     name: string;
@@ -156,7 +156,7 @@ export class ListPlantsService {
                     eq(plantDetailsTable.productId, productsTable.id),
                     eq(
                       plantDetailsTable.careDifficulty,
-                      careDifficulty as typeof CareDifficultyEnum[keyof typeof CareDifficultyEnum],
+                      careDifficulty as (typeof CareDifficultyEnum)[keyof typeof CareDifficultyEnum],
                     ),
                   ),
                 ),
@@ -172,7 +172,7 @@ export class ListPlantsService {
                     eq(plantDetailsTable.productId, productsTable.id),
                     eq(
                       plantDetailsTable.lightRequirement,
-                      lightRequirement as typeof LightRequirementEnum[keyof typeof LightRequirementEnum],
+                      lightRequirement as (typeof LightRequirementEnum)[keyof typeof LightRequirementEnum],
                     ),
                   ),
                 ),
@@ -188,7 +188,7 @@ export class ListPlantsService {
                     eq(plantDetailsTable.productId, productsTable.id),
                     eq(
                       plantDetailsTable.wateringFrequency,
-                      wateringFrequency as typeof WateringFrequencyEnum[keyof typeof WateringFrequencyEnum],
+                      wateringFrequency as (typeof WateringFrequencyEnum)[keyof typeof WateringFrequencyEnum],
                     ),
                   ),
                 ),
@@ -204,7 +204,7 @@ export class ListPlantsService {
                     eq(plantDetailsTable.productId, productsTable.id),
                     eq(
                       plantDetailsTable.humidityLevel,
-                      humidityLevel as typeof HumidityLevelEnum[keyof typeof HumidityLevelEnum],
+                      humidityLevel as (typeof HumidityLevelEnum)[keyof typeof HumidityLevelEnum],
                     ),
                   ),
                 ),
@@ -220,7 +220,7 @@ export class ListPlantsService {
                     eq(plantDetailsTable.productId, productsTable.id),
                     eq(
                       plantDetailsTable.growthRate,
-                      growthRate as typeof GrowthRateEnum[keyof typeof GrowthRateEnum],
+                      growthRate as (typeof GrowthRateEnum)[keyof typeof GrowthRateEnum],
                     ),
                   ),
                 ),
@@ -261,7 +261,10 @@ export class ListPlantsService {
                   .where(
                     and(
                       eq(productTranslationsTable.productId, productsTable.id),
-                      ilike(productTranslationsTable.shortDescription, `%${search}%`),
+                      ilike(
+                        productTranslationsTable.shortDescription,
+                        `%${search}%`,
+                      ),
                     ),
                   ),
               ),
@@ -282,9 +285,7 @@ export class ListPlantsService {
                     inArray(plantDetailsTagsTable.tagId, tagIds),
                   ),
                 )
-                .having(
-                  sql`count(*) = ${tagIds.length}`,
-                ),
+                .having(sql`count(*) = ${tagIds.length}`),
             )
           : undefined,
         minPrice !== undefined
@@ -363,10 +364,7 @@ export class ListPlantsService {
           updatedAt: productsTable.updatedAt,
         })
         .from(productsTable)
-        .leftJoin(
-          mediaTable,
-          eq(mediaTable.id, productsTable.thumbnailId),
-        )
+        .leftJoin(mediaTable, eq(mediaTable.id, productsTable.thumbnailId))
         .leftJoin(
           productTranslationsTable,
           and(
@@ -385,10 +383,7 @@ export class ListPlantsService {
           plantDetailsTable,
           eq(plantDetailsTable.productId, productsTable.id),
         )
-        .leftJoin(
-          shopTable,
-          eq(shopTable.id, productsTable.shopId),
-        )
+        .leftJoin(shopTable, eq(shopTable.id, productsTable.shopId))
         .leftJoin(
           shopTranslationsTable,
           and(
@@ -396,10 +391,7 @@ export class ListPlantsService {
             eq(shopTranslationsTable.locale, lang),
           ),
         )
-        .leftJoin(
-          shopLogoMedia,
-          eq(shopLogoMedia.id, shopTable.logoId),
-        )
+        .leftJoin(shopLogoMedia, eq(shopLogoMedia.id, shopTable.logoId))
         .where(baseWhere)
         .orderBy(() => {
           switch (sortBy) {
@@ -464,9 +456,7 @@ export class ListPlantsService {
           },
         });
 
-      const plantDetailMap = new Map(
-        plantDetails.map((d) => [d.productId, d]),
-      );
+      const plantDetailMap = new Map(plantDetails.map((d) => [d.productId, d]));
 
       const result: PublicPlantListItem[] = rows.map((row) => {
         const plantDetail = plantDetailMap.get(row.productId);
@@ -529,7 +519,7 @@ export class ListPlantsService {
         };
       });
 
-    return paginate(result, Number(total), page, limit);
+      return paginate(result, Number(total), page, limit);
     } catch (error) {
       this.logger.error(
         'Failed to list public plants',

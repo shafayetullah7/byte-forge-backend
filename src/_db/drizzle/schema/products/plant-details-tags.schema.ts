@@ -29,13 +29,16 @@ export const plantDetailsTagsTable = pgTable(
 export type TPlantDetailsTags = typeof plantDetailsTagsTable.$inferSelect;
 export type TNewPlantDetailsTags = typeof plantDetailsTagsTable.$inferInsert;
 
-export const plantDetailsTagsRelations = relations(plantDetailsTagsTable, ({ one }) => ({
-  plant: one(plantDetailsTable, {
-    fields: [plantDetailsTagsTable.plantId],
-    references: [plantDetailsTable.id],
+export const plantDetailsTagsRelations = relations(
+  plantDetailsTagsTable,
+  ({ one }) => ({
+    plant: one(plantDetailsTable, {
+      fields: [plantDetailsTagsTable.plantId],
+      references: [plantDetailsTable.id],
+    }),
+    tag: one(tagsTable, {
+      fields: [plantDetailsTagsTable.tagId],
+      references: [tagsTable.id],
+    }),
   }),
-  tag: one(tagsTable, {
-    fields: [plantDetailsTagsTable.tagId],
-    references: [tagsTable.id],
-  }),
-}));
+);

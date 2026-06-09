@@ -7,4 +7,5 @@ export const PaymentStatusEnum = {
   PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
 } as const;
 
-export type TPaymentStatus = (typeof PaymentStatusEnum)[keyof typeof PaymentStatusEnum];
+export type TPaymentStatus =
+  (typeof PaymentStatusEnum)[keyof typeof PaymentStatusEnum];

@@ -8,4 +8,5 @@ export const ShippingStatusEnum = {
   FAILED: 'FAILED',
 } as const;
 
-export type TShippingStatus = (typeof ShippingStatusEnum)[keyof typeof ShippingStatusEnum];
+export type TShippingStatus =
+  (typeof ShippingStatusEnum)[keyof typeof ShippingStatusEnum];

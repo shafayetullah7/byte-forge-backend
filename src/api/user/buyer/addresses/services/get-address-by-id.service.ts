@@ -66,13 +66,23 @@ export class GetAddressByIdService {
       isDefault: boolean;
       createdAt: Date;
       updatedAt: Date;
-      district: { translations: Array<{ locale: string; name: string }> } | null;
-      division: { translations: Array<{ locale: string; name: string }> } | null;
+      district: {
+        translations: Array<{ locale: string; name: string }>;
+      } | null;
+      division: {
+        translations: Array<{ locale: string; name: string }>;
+      } | null;
     },
     locale: string,
   ): AddressResponseDto {
-    const districtTranslation = resolveTranslation(address.district?.translations, locale);
-    const divisionTranslation = resolveTranslation(address.division?.translations, locale);
+    const districtTranslation = resolveTranslation(
+      address.district?.translations,
+      locale,
+    );
+    const divisionTranslation = resolveTranslation(
+      address.division?.translations,
+      locale,
+    );
 
     return {
       id: address.id,

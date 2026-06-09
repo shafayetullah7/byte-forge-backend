@@ -95,7 +95,9 @@ export class InventoryRepository {
     return inventory;
   }
 
-  async findByVariantIdForUpdate(variantId: string): Promise<TInventory | undefined> {
+  async findByVariantIdForUpdate(
+    variantId: string,
+  ): Promise<TInventory | undefined> {
     const [inventory] = await this.db.client
       .select()
       .from(inventoryTable)
@@ -113,7 +115,10 @@ export class InventoryRepository {
       .execute();
   }
 
-  async createInventory(payload: TNewInventory, tx?: DrizzleTx): Promise<TInventory> {
+  async createInventory(
+    payload: TNewInventory,
+    tx?: DrizzleTx,
+  ): Promise<TInventory> {
     const executor = this.db.getExecutor(tx);
     const [created] = await executor
       .insert(inventoryTable)
@@ -167,23 +172,18 @@ export class InventoryRepository {
 
     if (filters.startDate) {
       conditions.push(
-        gte(
-          inventoryMovementsTable.createdAt,
-          new Date(filters.startDate),
-        ),
+        gte(inventoryMovementsTable.createdAt, new Date(filters.startDate)),
       );
     }
 
     if (filters.endDate) {
       conditions.push(
-        lte(
-          inventoryMovementsTable.createdAt,
-          new Date(filters.endDate),
-        ),
+        lte(inventoryMovementsTable.createdAt, new Date(filters.endDate)),
       );
     }
 
-    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+    const whereClause =
+      conditions.length > 1 ? and(...conditions) : conditions[0];
 
     const [totalResult] = await this.db.client
       .select({ total: count() })
@@ -231,7 +231,7 @@ export class InventoryRepository {
     let hash = 0;
     for (let i = 0; i < uuid.length; i++) {
       const char = uuid.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     // Ensure positive number

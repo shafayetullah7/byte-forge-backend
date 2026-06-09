@@ -10,10 +10,13 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
 
 @Module({
   controllers: [ProductsController],
-  providers: [ProductsService, ListProductsService, GetProductByIdService, GetProductSummaryService, GetProductOverviewService],
-  imports: [
-    VerifiedUserAuthGuardModule,
-    ShopRepositoryModule,
+  providers: [
+    ProductsService,
+    ListProductsService,
+    GetProductByIdService,
+    GetProductSummaryService,
+    GetProductOverviewService,
   ],
+  imports: [VerifiedUserAuthGuardModule, ShopRepositoryModule],
 })
 export class ProductsModule {}

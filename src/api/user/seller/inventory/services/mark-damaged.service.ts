@@ -1,10 +1,7 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productVariantsTable,
-  productsTable,
-} from '@/_db/drizzle/schema';
+import { productVariantsTable, productsTable } from '@/_db/drizzle/schema';
 import { InventoryMovementTypeEnum } from '@/_db/drizzle/enum';
 import { InventoryRepository } from '@/_repositories/business/inventory.repository/inventory.repository';
 import { CustomException } from '@/common/exceptions/custom.exception';
@@ -64,8 +61,8 @@ export class MarkDamagedService {
       });
     }
 
-    const variant = { 
-      id: variantRecord.variantId, 
+    const variant = {
+      id: variantRecord.variantId,
       sku: variantRecord.variantSku,
       lowStockThreshold: variantRecord.lowStockThreshold ?? 5,
     };
@@ -82,7 +79,10 @@ export class MarkDamagedService {
 
       if (!inventory.trackInventory) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.trackingDisabled', { lang }),
+          message: this.i18n.t(
+            'message.validation.inventory.trackingDisabled',
+            { lang },
+          ),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -95,10 +95,13 @@ export class MarkDamagedService {
       // Validate: cannot damage more than available stock
       if (data.quantity > availableQuantity) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.damagedExceedsAvailable', {
-            lang,
-            args: { available: availableQuantity, requested: data.quantity },
-          }),
+          message: this.i18n.t(
+            'message.validation.inventory.damagedExceedsAvailable',
+            {
+              lang,
+              args: { available: availableQuantity, requested: data.quantity },
+            },
+          ),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -135,7 +138,7 @@ export class MarkDamagedService {
 
       this.logger.log(
         `Marked ${data.quantity} units as damaged for variant ${variant.id}. ` +
-        `Quantity: ${previousQuantity} -> ${newQuantity}`,
+          `Quantity: ${previousQuantity} -> ${newQuantity}`,
       );
 
       return {

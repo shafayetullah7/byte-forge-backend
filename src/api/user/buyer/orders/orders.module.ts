@@ -9,7 +9,12 @@ import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 
 @Module({
   controllers: [OrdersController],
-  providers: [GetOrdersService, GetOrderStatsService, GetOrderGroupService, CancelOrderService],
+  providers: [
+    GetOrdersService,
+    GetOrderStatsService,
+    GetOrderGroupService,
+    CancelOrderService,
+  ],
   imports: [OrderRepositoryModule, DrizzleModule],
 })
 export class OrdersModule {}

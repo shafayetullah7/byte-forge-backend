@@ -105,21 +105,22 @@ import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(GuestTokenMiddleware)
-      .forRoutes('*path');
+    consumer.apply(GuestTokenMiddleware).forRoutes('*path');
 
     consumer
       .apply(
-        morgan(':date[iso] :method :url :status :response-time ms - :res[content-length]', {
-          // Skip logging successful responses in production to reduce noise
-          skip: (req, res) => {
-            if (process.env.NODE_ENV === 'production') {
-              return res.statusCode < 400; // Only log errors in production
-            }
-            return false; // Log everything in development
+        morgan(
+          ':date[iso] :method :url :status :response-time ms - :res[content-length]',
+          {
+            // Skip logging successful responses in production to reduce noise
+            skip: (req, res) => {
+              if (process.env.NODE_ENV === 'production') {
+                return res.statusCode < 400; // Only log errors in production
+              }
+              return false; // Log everything in development
+            },
           },
-        }),
+        ),
       )
       .forRoutes('*path');
   }

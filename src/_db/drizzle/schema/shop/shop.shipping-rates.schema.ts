@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  decimal,
-  timestamp,
-  unique,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, decimal, timestamp, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { shopTable } from './shop.schema';
 import { districtsTable } from '../location/district.schema';
@@ -20,7 +14,9 @@ export const shopShippingRatesTable = pgTable(
       .notNull()
       .references(() => districtsTable.id, { onDelete: 'cascade' }),
     cost: decimal('cost', { precision: 10, scale: 2 }).notNull(),
-    costPerKg: decimal('cost_per_kg', { precision: 10, scale: 2 }).notNull().default('0'),
+    costPerKg: decimal('cost_per_kg', { precision: 10, scale: 2 })
+      .notNull()
+      .default('0'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),

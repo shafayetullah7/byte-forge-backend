@@ -12,7 +12,12 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
 
 @Module({
   controllers: [PlantsController],
-  providers: [PlantsService, CreatePlantService, ListPlantsService, GetPlantByIdService],
+  providers: [
+    PlantsService,
+    CreatePlantService,
+    ListPlantsService,
+    GetPlantByIdService,
+  ],
   imports: [
     MediaRepositoryModule,
     CategoryRepositoryModule,

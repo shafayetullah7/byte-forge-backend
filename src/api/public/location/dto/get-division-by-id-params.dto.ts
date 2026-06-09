@@ -5,4 +5,6 @@ export const getDivisionByIdParamsSchema = z.object({
   id: z.string().uuid({ message: 'Division ID must be a valid UUID' }),
 });
 
-export class GetDivisionByIdParamsDto extends createZodDto(getDivisionByIdParamsSchema) {}
+export class GetDivisionByIdParamsDto extends createZodDto(
+  getDivisionByIdParamsSchema,
+) {}

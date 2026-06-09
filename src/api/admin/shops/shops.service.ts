@@ -3,7 +3,6 @@ import { DrizzleService } from '../../../_db/drizzle/drizzle.service';
 import {
   shopTable,
   shopTranslationsTable,
-  shopContactTable,
 } from '../../../_db/drizzle/schema/shop';
 import { shopVerificationHistoryTable } from '../../../_db/drizzle/schema/shop/shop.verification.history.schema';
 import { ListShopsDto } from './dto/list-shops.dto';

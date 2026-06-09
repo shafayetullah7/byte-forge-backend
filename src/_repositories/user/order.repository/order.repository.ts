@@ -44,7 +44,10 @@ export interface GetBuyerOrderGroupsParams {
 export class OrderRepository {
   constructor(private readonly db: DrizzleService) {}
 
-  async createOrder(data: TNewOrder, transaction?: TLockTransaction): Promise<TOrder> {
+  async createOrder(
+    data: TNewOrder,
+    transaction?: TLockTransaction,
+  ): Promise<TOrder> {
     const executor = this.db.getExecutor(transaction?.tx);
     const [order] = await executor
       .insert(ordersTable)
@@ -74,9 +77,7 @@ export class OrderRepository {
       .from(ordersTable)
       .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId)));
 
-    const lockQuery = transaction?.lock
-      ? baseQuery.for('update')
-      : baseQuery;
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
     const [order] = await lockQuery.execute();
     return order;
   }
@@ -105,7 +106,10 @@ export class OrderRepository {
       .execute();
   }
 
-  async createOrderItem(data: TNewOrderItem, transaction?: TLockTransaction): Promise<TOrderItem> {
+  async createOrderItem(
+    data: TNewOrderItem,
+    transaction?: TLockTransaction,
+  ): Promise<TOrderItem> {
     const executor = this.db.getExecutor(transaction?.tx);
     const [item] = await executor
       .insert(orderItemsTable)
@@ -115,7 +119,10 @@ export class OrderRepository {
     return item;
   }
 
-  async createOrderItems(items: TNewOrderItem[], transaction?: TLockTransaction): Promise<TOrderItem[]> {
+  async createOrderItems(
+    items: TNewOrderItem[],
+    transaction?: TLockTransaction,
+  ): Promise<TOrderItem[]> {
     const executor = this.db.getExecutor(transaction?.tx);
     const result = await executor
       .insert(orderItemsTable)
@@ -125,7 +132,10 @@ export class OrderRepository {
     return result;
   }
 
-  async createOrderAddress(data: TNewOrderAddress, transaction?: TLockTransaction): Promise<TOrderAddress> {
+  async createOrderAddress(
+    data: TNewOrderAddress,
+    transaction?: TLockTransaction,
+  ): Promise<TOrderAddress> {
     const executor = this.db.getExecutor(transaction?.tx);
     const [address] = await executor
       .insert(orderAddressTable)
@@ -135,7 +145,10 @@ export class OrderRepository {
     return address;
   }
 
-  async createOrderStatusHistory(data: TNewOrderStatusHistory, transaction?: TLockTransaction): Promise<TOrderStatusHistory> {
+  async createOrderStatusHistory(
+    data: TNewOrderStatusHistory,
+    transaction?: TLockTransaction,
+  ): Promise<TOrderStatusHistory> {
     const executor = this.db.getExecutor(transaction?.tx);
     const [history] = await executor
       .insert(orderStatusHistoryTable)
@@ -145,7 +158,10 @@ export class OrderRepository {
     return history;
   }
 
-  async createOrderGroup(data: TNewOrderGroup, transaction?: TLockTransaction): Promise<TOrderGroup> {
+  async createOrderGroup(
+    data: TNewOrderGroup,
+    transaction?: TLockTransaction,
+  ): Promise<TOrderGroup> {
     const executor = this.db.getExecutor(transaction?.tx);
     const [group] = await executor
       .insert(orderGroupsTable)
@@ -155,7 +171,9 @@ export class OrderRepository {
     return group;
   }
 
-  async getOrderGroupWithOrders(groupId: string): Promise<TOrderGroup & { orders: TOrder[] } | undefined> {
+  async getOrderGroupWithOrders(
+    groupId: string,
+  ): Promise<(TOrderGroup & { orders: TOrder[] }) | undefined> {
     const [group] = await this.db.client.query.orderGroupsTable.findMany({
       where: eq(orderGroupsTable.id, groupId),
       with: {
@@ -187,13 +205,24 @@ export class OrderRepository {
       },
     });
 
-    const activeStatuses = ['PENDING_PAYMENT', 'CONFIRMED', 'PROCESSING', 'SHIPPED'];
+    const activeStatuses = [
+      'PENDING_PAYMENT',
+      'CONFIRMED',
+      'PROCESSING',
+      'SHIPPED',
+    ];
 
     return {
       total: allGroups.length,
-      active: allGroups.filter((g) => g.orders.some((o) => activeStatuses.includes(o.status))).length,
-      delivered: allGroups.filter((g) => g.orders.some((o) => o.status === 'DELIVERED')).length,
-      cancelled: allGroups.filter((g) => g.orders.some((o) => o.status === 'CANCELLED')).length,
+      active: allGroups.filter((g) =>
+        g.orders.some((o) => activeStatuses.includes(o.status)),
+      ).length,
+      delivered: allGroups.filter((g) =>
+        g.orders.some((o) => o.status === 'DELIVERED'),
+      ).length,
+      cancelled: allGroups.filter((g) =>
+        g.orders.some((o) => o.status === 'CANCELLED'),
+      ).length,
       totalSpent: allGroups
         .filter((g) => g.orders.some((o) => o.status === 'DELIVERED'))
         .reduce((sum, g) => sum + parseFloat(g.totalAmount), 0)
@@ -204,7 +233,13 @@ export class OrderRepository {
   async getBuyerOrderGroupsPaginated(
     params: GetBuyerOrderGroupsParams,
   ): Promise<{
-    groups: (TOrderGroup & { orders: (TOrder & { items: TOrderItem[]; address: TOrderAddress | undefined; statusHistory: TOrderStatusHistory[] })[] })[];
+    groups: (TOrderGroup & {
+      orders: (TOrder & {
+        items: TOrderItem[];
+        address: TOrderAddress | undefined;
+        statusHistory: TOrderStatusHistory[];
+      })[];
+    })[];
     total: number;
   }> {
     const {
@@ -235,7 +270,9 @@ export class OrderRepository {
       }
 
       if (paymentStatus) {
-        orderConditions.push(eq(ordersTable.paymentStatus, paymentStatus as any));
+        orderConditions.push(
+          eq(ordersTable.paymentStatus, paymentStatus as any),
+        );
       }
 
       if (search) {
@@ -287,7 +324,10 @@ export class OrderRepository {
       .execute();
 
     // Order by
-    const orderByField = sortBy === 'createdAt' ? orderGroupsTable.createdAt : orderGroupsTable.totalAmount;
+    const orderByField =
+      sortBy === 'createdAt'
+        ? orderGroupsTable.createdAt
+        : orderGroupsTable.totalAmount;
     const orderByFn = sortOrder === 'desc' ? desc : (field: any) => field;
 
     // Fetch groups with orders

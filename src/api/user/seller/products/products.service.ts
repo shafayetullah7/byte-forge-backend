@@ -27,7 +27,10 @@ export class ProductsService {
 
   async getProductById(userId: string, productId: string, lang: string) {
     const shop = await this.resolveShop(userId, lang);
-    const product = await this.getProductByIdService.execute(shop.id, productId);
+    const product = await this.getProductByIdService.execute(
+      shop.id,
+      productId,
+    );
 
     if (!product) {
       throw new CustomException({
@@ -42,7 +45,11 @@ export class ProductsService {
 
   async getProductSummary(userId: string, productId: string, lang: string) {
     const shop = await this.resolveShop(userId, lang);
-    const product = await this.getProductSummaryService.execute(shop.id, productId, lang);
+    const product = await this.getProductSummaryService.execute(
+      shop.id,
+      productId,
+      lang,
+    );
 
     if (!product) {
       throw new CustomException({
@@ -57,7 +64,10 @@ export class ProductsService {
 
   async getProductOverview(userId: string, productId: string, lang: string) {
     const shop = await this.resolveShop(userId, lang);
-    const product = await this.getProductOverviewService.execute(shop.id, productId);
+    const product = await this.getProductOverviewService.execute(
+      shop.id,
+      productId,
+    );
 
     if (!product) {
       throw new CustomException({

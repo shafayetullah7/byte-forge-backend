@@ -10,7 +10,6 @@ import { TagGroupRepository } from '@/_repositories/library/taxonomy/tag-group.r
 import { TagRepository } from '@/_repositories/library/taxonomy/tag.repository';
 import {
   tagGroupsTable,
-  TNewTag,
   TNewTagTranslation,
 } from '@/_db/drizzle/schema/taxonomy';
 

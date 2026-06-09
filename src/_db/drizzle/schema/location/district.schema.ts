@@ -28,10 +28,13 @@ export const districtsTable = pgTable('districts', {
 export type TDistrict = typeof districtsTable.$inferSelect;
 export type TNewDistrict = typeof districtsTable.$inferInsert;
 
-export const districtsRelations = relations(districtsTable, ({ one, many }) => ({
-  division: one(divisionsTable, {
-    fields: [districtsTable.divisionId],
-    references: [divisionsTable.id],
+export const districtsRelations = relations(
+  districtsTable,
+  ({ one, many }) => ({
+    division: one(divisionsTable, {
+      fields: [districtsTable.divisionId],
+      references: [divisionsTable.id],
+    }),
+    translations: many(districtTranslationsTable),
   }),
-  translations: many(districtTranslationsTable),
-}));
+);

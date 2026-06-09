@@ -49,9 +49,7 @@ export const ordersTable = pgTable(
   'orders',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    orderNumber: varchar('order_number', { length: 50 })
-      .notNull()
-      .unique(),
+    orderNumber: varchar('order_number', { length: 50 }).notNull().unique(),
     userId: uuid('user_id')
       .notNull()
       .references(() => userTable.id, { onDelete: 'cascade' }),

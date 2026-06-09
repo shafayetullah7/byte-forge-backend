@@ -18,9 +18,10 @@ export class GetAddressesService {
     pagination?: PaginationParams & { type?: 'shipping' | 'billing' | 'both' },
   ): Promise<{ addresses: AddressResponseDto[]; total: number }> {
     try {
-      const typeFilter = pagination?.type && pagination.type !== 'both'
-        ? pagination.type
-        : undefined;
+      const typeFilter =
+        pagination?.type && pagination.type !== 'both'
+          ? pagination.type
+          : undefined;
 
       const addresses = await this.db.client.query.userAddressesTable.findMany({
         where: typeFilter
@@ -93,8 +94,14 @@ export class GetAddressesService {
     },
     locale: string,
   ): AddressResponseDto {
-    const districtTranslation = resolveTranslation(row.district?.translations, locale);
-    const divisionTranslation = resolveTranslation(row.division?.translations, locale);
+    const districtTranslation = resolveTranslation(
+      row.district?.translations,
+      locale,
+    );
+    const divisionTranslation = resolveTranslation(
+      row.division?.translations,
+      locale,
+    );
 
     const createdAt = row.createdAt;
     const updatedAt = row.updatedAt;
@@ -118,13 +125,9 @@ export class GetAddressesService {
       billingNotes: row.billingNotes ?? null,
       isDefault: row.isDefault,
       createdAt:
-        createdAt instanceof Date
-          ? createdAt.toISOString()
-          : String(createdAt),
+        createdAt instanceof Date ? createdAt.toISOString() : String(createdAt),
       updatedAt:
-        updatedAt instanceof Date
-          ? updatedAt.toISOString()
-          : String(updatedAt),
+        updatedAt instanceof Date ? updatedAt.toISOString() : String(updatedAt),
     };
   }
 }

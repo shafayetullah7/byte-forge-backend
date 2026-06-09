@@ -7,7 +7,13 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ShippingRatesModule } from './shipping-rates/shipping-rates.module';
 
 @Module({
-  imports: [ShopModule, PlantsModule, ProductsModule, InventoryModule, ShippingRatesModule],
+  imports: [
+    ShopModule,
+    PlantsModule,
+    ProductsModule,
+    InventoryModule,
+    ShippingRatesModule,
+  ],
   exports: [ShopModule],
 })
 export class SellerApiModule {}

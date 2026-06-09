@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { eq } from 'drizzle-orm';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
-import {
-  divisionsTable,
-  districtsTable,
-} from '@/_db/drizzle/schema/location';
+import { divisionsTable, districtsTable } from '@/_db/drizzle/schema/location';
 
 export interface DistrictResponse {
   id: string;
@@ -39,14 +36,20 @@ export class PublicLocationService {
     });
 
     return divisions.map((division) => {
-      const divisionTranslation = resolveTranslation(division.translations, lang);
+      const divisionTranslation = resolveTranslation(
+        division.translations,
+        lang,
+      );
 
       return {
         id: division.id,
         code: division.code,
         name: divisionTranslation?.name ?? 'Unnamed Division',
         districts: division.districts.map((district) => {
-          const districtTranslation = resolveTranslation(district.translations, lang);
+          const districtTranslation = resolveTranslation(
+            district.translations,
+            lang,
+          );
 
           return {
             id: district.id,
@@ -58,7 +61,10 @@ export class PublicLocationService {
     });
   }
 
-  async findDivisionById(id: string, lang: string = 'en'): Promise<DivisionResponse | null> {
+  async findDivisionById(
+    id: string,
+    lang: string = 'en',
+  ): Promise<DivisionResponse | null> {
     const division = await this.db.client.query.divisionsTable.findFirst({
       where: eq(divisionsTable.id, id),
       with: {
@@ -81,7 +87,10 @@ export class PublicLocationService {
       code: division.code,
       name: divisionTranslation?.name ?? 'Unnamed Division',
       districts: division.districts.map((district) => {
-        const districtTranslation = resolveTranslation(district.translations, lang);
+        const districtTranslation = resolveTranslation(
+          district.translations,
+          lang,
+        );
 
         return {
           id: district.id,
@@ -101,7 +110,10 @@ export class PublicLocationService {
     });
 
     return districts.map((district) => {
-      const districtTranslation = resolveTranslation(district.translations, lang);
+      const districtTranslation = resolveTranslation(
+        district.translations,
+        lang,
+      );
 
       return {
         id: district.id,
@@ -111,7 +123,10 @@ export class PublicLocationService {
     });
   }
 
-  async findDistrictById(id: string, lang: string = 'en'): Promise<DistrictResponse | null> {
+  async findDistrictById(
+    id: string,
+    lang: string = 'en',
+  ): Promise<DistrictResponse | null> {
     const district = await this.db.client.query.districtsTable.findFirst({
       where: eq(districtsTable.id, id),
       with: {

@@ -46,9 +46,14 @@ export class CheckoutController {
     description:
       'Calculates the complete price breakdown for selected cart items including items subtotal, per-shop shipping costs, tax, and total based on the shipping address district.',
   })
-  @ApiOkResponseTyped(PriceBreakdownResponseDto, 'Price breakdown calculated successfully')
+  @ApiOkResponseTyped(
+    PriceBreakdownResponseDto,
+    'Price breakdown calculated successfully',
+  )
   @ApiUnauthorizedResponse()
-  @ApiBadRequestResponse('Invalid address ID, empty itemIds, or validation failed')
+  @ApiBadRequestResponse(
+    'Invalid address ID, empty itemIds, or validation failed',
+  )
   @ApiNotFoundResponse('Cart not found')
   @Post('price-breakdown')
   @UseGuards(CartAccessGuard)
@@ -66,7 +71,9 @@ export class CheckoutController {
     );
 
     return this.responseService.success({
-      message: this.i18n.t('message.success.priceBreakdownCalculated', { lang }),
+      message: this.i18n.t('message.success.priceBreakdownCalculated', {
+        lang,
+      }),
       data: { breakdown },
     });
   }
@@ -79,7 +86,9 @@ export class CheckoutController {
   })
   @ApiOkResponseTyped(PlaceOrderResponseDto, 'Order placed successfully')
   @ApiUnauthorizedResponse()
-  @ApiBadRequestResponse('Invalid request, insufficient stock, or unsupported payment method')
+  @ApiBadRequestResponse(
+    'Invalid request, insufficient stock, or unsupported payment method',
+  )
   @ApiNotFoundResponse('Cart or address not found')
   @Post('place-order')
   @UseGuards(CartAccessGuard)
@@ -89,7 +98,9 @@ export class CheckoutController {
     @I18nLang() lang: string,
   ) {
     if (!cartContext.userId) {
-      throw new BadRequestException('Guest checkout is not supported. Please sign in to place an order.');
+      throw new BadRequestException(
+        'Guest checkout is not supported. Please sign in to place an order.',
+      );
     }
 
     const resolved = await this.resolveCartContext(cartContext);

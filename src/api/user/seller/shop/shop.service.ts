@@ -726,10 +726,10 @@ export class ShopService {
       verification.utilityBillDocumentId,
     ].filter(Boolean) as string[];
 
-    let mediaMap: Map<string, any> = new Map();
+    const mediaMap: Map<string, any> = new Map();
     if (mediaIds.length > 0) {
       const medias = await this.mediaRepository.findMediaDetailsByIds(mediaIds);
-      medias.forEach(media => mediaMap.set(media.media.id, media.media));
+      medias.forEach((media) => mediaMap.set(media.media.id, media.media));
     }
 
     return {
@@ -741,14 +741,14 @@ export class ShopService {
       tradeLicenseDocumentId: verification.tradeLicenseDocumentId,
       tinDocumentId: verification.tinDocumentId,
       utilityBillDocumentId: verification.utilityBillDocumentId,
-      tradeLicenseDocument: verification.tradeLicenseDocumentId 
-        ? mediaMap.get(verification.tradeLicenseDocumentId) 
+      tradeLicenseDocument: verification.tradeLicenseDocumentId
+        ? mediaMap.get(verification.tradeLicenseDocumentId)
         : null,
-      tinDocument: verification.tinDocumentId 
-        ? mediaMap.get(verification.tinDocumentId) 
+      tinDocument: verification.tinDocumentId
+        ? mediaMap.get(verification.tinDocumentId)
         : null,
-      utilityBillDocument: verification.utilityBillDocumentId 
-        ? mediaMap.get(verification.utilityBillDocumentId) 
+      utilityBillDocument: verification.utilityBillDocumentId
+        ? mediaMap.get(verification.utilityBillDocumentId)
         : null,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,
@@ -837,7 +837,9 @@ export class ShopService {
             await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
           }
           throw new CustomException({
-            message: this.i18n.t('message.error.verificationAlreadyPending', { lang }),
+            message: this.i18n.t('message.error.verificationAlreadyPending', {
+              lang,
+            }),
             statusCode: HttpStatus.BAD_REQUEST,
             errorCode: ErrorCode.BAD_REQUEST,
           });
@@ -859,7 +861,8 @@ export class ShopService {
         // EDGE CASE: Prevent identical resubmissions (no changes made)
         const hasDocumentChanges =
           (dto.tradeLicenseDocumentId &&
-            dto.tradeLicenseDocumentId !== verification.tradeLicenseDocumentId) ||
+            dto.tradeLicenseDocumentId !==
+              verification.tradeLicenseDocumentId) ||
           (dto.tinDocumentId &&
             dto.tinDocumentId !== verification.tinDocumentId) ||
           (dto.utilityBillDocumentId &&
@@ -877,7 +880,9 @@ export class ShopService {
             await this.mediaRepository.decrementMediaUsage(mediaIds, tx);
           }
           throw new CustomException({
-            message: this.i18n.t('message.error.noChangesInResubmission', { lang }),
+            message: this.i18n.t('message.error.noChangesInResubmission', {
+              lang,
+            }),
             statusCode: HttpStatus.BAD_REQUEST,
             errorCode: ErrorCode.BAD_REQUEST,
           });
@@ -941,7 +946,7 @@ export class ShopService {
       ) {
         updatePayload.status = ShopVerificationStatusEnum.PENDING;
         updatePayload.rejectionReason = null;
-        
+
         // CRITICAL: Also update shop status to PENDING_VERIFICATION
         // This ensures consistency between shop status and verification status
         await this.shopRepository.update(

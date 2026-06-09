@@ -6,7 +6,19 @@ import { PublicLocationModule } from './location/location.module';
 import { PublicShopsModule } from './shops/shops.module';
 
 @Module({
-  imports: [PublicCategoriesModule, PublicTagsModule, PublicPlantsModule, PublicLocationModule, PublicShopsModule],
-  exports: [PublicCategoriesModule, PublicTagsModule, PublicPlantsModule, PublicLocationModule, PublicShopsModule],
+  imports: [
+    PublicCategoriesModule,
+    PublicTagsModule,
+    PublicPlantsModule,
+    PublicLocationModule,
+    PublicShopsModule,
+  ],
+  exports: [
+    PublicCategoriesModule,
+    PublicTagsModule,
+    PublicPlantsModule,
+    PublicLocationModule,
+    PublicShopsModule,
+  ],
 })
 export class PublicApiModule {}

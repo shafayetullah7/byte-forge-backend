@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { PublicShopService } from '../services/public-shop.service';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { PublicShopSlugDto } from '../dto/public-shop-slug.dto';
@@ -37,5 +37,4 @@ export class PublicShopController {
       data: shop,
     });
   }
-
 }

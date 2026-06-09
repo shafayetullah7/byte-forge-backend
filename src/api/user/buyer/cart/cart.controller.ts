@@ -95,7 +95,7 @@ export class CartController {
   ) {
     const count = await this.cartService.getCartCount(cartContext);
 
-    console.log({count})
+    console.log({ count });
 
     return this.responseService.success({
       message: this.i18n.t('message.success.cartRetrieved', { lang }),

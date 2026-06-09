@@ -18,8 +18,10 @@ export const districtTranslationsTable = pgTable(
   (t) => [unique().on(t.districtId, t.locale)],
 );
 
-export type TDistrictTranslation = typeof districtTranslationsTable.$inferSelect;
-export type TNewDistrictTranslation = typeof districtTranslationsTable.$inferInsert;
+export type TDistrictTranslation =
+  typeof districtTranslationsTable.$inferSelect;
+export type TNewDistrictTranslation =
+  typeof districtTranslationsTable.$inferInsert;
 
 export const districtTranslationsRelations = relations(
   districtTranslationsTable,

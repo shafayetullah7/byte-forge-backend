@@ -38,14 +38,8 @@ export const UpdateAddressSchema = z.object({
     .max(255, 'Address line 2 cannot exceed 255 characters')
     .optional()
     .nullable(),
-  districtId: z
-    .string()
-    .uuid('District ID must be a valid UUID')
-    .optional(),
-  divisionId: z
-    .string()
-    .uuid('Division ID must be a valid UUID')
-    .optional(),
+  districtId: z.string().uuid('District ID must be a valid UUID').optional(),
+  divisionId: z.string().uuid('Division ID must be a valid UUID').optional(),
   postalCode: z
     .string()
     .trim()

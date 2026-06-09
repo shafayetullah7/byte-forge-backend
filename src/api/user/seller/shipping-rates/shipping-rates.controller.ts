@@ -1,6 +1,9 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { ShippingRatesService, ShippingRate } from './shipping-rates.service';
-import { GetShippingRatesService, ShippingRateResponse } from './services/get-shipping-rates.service';
+import {
+  GetShippingRatesService,
+  ShippingRateResponse,
+} from './services/get-shipping-rates.service';
 import { BulkUpdateShippingRatesDto } from './dto/update-shipping-rates.dto';
 import { VerifiedUserAuthGuard } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard';
 import { TAuthorizedShop } from '@/common/types';

@@ -74,7 +74,7 @@ export class PlantListItemResponseDto {
   @ApiPropertyOptional({ example: 'A popular tropical houseplant' })
   shortDescription?: string;
 
-  @ApiPropertyOptional({ example: "29.99" })
+  @ApiPropertyOptional({ example: '29.99' })
   price?: string;
 
   @ApiProperty({ example: 50 })

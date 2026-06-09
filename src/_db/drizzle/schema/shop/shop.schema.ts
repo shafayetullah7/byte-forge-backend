@@ -1,5 +1,5 @@
 import { varchar, pgEnum, boolean } from 'drizzle-orm/pg-core';
-import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { userTable } from '../user';
 import { mediaTable } from '../media';

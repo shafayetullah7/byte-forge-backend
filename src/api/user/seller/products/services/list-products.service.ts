@@ -8,16 +8,7 @@ import {
 } from '@/_db/drizzle/schema';
 import { paginate } from '@/common/utils/pagination.util';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto';
-import {
-  and,
-  count,
-  eq,
-  exists,
-  ilike,
-  or,
-  asc,
-  desc,
-} from 'drizzle-orm';
+import { and, count, eq, exists, ilike, or, asc, desc } from 'drizzle-orm';
 
 export type ProductListItem = {
   id: string;
@@ -39,17 +30,14 @@ export class ListProductsService {
 
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(shopId: string, query: ListProductsQueryDto, lang: string = 'en') {
+  async execute(
+    shopId: string,
+    query: ListProductsQueryDto,
+    lang: string = 'en',
+  ) {
     try {
-      const {
-        page,
-        limit,
-        search,
-        productType,
-        status,
-        sortBy,
-        sortOrder,
-      } = query;
+      const { page, limit, search, productType, status, sortBy, sortOrder } =
+        query;
       const offset = (page - 1) * limit;
       const isAsc = sortOrder === 'asc';
 
@@ -66,10 +54,7 @@ export class ListProductsService {
                   .from(productTranslationsTable)
                   .where(
                     and(
-                      eq(
-                        productTranslationsTable.productId,
-                        productsTable.id,
-                      ),
+                      eq(productTranslationsTable.productId, productsTable.id),
                       ilike(productTranslationsTable.name, `%${search}%`),
                     ),
                   ),
@@ -100,10 +85,7 @@ export class ListProductsService {
           updatedAt: productsTable.updatedAt,
         })
         .from(productsTable)
-        .leftJoin(
-          mediaTable,
-          eq(mediaTable.id, productsTable.thumbnailId),
-        )
+        .leftJoin(mediaTable, eq(mediaTable.id, productsTable.thumbnailId))
         .leftJoin(
           productTranslationsTable,
           and(
@@ -152,9 +134,10 @@ export class ListProductsService {
         slug: row.slug,
         productType: row.productType,
         status: row.status,
-        thumbnail: row.thumbnailId && row.thumbnailUrl
-          ? { id: row.thumbnailId, url: row.thumbnailUrl }
-          : null,
+        thumbnail:
+          row.thumbnailId && row.thumbnailUrl
+            ? { id: row.thumbnailId, url: row.thumbnailUrl }
+            : null,
         name: row.name ?? null,
         shortDescription: row.shortDescription ?? null,
         price: row.price ?? null,

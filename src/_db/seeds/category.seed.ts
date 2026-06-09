@@ -352,7 +352,9 @@ async function seedCategories() {
             continue;
           }
 
-          console.log(`  ✅ Child: ${childCategory.slug} (${childCategory.id})`);
+          console.log(
+            `  ✅ Child: ${childCategory.slug} (${childCategory.id})`,
+          );
 
           // Self-reference for child (depth: 0)
           await insertSelfReference(childCategory.id);

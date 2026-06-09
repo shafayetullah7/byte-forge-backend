@@ -35,7 +35,10 @@ export class VariantInventoryDto {
   @ApiProperty({ example: false })
   allowBackorder!: boolean;
 
-  @ApiProperty({ enum: ['in_stock', 'low_stock', 'out_of_stock'], example: 'in_stock' })
+  @ApiProperty({
+    enum: ['in_stock', 'low_stock', 'out_of_stock'],
+    example: 'in_stock',
+  })
   status!: string;
 
   @ApiProperty({ type: Date })

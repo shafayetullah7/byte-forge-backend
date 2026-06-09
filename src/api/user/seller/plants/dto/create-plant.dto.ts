@@ -86,15 +86,23 @@ export const plantDetailsSchema = z.object({
     .trim()
     .max(255, 'Scientific name must be at most 255 characters')
     .optional(),
-  lightRequirement: z.enum(Object.keys(LightRequirementEnum) as [string, ...string[]]),
-  wateringFrequency: z.enum(Object.keys(WateringFrequencyEnum) as [string, ...string[]]),
-  humidityLevel: z.enum(Object.keys(HumidityLevelEnum) as [string, ...string[]]),
+  lightRequirement: z.enum(
+    Object.keys(LightRequirementEnum) as [string, ...string[]],
+  ),
+  wateringFrequency: z.enum(
+    Object.keys(WateringFrequencyEnum) as [string, ...string[]],
+  ),
+  humidityLevel: z.enum(
+    Object.keys(HumidityLevelEnum) as [string, ...string[]],
+  ),
   temperatureRange: z
     .string()
     .trim()
     .max(100, 'Temperature range must be at most 100 characters')
     .optional(),
-  careDifficulty: z.enum(Object.keys(CareDifficultyEnum) as [string, ...string[]]),
+  careDifficulty: z.enum(
+    Object.keys(CareDifficultyEnum) as [string, ...string[]],
+  ),
   growthRate: z
     .enum(Object.keys(GrowthRateEnum) as [string, ...string[]])
     .optional(),
@@ -204,7 +212,10 @@ export const productVariantSchema = z.object({
   isBase: z.boolean().optional().default(false),
   isActive: z.boolean().optional().default(true),
   plantAttributes: plantVariantAttributesSchema.optional(),
-  mediaIds: z.array(UUIDSchema).max(10, 'Maximum 10 images per variant').optional(),
+  mediaIds: z
+    .array(UUIDSchema)
+    .max(10, 'Maximum 10 images per variant')
+    .optional(),
   translations: z.object({
     en: variantTranslationSchema,
     bn: variantTranslationSchema,

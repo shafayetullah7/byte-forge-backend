@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  integer,
-  timestamp,
-  index,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, integer, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { reviewsTable } from './reviews.schema';
 import { mediaTable } from '../media/media.schema';
@@ -33,13 +27,16 @@ export const reviewImagesTable = pgTable(
 export type TReviewImage = typeof reviewImagesTable.$inferSelect;
 export type TNewReviewImage = typeof reviewImagesTable.$inferInsert;
 
-export const reviewImagesRelations = relations(reviewImagesTable, ({ one }) => ({
-  review: one(reviewsTable, {
-    fields: [reviewImagesTable.reviewId],
-    references: [reviewsTable.id],
+export const reviewImagesRelations = relations(
+  reviewImagesTable,
+  ({ one }) => ({
+    review: one(reviewsTable, {
+      fields: [reviewImagesTable.reviewId],
+      references: [reviewsTable.id],
+    }),
+    media: one(mediaTable, {
+      fields: [reviewImagesTable.mediaId],
+      references: [mediaTable.id],
+    }),
   }),
-  media: one(mediaTable, {
-    fields: [reviewImagesTable.mediaId],
-    references: [mediaTable.id],
-  }),
-}));
+);

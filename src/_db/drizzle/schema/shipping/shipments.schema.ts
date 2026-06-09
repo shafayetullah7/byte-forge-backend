@@ -3,13 +3,15 @@ import {
   uuid,
   varchar,
   timestamp,
-  text,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { ordersTable } from '../order/orders.schema';
 import { ShippingStatusEnum } from '../../enum';
-import { shipmentStatusHistoryTable, shipmentStatusEnum } from './shipment-status-history.schema';
+import {
+  shipmentStatusHistoryTable,
+  shipmentStatusEnum,
+} from './shipment-status-history.schema';
 
 export const shipmentsTable = pgTable(
   'shipments',
@@ -51,10 +53,13 @@ export const shipmentsTable = pgTable(
 export type TShipment = typeof shipmentsTable.$inferSelect;
 export type TNewShipment = typeof shipmentsTable.$inferInsert;
 
-export const shipmentsRelations = relations(shipmentsTable, ({ one, many }) => ({
-  order: one(ordersTable, {
-    fields: [shipmentsTable.orderId],
-    references: [ordersTable.id],
+export const shipmentsRelations = relations(
+  shipmentsTable,
+  ({ one, many }) => ({
+    order: one(ordersTable, {
+      fields: [shipmentsTable.orderId],
+      references: [ordersTable.id],
+    }),
+    statusHistory: many(shipmentStatusHistoryTable),
   }),
-  statusHistory: many(shipmentStatusHistoryTable),
-}));
+);

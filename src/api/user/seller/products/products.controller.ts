@@ -21,9 +21,20 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { ApiAuth, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
-import { ApiNotFoundResponse, ApiUnauthorizedResponse } from '@/common/decorators/api-error.decorator';
-import { ProductListItemResponseDto, ProductDetailResponseDto, ProductSummaryResponseDto, ProductOverviewResponseDto } from './dto/products-response.dto';
+import {
+  ApiAuth,
+  ApiPaginatedResponse,
+} from '@/common/decorators/swagger.decorators';
+import {
+  ApiNotFoundResponse,
+  ApiUnauthorizedResponse,
+} from '@/common/decorators/api-error.decorator';
+import {
+  ProductListItemResponseDto,
+  ProductDetailResponseDto,
+  ProductSummaryResponseDto,
+  ProductOverviewResponseDto,
+} from './dto/products-response.dto';
 import { ProductStatusEnum, ProductTypeEnum } from '@/_db/drizzle/enum';
 
 @ApiTags('📦 Seller - Products Management')
@@ -40,7 +51,8 @@ export class ProductsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'List products',
-    description: 'Returns a paginated list of all products for the authenticated seller',
+    description:
+      'Returns a paginated list of all products for the authenticated seller',
   })
   @ApiPaginatedResponse(ProductListItemResponseDto)
   @ApiQuery({
@@ -87,7 +99,11 @@ export class ProductsController {
       `Fetching products for user ${authenticUser.user.id} | Query: ${JSON.stringify(query)}`,
     );
     try {
-      const result = await this.productsService.getProducts(authenticUser.user.id, query, lang);
+      const result = await this.productsService.getProducts(
+        authenticUser.user.id,
+        query,
+        lang,
+      );
       this.logger.log(`Successfully fetched ${result.data.length} products`);
       return this.responseService.paginated({
         message: this.i18n.t('message.success.productsRetrieved', { lang }),
@@ -106,7 +122,8 @@ export class ProductsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get product by ID',
-    description: 'Returns full product details including thumbnail and variant information',
+    description:
+      'Returns full product details including thumbnail and variant information',
   })
   @ApiParam({
     name: 'id',
@@ -128,11 +145,13 @@ export class ProductsController {
     @I18nLang() lang: string,
   ) {
     const { id } = params;
-    this.logger.log(
-      `Fetching product ${id} for user ${authenticUser.user.id}`,
-    );
+    this.logger.log(`Fetching product ${id} for user ${authenticUser.user.id}`);
     try {
-      const product = await this.productsService.getProductById(authenticUser.user.id, id, lang);
+      const product = await this.productsService.getProductById(
+        authenticUser.user.id,
+        id,
+        lang,
+      );
       this.logger.log(`Successfully fetched product ${id}`);
       return this.responseService.success({
         message: this.i18n.t('message.success.productRetrieved', { lang }),
@@ -150,7 +169,8 @@ export class ProductsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get product summary',
-    description: 'Returns lightweight product info for layout header (id, slug, type, status, translations)',
+    description:
+      'Returns lightweight product info for layout header (id, slug, type, status, translations)',
   })
   @ApiParam({
     name: 'id',
@@ -176,7 +196,11 @@ export class ProductsController {
       `Fetching product summary ${id} for user ${authenticUser.user.id}`,
     );
     try {
-      const summary = await this.productsService.getProductSummary(authenticUser.user.id, id, lang);
+      const summary = await this.productsService.getProductSummary(
+        authenticUser.user.id,
+        id,
+        lang,
+      );
       this.logger.log(`Successfully fetched product summary ${id}`);
       return this.responseService.success({
         message: this.i18n.t('message.success.productRetrieved', { lang }),
@@ -194,7 +218,8 @@ export class ProductsController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get product overview',
-    description: 'Returns product overview data (thumbnail, variants, stock breakdown)',
+    description:
+      'Returns product overview data (thumbnail, variants, stock breakdown)',
   })
   @ApiParam({
     name: 'id',
@@ -220,7 +245,11 @@ export class ProductsController {
       `Fetching product overview ${id} for user ${authenticUser.user.id}`,
     );
     try {
-      const overview = await this.productsService.getProductOverview(authenticUser.user.id, id, lang);
+      const overview = await this.productsService.getProductOverview(
+        authenticUser.user.id,
+        id,
+        lang,
+      );
       this.logger.log(`Successfully fetched product overview ${id}`);
       return this.responseService.success({
         message: this.i18n.t('message.success.productRetrieved', { lang }),

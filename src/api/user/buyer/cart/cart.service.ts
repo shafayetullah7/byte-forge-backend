@@ -62,10 +62,7 @@ export class CartService {
     private readonly db: DrizzleService,
   ) {}
 
-  async mergeGuestCart(
-    userId: string,
-    guestToken: string,
-  ): Promise<void> {
+  async mergeGuestCart(userId: string, guestToken: string): Promise<void> {
     if (!userId || !guestToken) {
       return;
     }
@@ -238,17 +235,23 @@ export class CartService {
         return { itemsCount: 0, totalQuantity: 0 };
       }
       const itemsCount = await this.cartRepository.getCartItemsCount(cart.id);
-      const totalQuantity = await this.cartRepository.getCartTotalQuantity(cart.id);
+      const totalQuantity = await this.cartRepository.getCartTotalQuantity(
+        cart.id,
+      );
       return { itemsCount, totalQuantity };
     }
 
     if (context.guestToken) {
-      const cart = await this.cartRepository.getCartByGuestToken(context.guestToken);
+      const cart = await this.cartRepository.getCartByGuestToken(
+        context.guestToken,
+      );
       if (!cart) {
         return { itemsCount: 0, totalQuantity: 0 };
       }
       const itemsCount = await this.cartRepository.getCartItemsCount(cart.id);
-      const totalQuantity = await this.cartRepository.getCartTotalQuantity(cart.id);
+      const totalQuantity = await this.cartRepository.getCartTotalQuantity(
+        cart.id,
+      );
       return { itemsCount, totalQuantity };
     }
 

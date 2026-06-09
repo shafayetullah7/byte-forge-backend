@@ -22,10 +22,7 @@ export class AddressesService {
     private readonly setDefaultAddressService: SetDefaultAddressService,
   ) {}
 
-  async create(
-    userId: string,
-    dto: CreateAddressDto,
-  ): Promise<TUserAddress> {
+  async create(userId: string, dto: CreateAddressDto): Promise<TUserAddress> {
     return this.createAddressService.execute(userId, dto);
   }
 
@@ -57,10 +54,7 @@ export class AddressesService {
     return this.deleteAddressService.execute(addressId, userId);
   }
 
-  async setDefault(
-    addressId: string,
-    userId: string,
-  ): Promise<TUserAddress> {
+  async setDefault(addressId: string, userId: string): Promise<TUserAddress> {
     return this.setDefaultAddressService.execute(addressId, userId);
   }
 }

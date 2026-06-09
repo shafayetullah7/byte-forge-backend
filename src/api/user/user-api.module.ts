@@ -7,7 +7,19 @@ import { BuyerApiModule } from './buyer/buyer.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 
 @Module({
-  imports: [UserModule, UserAuthModule, SellerApiModule, BuyerApiModule, PasswordResetModule],
-  exports: [UserModule, UserAuthModule, SellerApiModule, BuyerApiModule, PasswordResetModule],
+  imports: [
+    UserModule,
+    UserAuthModule,
+    SellerApiModule,
+    BuyerApiModule,
+    PasswordResetModule,
+  ],
+  exports: [
+    UserModule,
+    UserAuthModule,
+    SellerApiModule,
+    BuyerApiModule,
+    PasswordResetModule,
+  ],
 })
 export class UserApiModule {}

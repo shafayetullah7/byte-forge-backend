@@ -22,7 +22,10 @@ export class PublicCategoriesController {
     summary: 'Get all active categories',
     description: 'Returns a list of all active categories with translations',
   })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   @ApiQuery({
     name: 'locale',
     required: false,
@@ -41,7 +44,10 @@ export class PublicCategoriesController {
     summary: 'Get category tree',
     description: 'Returns a hierarchical tree of all active categories',
   })
-  @ApiResponse({ status: 200, description: 'Category tree retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category tree retrieved successfully',
+  })
   @ApiQuery({
     name: 'locale',
     required: false,
@@ -64,7 +70,10 @@ export class PublicCategoriesController {
   @ApiNotFoundResponse('Category not found')
   @ApiParam({ name: 'id', description: 'Category UUID' })
   @Get(':id')
-  async findOne(@Param() params: GetCategoryByIdParamsDto, @I18nLang() lang: string) {
+  async findOne(
+    @Param() params: GetCategoryByIdParamsDto,
+    @I18nLang() lang: string,
+  ) {
     const data = await this.categoriesService.findOne(params.id, lang);
     return { success: true, message: 'Category retrieved', data };
   }

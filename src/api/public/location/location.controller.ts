@@ -21,7 +21,8 @@ export class PublicLocationController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get all divisions with districts',
-    description: 'Returns all Bangladesh divisions with their districts, with translations',
+    description:
+      'Returns all Bangladesh divisions with their districts, with translations',
   })
   @ApiResponse({ status: 200, description: 'Divisions retrieved successfully' })
   @ApiQuery({
@@ -40,13 +41,17 @@ export class PublicLocationController {
   @ApiAuth()
   @ApiOperation({
     summary: 'Get division by ID',
-    description: 'Returns a single division with its districts and translations',
+    description:
+      'Returns a single division with its districts and translations',
   })
   @ApiResponse({ status: 200, description: 'Division retrieved successfully' })
   @ApiNotFoundResponse('Division not found')
   @ApiParam({ name: 'id', description: 'Division UUID' })
   @Get('divisions/:id')
-  async findDivisionById(@Param() params: GetDivisionByIdParamsDto, @I18nLang() lang: string) {
+  async findDivisionById(
+    @Param() params: GetDivisionByIdParamsDto,
+    @I18nLang() lang: string,
+  ) {
     const data = await this.locationService.findDivisionById(params.id, lang);
     if (!data) {
       throw new Error('Division not found');
@@ -82,7 +87,10 @@ export class PublicLocationController {
   @ApiNotFoundResponse('District not found')
   @ApiParam({ name: 'id', description: 'District UUID' })
   @Get('districts/:id')
-  async findDistrictById(@Param() params: GetDistrictByIdParamsDto, @I18nLang() lang: string) {
+  async findDistrictById(
+    @Param() params: GetDistrictByIdParamsDto,
+    @I18nLang() lang: string,
+  ) {
     const data = await this.locationService.findDistrictById(params.id, lang);
     if (!data) {
       throw new Error('District not found');

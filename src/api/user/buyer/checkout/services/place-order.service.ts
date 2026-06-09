@@ -1,16 +1,26 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CartRepository } from '@/_repositories/user/cart.repository';
 import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { shopShippingRatesTable, districtsTable, districtTranslationsTable, orderGroupsTable, ordersTable } from '@/_db/drizzle/schema';
+import {
+  shopShippingRatesTable,
+  districtsTable,
+  districtTranslationsTable,
+  orderGroupsTable,
+  ordersTable,
+} from '@/_db/drizzle/schema';
 import { eq, and, inArray, desc, like } from 'drizzle-orm';
 import { OrderStatusEnum, PaymentStatusEnum } from '@/_db/drizzle/enum';
 import type { TPaymentMethod } from '@/_db/drizzle/enum/payment-method.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
 import {
   computeStockStatus,
-  computeLineTotal,
 } from '@/api/user/buyer/cart/cart.utils';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
@@ -63,7 +73,9 @@ export class PlaceOrderService {
     lang: string = 'en',
   ): Promise<PlaceOrderResult> {
     if (paymentMethod !== PaymentMethodEnum.COD) {
-      throw new BadRequestException('Only Cash on Delivery (COD) is currently supported');
+      throw new BadRequestException(
+        'Only Cash on Delivery (COD) is currently supported',
+      );
     }
 
     const address = await this.addressRepository.findById(addressId);
@@ -88,16 +100,24 @@ export class PlaceOrderService {
     }
 
     const variantIds = selectedItems.map((item) => item.variantId);
-    const inventories = await this.cartRepository.getInventoryByVariantIds(variantIds);
-    const inventoryMap = new Map(inventories.map((inv) => [inv.variantId, inv]));
+    const inventories =
+      await this.cartRepository.getInventoryByVariantIds(variantIds);
+    const inventoryMap = new Map(
+      inventories.map((inv) => [inv.variantId, inv]),
+    );
 
     const items: PlaceOrderItem[] = selectedItems.map((item) => {
       const variant = item.variant;
       const product = variant?.product;
       const shop = product?.shop;
       const translation = product?.translations?.find((t) => t.locale === lang);
-      const variantTranslation = variant?.translations?.find((t) => t.locale === lang);
-      const shopTranslation = resolveTranslation(shop?.translations ?? null, lang);
+      const variantTranslation = variant?.translations?.find(
+        (t) => t.locale === lang,
+      );
+      const shopTranslation = resolveTranslation(
+        shop?.translations ?? null,
+        lang,
+      );
 
       return {
         id: item.id,
@@ -121,7 +141,11 @@ export class PlaceOrderService {
 
       if (stockInfo.stockStatus === 'out_of_stock') {
         stockCheckErrors.push(`${item.productName} is out of stock`);
-      } else if (stockInfo.stockStatus === 'low_stock' && stockInfo.availableQuantity !== null && stockInfo.availableQuantity < item.quantity) {
+      } else if (
+        stockInfo.stockStatus === 'low_stock' &&
+        stockInfo.availableQuantity !== null &&
+        stockInfo.availableQuantity < item.quantity
+      ) {
         stockCheckErrors.push(
           `Insufficient stock for ${item.productName}. Available: ${stockInfo.availableQuantity}, Requested: ${item.quantity}`,
         );
@@ -141,12 +165,13 @@ export class PlaceOrderService {
 
     const districtId = address.districtId;
 
-    const shippingRates = await this.db.client.query.shopShippingRatesTable.findMany({
-      where: and(
-        inArray(shopShippingRatesTable.shopId, Array.from(shopGroups.keys())),
-        eq(shopShippingRatesTable.districtId, districtId),
-      ),
-    });
+    const shippingRates =
+      await this.db.client.query.shopShippingRatesTable.findMany({
+        where: and(
+          inArray(shopShippingRatesTable.shopId, Array.from(shopGroups.keys())),
+          eq(shopShippingRatesTable.districtId, districtId),
+        ),
+      });
 
     const rateMap = new Map<string, string>();
     for (const rate of shippingRates) {
@@ -158,11 +183,16 @@ export class PlaceOrderService {
         districtName: districtTranslationsTable.name,
       })
       .from(districtsTable)
-      .leftJoin(districtTranslationsTable, eq(districtsTable.id, districtTranslationsTable.districtId))
-      .where(and(
-        eq(districtsTable.id, districtId),
-        eq(districtTranslationsTable.locale, lang),
-      ))
+      .leftJoin(
+        districtTranslationsTable,
+        eq(districtsTable.id, districtTranslationsTable.districtId),
+      )
+      .where(
+        and(
+          eq(districtsTable.id, districtId),
+          eq(districtTranslationsTable.locale, lang),
+        ),
+      )
       .execute();
 
     const districtName = districtResult[0]?.districtName ?? '';
@@ -193,9 +223,10 @@ export class PlaceOrderService {
         .limit(1)
         .execute();
 
-      let orderCounter = lastOrder.length > 0
-        ? parseInt(lastOrder[0].orderNumber.split('-').pop() ?? '0', 10)
-        : 0;
+      let orderCounter =
+        lastOrder.length > 0
+          ? parseInt(lastOrder[0].orderNumber.split('-').pop() ?? '0', 10)
+          : 0;
 
       for (const [shopId, shopItems] of shopGroups) {
         const itemsSubtotal = shopItems.reduce(
@@ -288,10 +319,7 @@ export class PlaceOrderService {
         .set({ totalAmount: groupTotal.toFixed(2) })
         .where(eq(orderGroupsTable.id, orderGroup.id));
 
-      await this.cartRepository.deleteCartItemsByIds(
-        itemIds,
-        { tx },
-      );
+      await this.cartRepository.deleteCartItemsByIds(itemIds, { tx });
 
       return {
         orderGroupId: orderGroup.id,

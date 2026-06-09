@@ -74,7 +74,8 @@ export class CalculatePriceBreakdownService {
 
       const districtId = address.districtId;
 
-      const cart = await this.cartRepository.getCartWithItemsAndShopById(cartId);
+      const cart =
+        await this.cartRepository.getCartWithItemsAndShopById(cartId);
 
       if (!cart || cart.items.length === 0) {
         return {
@@ -118,7 +119,10 @@ export class CalculatePriceBreakdownService {
         const variantTranslation = variant?.translations?.find(
           (t) => t.locale === locale,
         );
-        const shopTranslation = resolveTranslation(shop?.translations ?? null, locale);
+        const shopTranslation = resolveTranslation(
+          shop?.translations ?? null,
+          locale,
+        );
         const inventory = inventoryMap.get(item.variantId) ?? null;
         const stockInfo = computeStockStatus(inventory);
 
@@ -155,12 +159,13 @@ export class CalculatePriceBreakdownService {
 
       // Fetch shipping rates for all shops for this district
       const shopIds = Array.from(shopGroups.keys());
-      const shippingRates = await this.db.client.query.shopShippingRatesTable.findMany({
-        where: and(
-          inArray(shopShippingRatesTable.shopId, shopIds),
-          eq(shopShippingRatesTable.districtId, districtId),
-        ),
-      });
+      const shippingRates =
+        await this.db.client.query.shopShippingRatesTable.findMany({
+          where: and(
+            inArray(shopShippingRatesTable.shopId, shopIds),
+            eq(shopShippingRatesTable.districtId, districtId),
+          ),
+        });
 
       const rateMap = new Map<string, string>();
       for (const rate of shippingRates) {

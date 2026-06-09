@@ -6,4 +6,5 @@ export const PaymentMethodEnum = {
   SSLCOMMERCE: 'SSLCOMMERCE',
 } as const;
 
-export type TPaymentMethod = (typeof PaymentMethodEnum)[keyof typeof PaymentMethodEnum];
+export type TPaymentMethod =
+  (typeof PaymentMethodEnum)[keyof typeof PaymentMethodEnum];

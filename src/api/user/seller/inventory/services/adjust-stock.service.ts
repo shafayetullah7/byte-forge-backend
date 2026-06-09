@@ -1,10 +1,7 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  productVariantsTable,
-  productsTable,
-} from '@/_db/drizzle/schema';
+import { productVariantsTable, productsTable } from '@/_db/drizzle/schema';
 import { InventoryMovementTypeEnum } from '@/_db/drizzle/enum';
 import { InventoryRepository } from '@/_repositories/business/inventory.repository/inventory.repository';
 import { CustomException } from '@/common/exceptions/custom.exception';
@@ -68,8 +65,8 @@ export class AdjustStockService {
       });
     }
 
-    const variant = { 
-      id: variantRecord.variantId, 
+    const variant = {
+      id: variantRecord.variantId,
       sku: variantRecord.variantSku,
       lowStockThreshold: variantRecord.lowStockThreshold ?? 5,
     };
@@ -86,7 +83,10 @@ export class AdjustStockService {
 
       if (!inventory.trackInventory) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.trackingDisabled', { lang }),
+          message: this.i18n.t(
+            'message.validation.inventory.trackingDisabled',
+            { lang },
+          ),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -99,10 +99,16 @@ export class AdjustStockService {
       // Validate: resulting quantity cannot be negative
       if (newQuantity < 0) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.insufficientStock', {
-            lang,
-            args: { current: previousQuantity, requested: Math.abs(data.quantityChange) },
-          }),
+          message: this.i18n.t(
+            'message.validation.inventory.insufficientStock',
+            {
+              lang,
+              args: {
+                current: previousQuantity,
+                requested: Math.abs(data.quantityChange),
+              },
+            },
+          ),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -111,7 +117,9 @@ export class AdjustStockService {
       // Validate: resulting quantity cannot exceed integer max
       if (newQuantity > MAX_INT32) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.stockOverflow', { lang }),
+          message: this.i18n.t('message.validation.inventory.stockOverflow', {
+            lang,
+          }),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -120,7 +128,10 @@ export class AdjustStockService {
       // Validate: reserved cannot exceed quantity
       if (data.quantityChange < 0 && newQuantity < previousReserved) {
         throw new CustomException({
-          message: this.i18n.t('message.validation.inventory.reservedExceedsQuantity', { lang }),
+          message: this.i18n.t(
+            'message.validation.inventory.reservedExceedsQuantity',
+            { lang },
+          ),
           statusCode: HttpStatus.BAD_REQUEST,
           errorCode: ErrorCode.VALIDATION_ERROR,
         });
@@ -162,7 +173,7 @@ export class AdjustStockService {
 
       this.logger.log(
         `Adjusted variant ${variant.id} by ${data.quantityChange} units. ` +
-        `Quantity: ${previousQuantity} -> ${newQuantity}`,
+          `Quantity: ${previousQuantity} -> ${newQuantity}`,
       );
 
       return {

@@ -46,13 +46,21 @@ export class GetProductByIdService {
 
   private queryProduct(shopId: string, productId: string) {
     return this.db.client.query.productsTable.findFirst({
-      where: and(eq(productsTable.shopId, shopId), eq(productsTable.id, productId)),
+      where: and(
+        eq(productsTable.shopId, shopId),
+        eq(productsTable.id, productId),
+      ),
       with: {
         thumbnail: {
           columns: { id: true, url: true },
         },
         translations: {
-          columns: { locale: true, name: true, description: true, shortDescription: true },
+          columns: {
+            locale: true,
+            name: true,
+            description: true,
+            shortDescription: true,
+          },
         },
         variants: {
           columns: {
@@ -69,7 +77,10 @@ export class GetProductByIdService {
     });
   }
 
-  async execute(shopId: string, productId: string): Promise<ProductDetailResult | null> {
+  async execute(
+    shopId: string,
+    productId: string,
+  ): Promise<ProductDetailResult | null> {
     try {
       const product = await this.queryProduct(shopId, productId);
       if (!product) return null;

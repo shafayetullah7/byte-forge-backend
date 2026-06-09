@@ -10,7 +10,11 @@ import {
   TOrderStatusHistory,
 } from '@/_db/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { TShopTranslation, TProductTranslation, TMedia } from '@/_db/drizzle/schema';
+import {
+  TShopTranslation,
+  TProductTranslation,
+  TMedia,
+} from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 // ─── Query Result Types ──────────────────────────────────────────────────────
@@ -44,11 +48,7 @@ interface OrderGroupWithRelations extends TOrderGroup {
 export class GetOrderGroupService {
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(
-    userId: string,
-    groupId: string,
-    lang: string = 'en',
-  ) {
+  async execute(userId: string, groupId: string, lang: string = 'en') {
     const group = await this.fetchGroupWithDetails(groupId, userId, lang);
 
     if (!group) {

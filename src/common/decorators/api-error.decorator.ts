@@ -27,7 +27,7 @@ export const ApiErrorResponse = (
     schema: {
       example: example || defaultExample,
     },
-  } as ApiResponseOptions);
+  });
 };
 
 /**

@@ -65,7 +65,7 @@ export class AdminSessionService {
       .where(eq(sessionTable.id, sessionId))
       .execute();
 
-    return (adminSession as { admin: TAdmin; session: TSession }) || null;
+    return adminSession || null;
   }
 
   async revokeSession(sessionId: string) {

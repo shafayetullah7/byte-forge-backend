@@ -16,7 +16,10 @@ export type ShippingRateResponse = {
 export class GetShippingRatesService {
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(shopId: string, lang: string = 'en'): Promise<ShippingRateResponse[]> {
+  async execute(
+    shopId: string,
+    lang: string = 'en',
+  ): Promise<ShippingRateResponse[]> {
     const districts = await this.db.client.query.districtsTable.findMany({
       with: {
         translations: true,
@@ -35,12 +38,21 @@ export class GetShippingRatesService {
 
     const rateMap = new Map<string, { cost: string; costPerKg: string }>();
     for (const rate of rates) {
-      rateMap.set(rate.districtId, { cost: rate.cost, costPerKg: rate.costPerKg });
+      rateMap.set(rate.districtId, {
+        cost: rate.cost,
+        costPerKg: rate.costPerKg,
+      });
     }
 
     return districts.map((district) => {
-      const districtTranslation = resolveTranslation(district.translations, lang);
-      const divisionTranslation = resolveTranslation(district.division.translations, lang);
+      const districtTranslation = resolveTranslation(
+        district.translations,
+        lang,
+      );
+      const divisionTranslation = resolveTranslation(
+        district.division.translations,
+        lang,
+      );
       const rate = rateMap.get(district.id);
 
       return {

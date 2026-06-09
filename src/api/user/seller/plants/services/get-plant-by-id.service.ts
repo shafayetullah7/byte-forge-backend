@@ -124,13 +124,21 @@ export class GetPlantByIdService {
 
   private queryProduct(shopId: string, plantId: string) {
     return this.db.client.query.productsTable.findFirst({
-      where: and(eq(productsTable.id, plantId), eq(productsTable.shopId, shopId)),
+      where: and(
+        eq(productsTable.id, plantId),
+        eq(productsTable.shopId, shopId),
+      ),
       with: {
         thumbnail: {
           columns: { id: true, url: true },
         },
         translations: {
-          columns: { locale: true, name: true, description: true, shortDescription: true },
+          columns: {
+            locale: true,
+            name: true,
+            description: true,
+            shortDescription: true,
+          },
         },
         plantDetails: {
           with: {
@@ -212,7 +220,10 @@ export class GetPlantByIdService {
     });
   }
 
-  async execute(shopId: string, plantId: string): Promise<PlantDetailResult | null> {
+  async execute(
+    shopId: string,
+    plantId: string,
+  ): Promise<PlantDetailResult | null> {
     const product = await this.queryProduct(shopId, plantId);
     if (!product) return null;
     return this.mapResult(product);
@@ -269,7 +280,10 @@ export class GetPlantByIdService {
         title: t.title,
       })),
       media: v.media
-        .filter((m): m is typeof m & { media: NonNullable<typeof m.media> } => m.media != null)
+        .filter(
+          (m): m is typeof m & { media: NonNullable<typeof m.media> } =>
+            m.media != null,
+        )
         .map((m) => ({
           id: m.id,
           mediaId: m.mediaId,
@@ -293,7 +307,9 @@ export class GetPlantByIdService {
     };
   }
 
-  private mapPlantDetails(details: NonNullable<DrizzleProduct['plantDetails']>): PlantDetailResult['plantDetails'] {
+  private mapPlantDetails(
+    details: NonNullable<DrizzleProduct['plantDetails']>,
+  ): PlantDetailResult['plantDetails'] {
     const category = details.category
       ? {
           id: details.category.id,
@@ -306,7 +322,10 @@ export class GetPlantByIdService {
       : null;
 
     const tags = details.tags
-      .filter((pt): pt is typeof pt & { tag: NonNullable<typeof pt.tag> } => pt.tag != null)
+      .filter(
+        (pt): pt is typeof pt & { tag: NonNullable<typeof pt.tag> } =>
+          pt.tag != null,
+      )
       .map((pt) => ({
         id: pt.tag.id,
         slug: pt.tag.slug,
@@ -346,7 +365,9 @@ export class GetPlantByIdService {
     };
   }
 
-  private mapCareInstructions(care: NonNullable<DrizzleProduct['careInstructions']>): PlantDetailResult['careInstructions'] {
+  private mapCareInstructions(
+    care: NonNullable<DrizzleProduct['careInstructions']>,
+  ): PlantDetailResult['careInstructions'] {
     const translations = care.translations.map((t) => ({
       locale: t.locale,
       lightInstructions: t.lightInstructions,

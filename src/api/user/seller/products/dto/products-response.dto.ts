@@ -15,7 +15,10 @@ export class ProductSummaryResponseDto {
   @ApiProperty({ example: 'monstera-deliciosa' })
   slug!: string;
 
-  @ApiProperty({ enum: ['plant', 'pot', 'seed', 'fertilizer'], example: 'plant' })
+  @ApiProperty({
+    enum: ['plant', 'pot', 'seed', 'fertilizer'],
+    example: 'plant',
+  })
   productType!: string;
 
   @ApiProperty({ enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'], example: 'ACTIVE' })
@@ -92,7 +95,10 @@ export class ProductDetailResponseDto {
   @ApiProperty({ example: 'monstera-deliciosa' })
   slug!: string;
 
-  @ApiProperty({ enum: ['plant', 'pot', 'seed', 'fertilizer'], example: 'plant' })
+  @ApiProperty({
+    enum: ['plant', 'pot', 'seed', 'fertilizer'],
+    example: 'plant',
+  })
   productType!: string;
 
   @ApiProperty({ enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'], example: 'ACTIVE' })
@@ -104,7 +110,12 @@ export class ProductDetailResponseDto {
   @ApiPropertyOptional({
     type: [Object],
     example: [
-      { locale: 'en', name: 'Monstera Deliciosa', description: '...', shortDescription: '...' },
+      {
+        locale: 'en',
+        name: 'Monstera Deliciosa',
+        description: '...',
+        shortDescription: '...',
+      },
     ],
   })
   translations?: Array<{
@@ -117,7 +128,15 @@ export class ProductDetailResponseDto {
   @ApiPropertyOptional({
     type: [Object],
     example: [
-      { id: 'var-1', sku: 'ALBO-MED-001', price: '4500.00', inventoryCount: 8, lowStockThreshold: 3, isBase: true, isActive: true },
+      {
+        id: 'var-1',
+        sku: 'ALBO-MED-001',
+        price: '4500.00',
+        inventoryCount: 8,
+        lowStockThreshold: 3,
+        isBase: true,
+        isActive: true,
+      },
     ],
   })
   variants?: Array<{
@@ -132,7 +151,12 @@ export class ProductDetailResponseDto {
 
   @ApiPropertyOptional({
     type: Object,
-    example: { totalStock: 12, availableStock: 12, reservedStock: 0, lowStockCount: 1 },
+    example: {
+      totalStock: 12,
+      availableStock: 12,
+      reservedStock: 0,
+      lowStockCount: 1,
+    },
   })
   stockBreakdown?: {
     totalStock: number;
@@ -155,7 +179,10 @@ export class ProductListItemResponseDto {
   @ApiProperty({ example: 'monstera-deliciosa' })
   slug!: string;
 
-  @ApiProperty({ enum: ['plant', 'pot', 'seed', 'fertilizer'], example: 'plant' })
+  @ApiProperty({
+    enum: ['plant', 'pot', 'seed', 'fertilizer'],
+    example: 'plant',
+  })
   productType!: string;
 
   @ApiProperty({ enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'], example: 'ACTIVE' })

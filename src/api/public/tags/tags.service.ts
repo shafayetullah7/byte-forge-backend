@@ -2,9 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   tagGroupsTable,
-  tagGroupTranslationsTable,
   tagsTable,
-  tagTranslationsTable,
 } from '@/_db/drizzle/schema/taxonomy';
 import { and, eq, isNull, inArray, sql } from 'drizzle-orm';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
@@ -37,10 +35,7 @@ export class PublicTagsService {
       ),
       with: {
         tags: {
-          where: and(
-            eq(tagsTable.isActive, true),
-            isNull(tagsTable.deletedAt),
-          ),
+          where: and(eq(tagsTable.isActive, true), isNull(tagsTable.deletedAt)),
           with: {
             translations: true,
           },
@@ -79,10 +74,7 @@ export class PublicTagsService {
 
   async findOne(id: string, lang: string = 'en'): Promise<PublicTagResponse> {
     const tag = await this.db.client.query.tagsTable.findFirst({
-      where: and(
-        eq(tagsTable.id, id),
-        isNull(tagsTable.deletedAt),
-      ),
+      where: and(eq(tagsTable.id, id), isNull(tagsTable.deletedAt)),
       with: {
         translations: true,
       },

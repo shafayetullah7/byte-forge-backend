@@ -4,4 +4,5 @@ export const ReviewStatusEnum = {
   REJECTED: 'REJECTED',
 } as const;
 
-export type TReviewStatus = (typeof ReviewStatusEnum)[keyof typeof ReviewStatusEnum];
+export type TReviewStatus =
+  (typeof ReviewStatusEnum)[keyof typeof ReviewStatusEnum];

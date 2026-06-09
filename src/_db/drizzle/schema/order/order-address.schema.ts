@@ -24,24 +24,27 @@ export const orderAddressTable = pgTable(
     city: varchar('city', { length: 100 }).notNull(),
     state: varchar('state', { length: 100 }),
     postalCode: varchar('postal_code', { length: 20 }),
-    country: varchar('country', { length: 100 }).notNull().default('Bangladesh'),
+    country: varchar('country', { length: 100 })
+      .notNull()
+      .default('Bangladesh'),
     companyName: varchar('company_name', { length: 255 }),
     deliveryInstructions: text('delivery_instructions'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (t) => [
-    index('order_addresses_order_id_idx').on(t.orderId),
-  ],
+  (t) => [index('order_addresses_order_id_idx').on(t.orderId)],
 );
 
 export type TOrderAddress = typeof orderAddressTable.$inferSelect;
 export type TNewOrderAddress = typeof orderAddressTable.$inferInsert;
 
-export const orderAddressRelations = relations(orderAddressTable, ({ one }) => ({
-  order: one(ordersTable, {
-    fields: [orderAddressTable.orderId],
-    references: [ordersTable.id],
+export const orderAddressRelations = relations(
+  orderAddressTable,
+  ({ one }) => ({
+    order: one(ordersTable, {
+      fields: [orderAddressTable.orderId],
+      references: [ordersTable.id],
+    }),
   }),
-}));
+);

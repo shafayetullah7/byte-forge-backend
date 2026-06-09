@@ -25,12 +25,10 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@/common/decorators/api-error.decorator';
 import { ApiPagination } from '@/common/decorators/api-pagination.decorator';

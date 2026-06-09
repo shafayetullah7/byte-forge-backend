@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { districtsTable, divisionsTable, TUserAddress } from '@/_db/drizzle/schema';
+import {
+  districtsTable,
+  divisionsTable,
+  TUserAddress,
+} from '@/_db/drizzle/schema';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { CreateAddressDto } from '../dto/create-address.dto';
 
@@ -15,10 +19,7 @@ export class CreateAddressService {
     private readonly db: DrizzleService,
   ) {}
 
-  async execute(
-    userId: string,
-    dto: CreateAddressDto,
-  ): Promise<TUserAddress> {
+  async execute(userId: string, dto: CreateAddressDto): Promise<TUserAddress> {
     try {
       const [district, division] = await Promise.all([
         this.validateDistrict(dto.districtId),
@@ -28,7 +29,8 @@ export class CreateAddressService {
       if (district.divisionId !== division.id) {
         throw CustomException.badRequest({
           message: 'Invalid location',
-          details: 'The selected district does not belong to the selected division',
+          details:
+            'The selected district does not belong to the selected division',
         });
       }
 

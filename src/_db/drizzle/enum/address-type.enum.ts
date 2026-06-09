@@ -4,4 +4,5 @@ export const AddressTypeEnum = {
   BOTH: 'both',
 } as const;
 
-export type TAddressType = (typeof AddressTypeEnum)[keyof typeof AddressTypeEnum];
+export type TAddressType =
+  (typeof AddressTypeEnum)[keyof typeof AddressTypeEnum];

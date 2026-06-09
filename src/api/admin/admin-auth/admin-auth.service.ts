@@ -8,7 +8,6 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateLocalAdminDto } from './dto/create.local.admin.dto';
 import { AdminService } from '../admin/admin.service';
 import { AdminLocalAuthService } from './admin-local-auth.service';
-import { AdminAuth } from './types/admin-auth.type';
 import { DeviceInfo } from '@/_db/drizzle/schema';
 import { AdminSessionService } from '../admin-session/admin-session.service';
 import { HashingService } from '@/common/modules/hashing/hashing.service';

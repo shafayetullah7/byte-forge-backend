@@ -2,7 +2,6 @@ import {
   pgTable,
   uuid,
   integer,
-  varchar,
   pgEnum,
   index,
 } from 'drizzle-orm/pg-core';
@@ -50,17 +49,20 @@ export const productMediaTable = pgTable(
 export type TProductMedia = typeof productMediaTable.$inferSelect;
 export type TNewProductMedia = typeof productMediaTable.$inferInsert;
 
-export const productMediaRelations = relations(productMediaTable, ({ one }) => ({
-  product: one(productsTable, {
-    fields: [productMediaTable.productId],
-    references: [productsTable.id],
+export const productMediaRelations = relations(
+  productMediaTable,
+  ({ one }) => ({
+    product: one(productsTable, {
+      fields: [productMediaTable.productId],
+      references: [productsTable.id],
+    }),
+    variant: one(productVariantsTable, {
+      fields: [productMediaTable.variantId],
+      references: [productVariantsTable.id],
+    }),
+    media: one(mediaTable, {
+      fields: [productMediaTable.mediaId],
+      references: [mediaTable.id],
+    }),
   }),
-  variant: one(productVariantsTable, {
-    fields: [productMediaTable.variantId],
-    references: [productVariantsTable.id],
-  }),
-  media: one(mediaTable, {
-    fields: [productMediaTable.mediaId],
-    references: [mediaTable.id],
-  }),
-}));
+);

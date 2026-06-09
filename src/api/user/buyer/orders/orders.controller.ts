@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetOrdersService } from './services/get-orders.service';
 import { GetOrderStatsService } from './services/get-order-stats.service';
@@ -16,7 +24,11 @@ import {
   ApiAuth,
   ApiOkResponseTyped,
 } from '@/common/decorators/swagger.decorators';
-import { ApiUnauthorizedResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@/common/decorators/api-error.decorator';
+import {
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+} from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
@@ -96,7 +108,10 @@ export class OrdersController {
     description:
       'Returns full details for a specific order group including all orders, items, addresses, payment info, and status history. Translations are resolved based on the locale parameter.',
   })
-  @ApiOkResponseTyped(GetOrderGroupResponseDto, 'Order group details retrieved successfully')
+  @ApiOkResponseTyped(
+    GetOrderGroupResponseDto,
+    'Order group details retrieved successfully',
+  )
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse()
   @Get(':groupId')

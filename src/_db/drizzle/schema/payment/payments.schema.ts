@@ -8,7 +8,11 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { ordersTable, paymentStatusEnum, paymentMethodEnum } from '../order/orders.schema';
+import {
+  ordersTable,
+  paymentStatusEnum,
+  paymentMethodEnum,
+} from '../order/orders.schema';
 import { PaymentStatusEnum } from '../../enum';
 
 export const paymentTable = pgTable(

@@ -8,11 +8,7 @@ import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 export class GetOrdersService {
   constructor(private readonly orderRepository: OrderRepository) {}
 
-  async execute(
-    userId: string,
-    filters: OrdersFilterDto,
-    lang: string = 'en',
-  ) {
+  async execute(userId: string, filters: OrdersFilterDto, lang: string = 'en') {
     const result = await this.orderRepository.getBuyerOrderGroupsPaginated({
       userId,
       page: filters.page ?? 1,
@@ -31,7 +27,10 @@ export class GetOrdersService {
         totalAmount: group.totalAmount,
         createdAt: group.createdAt,
         orders: group.orders.map((order: any) => {
-          const shopTranslation = resolveTranslation<TShopTranslation>(order.shop?.translations, lang);
+          const shopTranslation = resolveTranslation<TShopTranslation>(
+            order.shop?.translations,
+            lang,
+          );
           const shopName = shopTranslation?.name ?? 'Unknown Shop';
           const shopLogo = order.shop?.logo?.url ?? null;
           return {
@@ -45,7 +44,11 @@ export class GetOrdersService {
             total: order.total,
             createdAt: order.createdAt,
             items: order.items.map((item: any) => {
-              const productTranslation = resolveTranslation<TProductTranslation>(item.product?.translations, lang);
+              const productTranslation =
+                resolveTranslation<TProductTranslation>(
+                  item.product?.translations,
+                  lang,
+                );
               return {
                 id: item.id,
                 productName: productTranslation?.name ?? item.productName,
@@ -53,7 +56,10 @@ export class GetOrdersService {
                 quantity: item.quantity,
                 total: (parseFloat(item.unitPrice) * item.quantity).toFixed(2),
                 thumbnail: item.product?.thumbnail
-                  ? { id: item.product.thumbnail.id, url: item.product.thumbnail.url }
+                  ? {
+                      id: item.product.thumbnail.id,
+                      url: item.product.thumbnail.url,
+                    }
                   : null,
               };
             }),

@@ -13,9 +13,7 @@ import { InventoryMovementTypeEnum } from '@/_db/drizzle/enum';
 export class GetStockMovementsService {
   private readonly logger = new Logger(GetStockMovementsService.name);
 
-  constructor(
-    private readonly db: DrizzleService,
-  ) {}
+  constructor(private readonly db: DrizzleService) {}
 
   async execute(
     shopId: string,

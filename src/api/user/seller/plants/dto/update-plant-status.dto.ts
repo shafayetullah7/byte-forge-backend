@@ -8,4 +8,6 @@ export const updatePlantStatusSchema = z.object({
   }),
 });
 
-export class UpdatePlantStatusDto extends createZodDto(updatePlantStatusSchema) {}
+export class UpdatePlantStatusDto extends createZodDto(
+  updatePlantStatusSchema,
+) {}

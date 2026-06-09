@@ -41,7 +41,11 @@ export type PlantListItem = {
 export class ListPlantsService {
   constructor(private readonly db: DrizzleService) {}
 
-  async execute(shopId: string, query: ListPlantsQueryDto, lang: string = 'en') {
+  async execute(
+    shopId: string,
+    query: ListPlantsQueryDto,
+    lang: string = 'en',
+  ) {
     const {
       page,
       limit,
@@ -81,10 +85,7 @@ export class ListPlantsService {
                 .from(productTranslationsTable)
                 .where(
                   and(
-                    eq(
-                      productTranslationsTable.productId,
-                      productsTable.id,
-                    ),
+                    eq(productTranslationsTable.productId, productsTable.id),
                     ilike(productTranslationsTable.name, `%${search}%`),
                   ),
                 ),
@@ -135,10 +136,7 @@ export class ListPlantsService {
         updatedAt: productsTable.updatedAt,
       })
       .from(productsTable)
-      .leftJoin(
-        mediaTable,
-        eq(mediaTable.id, productsTable.thumbnailId),
-      )
+      .leftJoin(mediaTable, eq(mediaTable.id, productsTable.thumbnailId))
       .leftJoin(
         productTranslationsTable,
         and(
@@ -188,34 +186,31 @@ export class ListPlantsService {
 
     const productIds = rows.map((r) => r.productId);
 
-    const plantDetails =
-      await this.db.client.query.plantDetailsTable.findMany({
-        where: inArray(plantDetailsTable.productId, productIds),
-        with: {
-          category: {
-            columns: { id: true, slug: true },
-            with: {
-              translations: { columns: { locale: true, name: true } },
-            },
+    const plantDetails = await this.db.client.query.plantDetailsTable.findMany({
+      where: inArray(plantDetailsTable.productId, productIds),
+      with: {
+        category: {
+          columns: { id: true, slug: true },
+          with: {
+            translations: { columns: { locale: true, name: true } },
           },
-          tags: {
-            with: {
-              tag: {
-                columns: { id: true, slug: true },
-                with: {
-                  translations: {
-                    columns: { locale: true, name: true },
-                  },
+        },
+        tags: {
+          with: {
+            tag: {
+              columns: { id: true, slug: true },
+              with: {
+                translations: {
+                  columns: { locale: true, name: true },
                 },
               },
             },
           },
         },
-      });
+      },
+    });
 
-    const plantDetailMap = new Map(
-      plantDetails.map((d) => [d.productId, d]),
-    );
+    const plantDetailMap = new Map(plantDetails.map((d) => [d.productId, d]));
 
     const result: PlantListItem[] = rows.map((row) => {
       const plantDetail = plantDetailMap.get(row.productId);
@@ -225,19 +220,22 @@ export class ListPlantsService {
 
       const tags =
         plantDetail?.tags?.map((pt) => {
-          const tagTrans = pt.tag?.translations?.find(
-            (t) => t.locale === lang,
-          );
-          return { id: pt.tag.id, slug: pt.tag.slug, name: tagTrans?.name ?? null };
+          const tagTrans = pt.tag?.translations?.find((t) => t.locale === lang);
+          return {
+            id: pt.tag.id,
+            slug: pt.tag.slug,
+            name: tagTrans?.name ?? null,
+          };
         }) ?? [];
 
       return {
         id: row.productId,
         slug: row.slug,
         status: row.status,
-        thumbnail: row.thumbnailId && row.thumbnailUrl
-          ? { id: row.thumbnailId, url: row.thumbnailUrl }
-          : null,
+        thumbnail:
+          row.thumbnailId && row.thumbnailUrl
+            ? { id: row.thumbnailId, url: row.thumbnailUrl }
+            : null,
         name: row.name ?? null,
         shortDescription: row.shortDescription ?? null,
         price: row.price ?? null,
@@ -255,7 +253,7 @@ export class ListPlantsService {
       };
     });
 
-    console.log("[ListPlantsService] Result:", JSON.stringify(result, null, 2));
+    console.log('[ListPlantsService] Result:', JSON.stringify(result, null, 2));
 
     return paginate(result, Number(total), page, limit);
   }

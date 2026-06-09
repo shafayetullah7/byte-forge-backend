@@ -37,7 +37,10 @@ export class GetProductOverviewService {
 
   private queryProduct(shopId: string, productId: string) {
     return this.db.client.query.productsTable.findFirst({
-      where: and(eq(productsTable.shopId, shopId), eq(productsTable.id, productId)),
+      where: and(
+        eq(productsTable.shopId, shopId),
+        eq(productsTable.id, productId),
+      ),
       columns: {
         id: true,
         status: true,
@@ -62,7 +65,10 @@ export class GetProductOverviewService {
     });
   }
 
-  async execute(shopId: string, productId: string): Promise<ProductOverviewResult | null> {
+  async execute(
+    shopId: string,
+    productId: string,
+  ): Promise<ProductOverviewResult | null> {
     try {
       const product = await this.queryProduct(shopId, productId);
       if (!product) return null;

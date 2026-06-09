@@ -44,8 +44,10 @@ export const shipmentStatusHistoryTable = pgTable(
   ],
 );
 
-export type TShipmentStatusHistory = typeof shipmentStatusHistoryTable.$inferSelect;
-export type TNewShipmentStatusHistory = typeof shipmentStatusHistoryTable.$inferInsert;
+export type TShipmentStatusHistory =
+  typeof shipmentStatusHistoryTable.$inferSelect;
+export type TNewShipmentStatusHistory =
+  typeof shipmentStatusHistoryTable.$inferInsert;
 
 export const shipmentStatusHistoryRelations = relations(
   shipmentStatusHistoryTable,

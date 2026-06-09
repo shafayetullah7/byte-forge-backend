@@ -8,4 +8,5 @@ export const OrderStatusEnum = {
   EXPIRED: 'EXPIRED',
 } as const;
 
-export type TOrderStatus = (typeof OrderStatusEnum)[keyof typeof OrderStatusEnum];
+export type TOrderStatus =
+  (typeof OrderStatusEnum)[keyof typeof OrderStatusEnum];

@@ -18,8 +18,17 @@ import { AddressPaginationDto } from './dto/list-addresses-query.dto';
 import { AddressResponseDto } from './response/address-response.dto';
 import { ResponseService } from '@/common/modules/response/response.service';
 import { I18nLang, I18nService } from 'nestjs-i18n';
-import { ApiAuth, ApiOkResponseTyped, ApiCreatedResponseTyped, ApiPaginatedResponse } from '@/common/decorators/swagger.decorators';
-import { ApiBadRequestResponse, ApiUnauthorizedResponse, ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';
+import {
+  ApiAuth,
+  ApiOkResponseTyped,
+  ApiCreatedResponseTyped,
+  ApiPaginatedResponse,
+} from '@/common/decorators/swagger.decorators';
+import {
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiNotFoundResponse,
+} from '@/common/decorators/api-error.decorator';
 import { AuthenticUser } from '@/common/decorators/authentic-user.decorator';
 import { TAuthenticUser } from '@/common/types';
 import { UserAuthGuard } from '@/common/guards/user-auth-guard/user-auth.guard';
@@ -69,7 +78,12 @@ export class AddressesController {
       lang,
       query,
     );
-    console.log('[GET /addresses] total:', total, 'data:', JSON.stringify(addresses, null, 2));
+    console.log(
+      '[GET /addresses] total:',
+      total,
+      'data:',
+      JSON.stringify(addresses, null, 2),
+    );
     return this.responseService.paginated({
       message: this.i18n.t('message.success.addressesRetrieved', { lang }),
       data: addresses,
@@ -92,7 +106,11 @@ export class AddressesController {
     @AuthenticUser() authUser: TAuthenticUser,
     @I18nLang() lang: string,
   ) {
-    const result = await this.addressesService.findById(params.id, authUser.user.id, lang);
+    const result = await this.addressesService.findById(
+      params.id,
+      authUser.user.id,
+      lang,
+    );
     return this.responseService.success({
       message: this.i18n.t('message.success.addressRetrieved', { lang }),
       data: result,

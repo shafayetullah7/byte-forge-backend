@@ -45,7 +45,10 @@ export class PublicTagsController {
   @ApiNotFoundResponse('Tag not found')
   @ApiParam({ name: 'id', description: 'Tag UUID' })
   @Get(':id')
-  async findOne(@Param() params: GetTagByIdParamsDto, @I18nLang() lang: string) {
+  async findOne(
+    @Param() params: GetTagByIdParamsDto,
+    @I18nLang() lang: string,
+  ) {
     const data = await this.tagsService.findOne(params.id, lang);
     return { success: true, message: 'Tag retrieved', data };
   }

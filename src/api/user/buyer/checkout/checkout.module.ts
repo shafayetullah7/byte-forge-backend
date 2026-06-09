@@ -10,6 +10,11 @@ import { CartAccessGuardModule } from '@/common/guards/cart-access-guard/cart-ac
 @Module({
   controllers: [CheckoutController],
   providers: [CalculatePriceBreakdownService, PlaceOrderService],
-  imports: [CartRepositoryModule, UserAddressRepositoryModule, OrderRepositoryModule, CartAccessGuardModule],
+  imports: [
+    CartRepositoryModule,
+    UserAddressRepositoryModule,
+    OrderRepositoryModule,
+    CartAccessGuardModule,
+  ],
 })
 export class CheckoutModule {}

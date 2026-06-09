@@ -4,12 +4,10 @@ import { AddressTypeEnum } from '@/_db/drizzle/enum';
 
 const PHONE_PATTERN = /^\+?[1-9]\d{1,14}$/;
 const POSTAL_CODE_PATTERN = /^\d{4,10}$/;
-const COMPANY_NAME_PATTERN = /^[a-zA-Z0-9\s\u0980-\u09FF\.\-\&\(\)\,]+$/;
+// const COMPANY_NAME_PATTERN = /^[a-zA-Z0-9\s\u0980-\u09FF\.\-\&\(\)\,]+$/;
 
 export const CreateAddressSchema = z.object({
-  type: z
-    .nativeEnum(AddressTypeEnum)
-    .default(AddressTypeEnum.SHIPPING),
+  type: z.nativeEnum(AddressTypeEnum).default(AddressTypeEnum.SHIPPING),
   label: z
     .string()
     .trim()
@@ -37,12 +35,8 @@ export const CreateAddressSchema = z.object({
     .max(255, 'Address line 2 cannot exceed 255 characters')
     .optional()
     .nullable(),
-  districtId: z
-    .string()
-    .uuid('District ID is required'),
-  divisionId: z
-    .string()
-    .uuid('Division ID is required'),
+  districtId: z.string().uuid('District ID is required'),
+  divisionId: z.string().uuid('Division ID is required'),
   postalCode: z
     .string()
     .trim()

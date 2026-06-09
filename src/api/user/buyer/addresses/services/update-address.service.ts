@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { UserAddressRepository } from '@/_repositories/user/user-address.repository';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { districtsTable, divisionsTable, TUserAddress } from '@/_db/drizzle/schema';
+import {
+  districtsTable,
+  divisionsTable,
+  TUserAddress,
+} from '@/_db/drizzle/schema';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 
@@ -46,7 +50,8 @@ export class UpdateAddressService {
           if (district.divisionId !== division.id) {
             throw CustomException.badRequest({
               message: 'Invalid location',
-              details: 'The selected district does not belong to the selected division',
+              details:
+                'The selected district does not belong to the selected division',
             });
           }
         }

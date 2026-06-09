@@ -49,6 +49,4 @@ export class PublicShopService {
       createdAt: shop.createdAt,
     };
   }
-
-
 }

@@ -24,12 +24,9 @@ import {
   isNull,
   gt,
   inArray,
-  notInArray,
   count,
   asc,
-  ilike,
   SQL,
-  getTableColumns,
 } from 'drizzle-orm';
 
 import { paginate } from '@/common/utils/pagination.util';

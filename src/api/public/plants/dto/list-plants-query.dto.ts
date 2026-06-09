@@ -36,8 +36,14 @@ export const listPlantsQuerySchema = PaginationParamsSchema.extend({
   growthRate: z
     .enum(Object.keys(GrowthRateEnum) as [string, ...string[]])
     .optional(),
-  minPrice: z.coerce.number().nonnegative('Min price cannot be negative').optional(),
-  maxPrice: z.coerce.number().nonnegative('Max price cannot be negative').optional(),
+  minPrice: z.coerce
+    .number()
+    .nonnegative('Min price cannot be negative')
+    .optional(),
+  maxPrice: z.coerce
+    .number()
+    .nonnegative('Max price cannot be negative')
+    .optional(),
   inStockOnly: z.coerce.boolean().optional().default(false),
   sortBy: z
     .enum(['name', 'price', 'difficulty', 'inventory', 'createdAt'])

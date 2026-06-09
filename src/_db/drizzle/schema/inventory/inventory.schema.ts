@@ -34,9 +34,7 @@ export const inventoryTable = pgTable(
       .notNull()
       .references(() => shopTable.id, { onDelete: 'cascade' }),
     quantity: integer('quantity').notNull().default(0),
-    reservedQuantity: integer('reserved_quantity')
-      .notNull()
-      .default(0),
+    reservedQuantity: integer('reserved_quantity').notNull().default(0),
     lowStockThreshold: integer('low_stock_threshold').notNull().default(5),
     trackInventory: boolean('track_inventory').notNull().default(true),
     allowBackorder: boolean('allow_backorder').notNull().default(false),

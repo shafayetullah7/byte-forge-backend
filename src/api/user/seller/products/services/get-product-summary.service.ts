@@ -24,7 +24,10 @@ export class GetProductSummaryService {
 
   private queryProduct(shopId: string, productId: string, lang: string) {
     return this.db.client.query.productsTable.findFirst({
-      where: and(eq(productsTable.shopId, shopId), eq(productsTable.id, productId)),
+      where: and(
+        eq(productsTable.shopId, shopId),
+        eq(productsTable.id, productId),
+      ),
       columns: {
         id: true,
         slug: true,
@@ -40,7 +43,11 @@ export class GetProductSummaryService {
     });
   }
 
-  async execute(shopId: string, productId: string, lang: string = 'en'): Promise<ProductSummaryResult | null> {
+  async execute(
+    shopId: string,
+    productId: string,
+    lang: string = 'en',
+  ): Promise<ProductSummaryResult | null> {
     try {
       const product = await this.queryProduct(shopId, productId, lang);
       if (!product) return null;
@@ -55,7 +62,10 @@ export class GetProductSummaryService {
   }
 
   private mapResult(product: DrizzleSummary): ProductSummaryResult {
-    const translation = product.translations[0] ?? { name: '', shortDescription: null };
+    const translation = product.translations[0] ?? {
+      name: '',
+      shortDescription: null,
+    };
     return {
       id: product.id,
       slug: product.slug,

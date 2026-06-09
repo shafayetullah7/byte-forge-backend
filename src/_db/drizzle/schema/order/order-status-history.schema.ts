@@ -34,7 +34,8 @@ export const orderStatusHistoryTable = pgTable(
 );
 
 export type TOrderStatusHistory = typeof orderStatusHistoryTable.$inferSelect;
-export type TNewOrderStatusHistory = typeof orderStatusHistoryTable.$inferInsert;
+export type TNewOrderStatusHistory =
+  typeof orderStatusHistoryTable.$inferInsert;
 
 export const orderStatusHistoryRelations = relations(
   orderStatusHistoryTable,

@@ -5,4 +5,5 @@ export const ShippingMethodEnum = {
   INTERNATIONAL_SHIPPING: 'INTERNATIONAL_SHIPPING',
 } as const;
 
-export type TShippingMethod = (typeof ShippingMethodEnum)[keyof typeof ShippingMethodEnum];
+export type TShippingMethod =
+  (typeof ShippingMethodEnum)[keyof typeof ShippingMethodEnum];

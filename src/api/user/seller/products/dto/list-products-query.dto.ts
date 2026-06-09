@@ -12,4 +12,6 @@ export const listProductsQuerySchema = PaginationParamsSchema.extend({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
-export class ListProductsQueryDto extends createZodDto(listProductsQuerySchema) {}
+export class ListProductsQueryDto extends createZodDto(
+  listProductsQuerySchema,
+) {}

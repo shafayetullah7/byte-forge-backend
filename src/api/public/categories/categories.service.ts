@@ -26,20 +26,21 @@ export class PublicCategoriesService {
   constructor(private readonly db: DrizzleService) {}
 
   async findAll(lang: string = 'en'): Promise<PublicCategoryResponse[]> {
-    const activeCategories = await this.db.client.query.categoriesTable.findMany({
-      where: and(
-        eq(categoriesTable.isActive, true),
-        isNull(categoriesTable.deletedAt),
-      ),
-      with: {
-        translations: true,
-        parentHierarchies: {
-          where: eq(categoryHierarchyTable.depth, 1),
-          columns: { ancestorId: true },
+    const activeCategories =
+      await this.db.client.query.categoriesTable.findMany({
+        where: and(
+          eq(categoriesTable.isActive, true),
+          isNull(categoriesTable.deletedAt),
+        ),
+        with: {
+          translations: true,
+          parentHierarchies: {
+            where: eq(categoryHierarchyTable.depth, 1),
+            columns: { ancestorId: true },
+          },
         },
-      },
-      orderBy: (t, { asc }) => asc(t.slug),
-    });
+        orderBy: (t, { asc }) => asc(t.slug),
+      });
 
     return activeCategories.map((cat) => {
       const translation = resolveTranslation(cat.translations, lang);
@@ -60,12 +61,12 @@ export class PublicCategoriesService {
     });
   }
 
-  async findOne(id: string, lang: string = 'en'): Promise<PublicCategoryResponse> {
+  async findOne(
+    id: string,
+    lang: string = 'en',
+  ): Promise<PublicCategoryResponse> {
     const category = await this.db.client.query.categoriesTable.findFirst({
-      where: and(
-        eq(categoriesTable.id, id),
-        isNull(categoriesTable.deletedAt),
-      ),
+      where: and(eq(categoriesTable.id, id), isNull(categoriesTable.deletedAt)),
       with: {
         translations: true,
         parentHierarchies: {
@@ -118,7 +119,12 @@ export class PublicCategoriesService {
           eq(categoryTranslationsTable.locale, 'en'),
         ),
       )
-      .where(and(eq(categoriesTable.isActive, true), isNull(categoriesTable.deletedAt)));
+      .where(
+        and(
+          eq(categoriesTable.isActive, true),
+          isNull(categoriesTable.deletedAt),
+        ),
+      );
 
     const ids = allCategories.map((c) => c.id);
     const allTranslations =

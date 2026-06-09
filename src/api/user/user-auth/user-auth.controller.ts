@@ -102,17 +102,12 @@ export class UserAuthController {
 
     this.cookieService.setSessionCookie(res, result.id);
 
-    const guestToken = (
-      req as Request & { guestToken: string }
-    ).guestToken;
+    const guestToken = (req as Request & { guestToken: string }).guestToken;
 
-    this.eventEmitter.emit(
-      'auth.user.loggedin',
-      {
-        userId: userAuth.user.id,
-        guestToken,
-      } as UserLoggedInEvent,
-    );
+    this.eventEmitter.emit('auth.user.loggedin', {
+      userId: userAuth.user.id,
+      guestToken,
+    });
 
     return this.responseService.success({
       message: this.i18n.t('message.success.userLoggedIn', { lang }),

@@ -52,7 +52,12 @@ export class CreatePlantService {
     private readonly i18n: I18nService,
   ) {}
 
-  async execute(shopId: string, userId: string, dto: CreatePlantDto, lang: string) {
+  async execute(
+    shopId: string,
+    userId: string,
+    dto: CreatePlantDto,
+    lang: string,
+  ) {
     return this.db.transaction(async (tx) => {
       // === 1. Validate media duplicates FIRST (fail fast) ===
       this.validateMediaDuplicates(dto, lang);
@@ -99,10 +104,18 @@ export class CreatePlantService {
       }
 
       // === 9. Create plant details (EN + Shared) ===
-      const plantDetails = await this.createPlantDetails(product.id, dto.plantDetails, tx);
+      const plantDetails = await this.createPlantDetails(
+        product.id,
+        dto.plantDetails,
+        tx,
+      );
 
       // === 10. Create plant details translations ===
-      await this.createPlantDetailsTranslations(plantDetails.id, dto.plantDetails.translations.bn, tx);
+      await this.createPlantDetailsTranslations(
+        plantDetails.id,
+        dto.plantDetails.translations.bn,
+        tx,
+      );
 
       // === 11. Create care instructions ===
       if (dto.careGuide) {
@@ -128,18 +141,30 @@ export class CreatePlantService {
 
       // === 14. Create plant detail tags (BATCH) ===
       if (dto.plantDetails.tagIds && dto.plantDetails.tagIds.length > 0) {
-        await this.createPlantDetailTags(plantDetails.id, dto.plantDetails.tagIds, tx);
+        await this.createPlantDetailTags(
+          plantDetails.id,
+          dto.plantDetails.tagIds,
+          tx,
+        );
       }
 
       // === 15. Increment media usage counts (BATCH - single update) ===
       await this.mediaRepository.incrementMediaUsage(allMediaIds, tx);
 
       // === 16. Increment category usage count ===
-      await this.categoryRepository.incrementUsageCount(dto.plantDetails.categoryId, 1, tx);
+      await this.categoryRepository.incrementUsageCount(
+        dto.plantDetails.categoryId,
+        1,
+        tx,
+      );
 
       // === 17. Increment tag usage counts (BATCH) ===
       if (dto.plantDetails.tagIds && dto.plantDetails.tagIds.length > 0) {
-        await this.tagRepository.incrementUsageCountBatch(dto.plantDetails.tagIds, 1, tx);
+        await this.tagRepository.incrementUsageCountBatch(
+          dto.plantDetails.tagIds,
+          1,
+          tx,
+        );
       }
 
       // === 18. Return product ID (controller can fetch complete data if needed) ===
@@ -149,8 +174,15 @@ export class CreatePlantService {
 
   // === Validation Methods ===
 
-  private async validateCategory(categoryId: string, tx: DrizzleTx, lang: string) {
-    const category = await this.categoryRepository.findOne(categoryId, { tx, lock: false });
+  private async validateCategory(
+    categoryId: string,
+    tx: DrizzleTx,
+    lang: string,
+  ) {
+    const category = await this.categoryRepository.findOne(categoryId, {
+      tx,
+      lock: false,
+    });
 
     if (!category) {
       throw new CustomException({
@@ -220,7 +252,10 @@ export class CreatePlantService {
     return slug;
   }
 
-  private validateVariantSkus(variants: CreatePlantDto['variants'], lang: string) {
+  private validateVariantSkus(
+    variants: CreatePlantDto['variants'],
+    lang: string,
+  ) {
     const skus = variants.map((v) => v.sku).filter(Boolean);
     const uniqueSkus = new Set(skus);
 
@@ -232,7 +267,9 @@ export class CreatePlantService {
         validationErrors: [
           {
             field: 'variants.sku',
-            message: this.i18n.t('message.error.duplicateSkuInVariants', { lang }),
+            message: this.i18n.t('message.error.duplicateSkuInVariants', {
+              lang,
+            }),
           },
         ],
       });
@@ -334,10 +371,7 @@ export class CreatePlantService {
 
   // === Creation Methods (BATCH Operations) ===
 
-  private async createProductRecord(
-    payload: TNewProduct,
-    tx: DrizzleTx,
-  ) {
+  private async createProductRecord(payload: TNewProduct, tx: DrizzleTx) {
     const [product] = await tx
       .insert(productsTable)
       .values(payload)
@@ -384,7 +418,10 @@ export class CreatePlantService {
       toxicityInfo: details.translations.en.toxicityInfo || null,
     };
 
-    const [plantDetails] = await tx.insert(plantDetailsTable).values(payload).returning();
+    const [plantDetails] = await tx
+      .insert(plantDetailsTable)
+      .values(payload)
+      .returning();
     return plantDetails;
   }
 
@@ -422,7 +459,10 @@ export class CreatePlantService {
       seasonalCare: instructions?.seasonalCare || null,
     };
 
-    const [care] = await tx.insert(plantCareInstructionsTable).values(payload).returning();
+    const [care] = await tx
+      .insert(plantCareInstructionsTable)
+      .values(payload)
+      .returning();
     return care;
   }
 
@@ -546,8 +586,18 @@ export class CreatePlantService {
     for (let i = 0; i < variants.length; i++) {
       const enTitle = dto.variants[i].translations.en.title?.trim();
       const bnTitle = dto.variants[i].translations.bn.title?.trim();
-      if (enTitle) payloads.push({ variantId: variants[i].id, locale: 'en', title: enTitle });
-      if (bnTitle) payloads.push({ variantId: variants[i].id, locale: 'bn', title: bnTitle });
+      if (enTitle)
+        payloads.push({
+          variantId: variants[i].id,
+          locale: 'en',
+          title: enTitle,
+        });
+      if (bnTitle)
+        payloads.push({
+          variantId: variants[i].id,
+          locale: 'bn',
+          title: bnTitle,
+        });
     }
 
     if (payloads.length > 0) {

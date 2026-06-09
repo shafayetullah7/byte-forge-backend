@@ -46,8 +46,8 @@ export class GetProductInventoryService {
 
       // Get inventory records for these variants
       const variantIds = variants.map((v) => v.id);
-      let inventoryRecords: typeof inventoryTable.$inferSelect[] = [];
-      
+      let inventoryRecords: (typeof inventoryTable.$inferSelect)[] = [];
+
       if (variantIds.length > 0) {
         inventoryRecords = await this.db.client
           .select()
@@ -64,7 +64,7 @@ export class GetProductInventoryService {
       // Map all variants, using inventory data if available, otherwise defaults
       const mappedVariants = variants.map((variant) => {
         const inventory = inventoryMap.get(variant.id);
-        
+
         if (!inventory) {
           // No inventory record yet - return zero stock
           return {
@@ -84,7 +84,8 @@ export class GetProductInventoryService {
           };
         }
 
-        const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+        const availableQuantity =
+          inventory.quantity - inventory.reservedQuantity;
 
         let status: 'in_stock' | 'low_stock' | 'out_of_stock';
         if (availableQuantity === 0) {
@@ -113,10 +114,14 @@ export class GetProductInventoryService {
       });
 
       const totalStock = mappedVariants.reduce((sum, v) => sum + v.quantity, 0);
-      const reservedStock = mappedVariants.reduce((sum, v) => sum + v.reservedQuantity, 0);
+      const reservedStock = mappedVariants.reduce(
+        (sum, v) => sum + v.reservedQuantity,
+        0,
+      );
       const availableStock = totalStock - reservedStock;
       const lowStockCount = mappedVariants.filter(
-        (v) => v.availableQuantity > 0 && v.availableQuantity <= v.lowStockThreshold,
+        (v) =>
+          v.availableQuantity > 0 && v.availableQuantity <= v.lowStockThreshold,
       ).length;
       const outOfStockCount = mappedVariants.filter(
         (v) => v.availableQuantity === 0,

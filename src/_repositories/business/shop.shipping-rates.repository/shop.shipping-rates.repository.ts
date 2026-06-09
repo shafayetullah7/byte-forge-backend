@@ -32,7 +32,10 @@ export class ShopShippingRatesRepository {
       .insert(shopShippingRatesTable)
       .values(values)
       .onConflictDoUpdate({
-        target: [shopShippingRatesTable.shopId, shopShippingRatesTable.districtId],
+        target: [
+          shopShippingRatesTable.shopId,
+          shopShippingRatesTable.districtId,
+        ],
         set: {
           cost: sql`EXCLUDED.cost`,
           costPerKg: sql`EXCLUDED.cost_per_kg`,

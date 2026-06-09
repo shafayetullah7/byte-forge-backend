@@ -14,10 +14,13 @@ import { SuspendShopDto } from './dto/suspend-shop.dto';
 import { paginate } from '@/common/utils/pagination.util';
 import { PaginationParams } from '@/common/schemas/pagination.schema';
 import { and, eq, sql, asc, desc, ilike, count, inArray } from 'drizzle-orm';
-import { shopTable, shopVerificationTable, shopVerificationHistoryTable, mediaTable } from '@/_db/drizzle/schema';
+import {
+  shopTable,
+  shopVerificationTable,
+  shopVerificationHistoryTable,
+} from '@/_db/drizzle/schema';
 import {
   ShopStatusEnum,
-  TShopStatus,
   ShopVerificationStatusEnum,
   ShopVerificationActionEnum,
 } from '@/_db/drizzle/enum';
@@ -149,7 +152,15 @@ export class AdminShopService {
   }
 
   async getAllShops(query: ShopQueryDto) {
-    const { status, verificationStatus, search, limit = 20, page = 1, sortBy, sortOrder } = query;
+    const {
+      status,
+      verificationStatus,
+      search,
+      limit = 20,
+      page = 1,
+      sortBy,
+      sortOrder,
+    } = query;
     const offset = (page - 1) * limit;
 
     const sortFn = sortOrder === 'asc' ? asc : desc;
@@ -157,7 +168,7 @@ export class AdminShopService {
       sortBy === 'updatedAt' ? shopTable.updatedAt : shopTable.createdAt;
 
     const baseConditions = [
-      status ? eq(shopTable.status, status as TShopStatus) : undefined,
+      status ? eq(shopTable.status, status) : undefined,
       search ? ilike(shopTable.slug, `%${search}%`) : undefined,
     ];
 
@@ -219,9 +230,7 @@ export class AdminShopService {
         (t) => t.locale === 'en',
       );
       const addressEnglishTranslation =
-        shop.shopAddressTable?.translations?.find(
-          (t) => t.locale === 'en',
-        );
+        shop.shopAddressTable?.translations?.find((t) => t.locale === 'en');
       return {
         id: shop.id,
         ownerId: shop.ownerId,
@@ -245,7 +254,8 @@ export class AdminShopService {
           ? {
               status: shop.shopVerificationTable.status,
               verifiedAt: shop.shopVerificationTable.verifiedAt || null,
-              rejectionReason: shop.shopVerificationTable.rejectionReason || null,
+              rejectionReason:
+                shop.shopVerificationTable.rejectionReason || null,
             }
           : null,
         createdAt: shop.createdAt,
@@ -356,12 +366,12 @@ export class AdminShopService {
       status: verification.status,
       submittedAt: verification.createdAt,
       verifiedAt: verification.verifiedAt,
-      
+
       // Documents - IDs
       tradeLicenseDocumentId: verification.tradeLicenseDocumentId,
       tinDocumentId: verification.tinDocumentId,
       utilityBillDocumentId: verification.utilityBillDocumentId,
-      
+
       // Documents - Full media objects for preview
       tradeLicenseNumber: verification.tradeLicenseNumber,
       tradeLicenseDocument: verification.tradeLicenseMedia
@@ -386,11 +396,11 @@ export class AdminShopService {
             name: verification.utilityBillMedia.fileName || 'Utility Bill',
           }
         : null,
-      
+
       // Admin
       adminNotes: verification.adminNotes,
       rejectionReason: verification.rejectionReason,
-      
+
       // History
       history: history.map((h) => ({
         id: h.id,
@@ -460,7 +470,7 @@ export class AdminShopService {
     await this.db.transaction(async (tx) => {
       await this.shopRepository.update(
         shopId,
-        { 
+        {
           status: ShopStatusEnum.ACTIVE,
           isVerified: true,
         },
@@ -504,7 +514,7 @@ export class AdminShopService {
     await this.db.transaction(async (tx) => {
       await this.shopRepository.update(
         shopId,
-        { 
+        {
           status: ShopStatusEnum.ACTIVE,
           isVerified: true,
         },
