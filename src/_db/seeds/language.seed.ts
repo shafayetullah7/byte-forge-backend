@@ -73,7 +73,7 @@ export async function seedLanguages() {
 
     console.log('✅ Languages refinement completed!');
   } catch (error: any) {
-    if (error.code === '23503') {
+    if ((error as { code?: string }).code === '23503') {
       console.warn(
         '⚠️ Could not remove some languages due to foreign key constraints. Make sure all translations are cleared.',
       );

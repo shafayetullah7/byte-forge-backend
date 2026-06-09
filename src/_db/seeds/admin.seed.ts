@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { seed as drizzleSeed } from 'drizzle-seed';

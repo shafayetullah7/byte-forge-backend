@@ -47,7 +47,7 @@ export class AdminAuthController {
   @ApiResponse({ status: 201, description: 'Admin successfully registered' })
   @ApiBadRequestResponse()
   @Post('register')
-  async register(@Body() payload: CreateLocalAdminDto, @Req() req: Request) {
+  async register(@Body() payload: CreateLocalAdminDto) {
     const result = await this.adminAuthService.register(payload);
 
     return this.responseService.success({
@@ -72,7 +72,7 @@ export class AdminAuthController {
     const deviceInfo = parseDeviceInfo(userAgent);
     const ip = getClientIp(req);
 
-    const { tokens, admin, session } = await this.adminAuthService.login(
+    const { tokens, admin } = await this.adminAuthService.login(
       payload.email,
       payload.password,
       deviceInfo,
@@ -101,7 +101,8 @@ export class AdminAuthController {
   @ApiUnauthorizedResponse()
   @UseGuards(AdminAuthGuard)
   @Get('check')
-  async checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
+  checkAuth(@AuthenticAdminUser() adminAuth: AuthenticAdmin) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { createdAt, updatedAt, ...adminProfile } = adminAuth.admin;
 
     return this.responseService.success({
@@ -121,12 +122,12 @@ export class AdminAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.adminRefreshToken;
+    const refreshToken = req.cookies?.adminRefreshToken as string | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    const { tokens, admin, session } =
+    const { tokens, admin } =
       await this.adminAuthService.refreshTokens(refreshToken);
 
     this.cookieService.setAdminAccessToken(res, tokens.accessToken);

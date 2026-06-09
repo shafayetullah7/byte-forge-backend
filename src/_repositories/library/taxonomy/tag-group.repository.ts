@@ -1,14 +1,12 @@
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   tagGroupsTable,
-  tagsTable,
   tagGroupTranslationsTable,
-  tagTranslationsTable,
   TNewTagGroup,
   TTagGroup,
 } from '@/_db/drizzle/schema/taxonomy';
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { eq, isNull, and, SQL, count, asc, desc, sql } from 'drizzle-orm';
+import { Injectable } from '@nestjs/common';
+import { eq, isNull, and, SQL, sql } from 'drizzle-orm';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { TLockTransaction } from '../../_types/lock.transaction';
 

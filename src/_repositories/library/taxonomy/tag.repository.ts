@@ -1,21 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import {
-  eq,
-  ilike,
-  isNotNull,
-  isNull,
-  and,
-  SQL,
-  count,
-  asc,
-  desc,
-  sql,
-  inArray,
-} from 'drizzle-orm';
+import { eq, isNull, and, SQL, inArray, sql } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   tagsTable,
-  tagGroupsTable,
   tagTranslationsTable,
   TNewTag,
   TTag,

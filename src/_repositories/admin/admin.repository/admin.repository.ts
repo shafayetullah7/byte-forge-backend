@@ -1,6 +1,6 @@
 import { SQL, eq, and } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { adminTable, TAdmin, TNewAdmin } from '@/_db/drizzle/schema';
+import { adminTable, TAdmin } from '@/_db/drizzle/schema';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
 

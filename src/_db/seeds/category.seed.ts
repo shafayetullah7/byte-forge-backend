@@ -248,12 +248,6 @@ const PLANT_CATEGORIES = [
   },
 ];
 
-interface CategoryData {
-  slug: string;
-  translations: { locale: string; name: string; description: string }[];
-  children?: CategoryData[];
-}
-
 /**
  * Upsert a category: create if not exists, return existing if already seeded.
  */

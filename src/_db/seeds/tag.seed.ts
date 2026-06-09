@@ -763,15 +763,6 @@ const TAG_DATA = [
   },
 ];
 
-interface TagGroupData {
-  slug: string;
-  translations: { locale: string; name: string; description: string }[];
-  tags: {
-    slug: string;
-    translations: { locale: string; name: string; description: string }[];
-  }[];
-}
-
 /**
  * Upsert a tag group: create if not exists, return existing if already seeded.
  */

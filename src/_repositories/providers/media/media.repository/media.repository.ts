@@ -226,7 +226,7 @@ export class MediaRepository implements IMediaRepository {
     incrementBy: number = 1,
   ) {
     if (mediaIds.length === 0) return;
-    const updatedMedia = await tx
+    await tx
       .update(mediaTable)
       .set({ usesCount: sql`${mediaTable.usesCount} + ${incrementBy}` })
       .where(inArray(mediaTable.id, mediaIds))

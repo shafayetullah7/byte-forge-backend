@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm';
-import { ShopStatusEnum } from '@/_db/drizzle/enum';
 
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
@@ -26,7 +25,6 @@ import {
   TShopContact,
   TShopManager,
   TShopTranslation,
-  TShopVerification,
 } from '@/_db/drizzle/schema/shop';
 import { Injectable } from '@nestjs/common';
 import { DrizzleTx } from '@/_db/drizzle/types';
