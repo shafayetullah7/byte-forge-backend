@@ -62,9 +62,13 @@ export class AdminAuthGuard implements CanActivate {
       if (!accessToken) {
         throw new Error('No access token');
       }
-      payload = await this.jwtService.verifyAsync(accessToken, {
-        secret: this.configService.jwtAdminAccessSecret,
-      });
+      const verifiedPayload: unknown = await this.jwtService.verifyAsync(
+        accessToken,
+        {
+          secret: this.configService.jwtAdminAccessSecret,
+        },
+      );
+      payload = verifiedPayload as JwtPayload;
     } catch {
       // Access token expired or missing, try refresh
       if (!refreshToken) {
@@ -81,20 +85,24 @@ export class AdminAuthGuard implements CanActivate {
           refreshResult.tokens.accessToken,
         );
 
-        payload = await this.jwtService.verifyAsync(
+        const verifiedPayload: unknown = await this.jwtService.verifyAsync(
           refreshResult.tokens.accessToken,
           {
             secret: this.configService.jwtAdminAccessSecret,
           },
         );
+        payload = verifiedPayload as JwtPayload;
       } catch {
         throw new UnauthorizedException('Session expired');
       }
     }
 
     // 3. Session Validation in DB
+    if (!payload) {
+      throw new UnauthorizedException('Invalid token');
+    }
     const adminSession = await this.adminSessionService.getAdminSession(
-      payload!.sessionId,
+      payload.sessionId,
     );
 
     if (!adminSession) {

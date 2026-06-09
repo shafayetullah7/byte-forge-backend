@@ -7,7 +7,13 @@ import {
 import { Request } from 'express';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
-import { CartContext } from '@/common/types/cart-context.type';
+import { CartContext, AccessUserAuth } from '@/common/types';
+
+type RequestWithCart = Request & {
+  guestToken?: string;
+  cartContext?: CartContext;
+  user?: AccessUserAuth;
+};
 
 @Injectable()
 export class CartAccessGuard implements CanActivate {
@@ -16,10 +22,10 @@ export class CartAccessGuard implements CanActivate {
     private readonly sessionRepository: SessionRepository,
   ) {}
 
-  async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
-    const sessionId = request.cookies?.sessionId as undefined | string;
-    const guestToken = (request as Request & { guestToken: string }).guestToken;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<RequestWithCart>();
+    const sessionId = request.cookies?.sessionId as string | undefined;
+    const guestToken = request.guestToken;
 
     let userId: string | undefined;
     let pendingMerge = false;
@@ -36,7 +42,10 @@ export class CartAccessGuard implements CanActivate {
         );
         if (active) {
           userId = userSession.user.id;
-          request.user = { ...userSession };
+          request.user = {
+            user: userSession.user,
+            session: userSession.session,
+          };
         }
       }
     }
@@ -55,8 +64,7 @@ export class CartAccessGuard implements CanActivate {
       pendingMerge,
     };
 
-    (request as Request & { cartContext: CartContext }).cartContext =
-      cartContext;
+    request.cartContext = cartContext;
 
     return true;
   }
