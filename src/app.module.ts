@@ -34,6 +34,7 @@ import { EventsModule } from './common/modules/events/events.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 import { JwtModule } from '@nestjs/jwt';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import morgan = require('morgan');
 import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware';
 

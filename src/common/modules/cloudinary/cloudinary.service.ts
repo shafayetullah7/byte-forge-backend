@@ -18,13 +18,15 @@ export class CloudinaryService {
   ): Promise<UploadApiResponse> {
     try {
       return await this.uploadToCloudinary(file.buffer, folder);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Cloudinary Upload Error:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       throw CustomException.create({
         message: 'Failed to upload file to media server',
         errorCode: ErrorCode.SERVICE_UNAVAILABLE,
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-        details: error.message,
+        details: errorMessage,
       });
     }
   }
@@ -48,13 +50,15 @@ export class CloudinaryService {
   async deleteFile(publicId: string): Promise<void> {
     try {
       await this.cloudinaryProvider.client.uploader.destroy(publicId);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Cloudinary Delete Error:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       throw CustomException.create({
         message: `Failed to delete media with publicId ${publicId}`,
         errorCode: ErrorCode.SERVICE_UNAVAILABLE,
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-        details: error.message,
+        details: errorMessage,
       });
     }
   }
