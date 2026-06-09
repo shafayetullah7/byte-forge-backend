@@ -4,6 +4,10 @@ import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import { AppEnvService } from '@/_config/app-env/app-env.service';
 
+interface SentMessageInfo {
+  messageId: string;
+}
+
 @Injectable()
 export class GmailProvider implements IEmailProvider {
   private transporter: Transporter;
@@ -49,13 +53,14 @@ export class GmailProvider implements IEmailProvider {
         '[DEBUG] GmailProvider attempting to send email to:',
         options.to,
       );
-      const info = await this.transporter.sendMail({
+      const sendMailResult: unknown = await this.transporter.sendMail({
         from: `"${this.fromName}" <${this.fromEmail}>`,
         to: options.to,
         subject: options.subject,
         text: options.text,
         html: options.html,
       });
+      const info = sendMailResult as SentMessageInfo;
 
       this.logger.log(`Email sent to ${options.to}: ${info.messageId}`);
       console.log('[DEBUG] GmailProvider success. MessageID:', info.messageId);
