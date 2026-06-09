@@ -4,13 +4,12 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { AppConfigService } from '@/common/modules/app-config/app-config.service';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
-import { eq, and, gt, getTableColumns } from 'drizzle-orm';
+import { eq, and, getTableColumns } from 'drizzle-orm';
 import {
   sessionTable,
   userSessionTable,
   userTable,
 } from '@/_db/drizzle/schema';
-import { UserAuth } from './types/user-auth.type';
 import { TSession, TUser } from '@/_db/drizzle/schema';
 import * as crypto from 'crypto';
 
@@ -42,6 +41,7 @@ export class UserAuthV2Service {
 
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtUserAccessSecret,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expiresIn: this.configService.jwtUserAccessExp as any,
     });
   }
@@ -55,6 +55,7 @@ export class UserAuthV2Service {
 
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtUserRefreshSecret,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expiresIn: this.configService.jwtUserRefreshExp as any,
     });
   }
@@ -63,7 +64,11 @@ export class UserAuthV2Service {
     currentRefreshToken: string,
   ): Promise<RefreshTokenResult> {
     // 1. Verify refresh token
-    const payload = await this.jwtService.verifyAsync(currentRefreshToken, {
+    const payload = await this.jwtService.verifyAsync<{
+      sub: string;
+      sessionId: string;
+      role: string;
+    }>(currentRefreshToken, {
       secret: this.configService.jwtUserRefreshSecret,
     });
 
