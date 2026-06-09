@@ -16,6 +16,11 @@ import {
   TNewOrderStatusHistory,
   TOrderGroup,
   TNewOrderGroup,
+  TMedia,
+  TShop,
+  TShopTranslation,
+  TProduct,
+  TProductTranslation,
 } from '@/_db/drizzle/schema';
 import { TOrderStatus, TPaymentStatus } from '@/_db/drizzle/enum';
 import { Injectable } from '@nestjs/common';
@@ -236,9 +241,22 @@ export class OrderRepository {
   ): Promise<{
     groups: (TOrderGroup & {
       orders: (TOrder & {
-        items: TOrderItem[];
+        items: (TOrderItem & {
+          product:
+            | (TProduct & {
+                thumbnail: TMedia | null;
+                translations: TProductTranslation[];
+              })
+            | null;
+        })[];
         address: TOrderAddress | undefined;
         statusHistory: TOrderStatusHistory[];
+        shop:
+          | (TShop & {
+              translations: TShopTranslation[];
+              logo: TMedia | null;
+            })
+          | null;
       })[];
     })[];
     total: number;

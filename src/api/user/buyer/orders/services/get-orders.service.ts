@@ -1,8 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrdersFilterDto } from '../dto/orders-pagination.dto';
-import { TShopTranslation, TProductTranslation } from '@/_db/drizzle/schema';
+import {
+  TShopTranslation,
+  TProductTranslation,
+  TMedia,
+  TOrderItem,
+} from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+
+type ItemWithProduct = TOrderItem & {
+  product: {
+    id: string;
+    translations: TProductTranslation[];
+    thumbnail: TMedia | null;
+  } | null;
+};
 
 @Injectable()
 export class GetOrdersService {
@@ -26,7 +39,7 @@ export class GetOrdersService {
         id: group.id,
         totalAmount: group.totalAmount,
         createdAt: group.createdAt,
-        orders: group.orders.map((order: any) => {
+        orders: group.orders.map((order) => {
           const shopTranslation = resolveTranslation<TShopTranslation>(
             order.shop?.translations,
             lang,
@@ -43,7 +56,7 @@ export class GetOrdersService {
             paymentStatus: order.paymentStatus,
             total: order.total,
             createdAt: order.createdAt,
-            items: order.items.map((item: any) => {
+            items: order.items.map((item: ItemWithProduct) => {
               const productTranslation =
                 resolveTranslation<TProductTranslation>(
                   item.product?.translations,
