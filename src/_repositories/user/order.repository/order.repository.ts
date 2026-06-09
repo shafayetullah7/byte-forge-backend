@@ -1,4 +1,4 @@
-import { eq, inArray, count, desc, and, or, like, sql } from 'drizzle-orm';
+import { eq, inArray, count, desc, and, or, like, sql, SQL } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ordersTable,
@@ -17,6 +17,7 @@ import {
   TOrderGroup,
   TNewOrderGroup,
 } from '@/_db/drizzle/schema';
+import { TOrderStatus, TPaymentStatus } from '@/_db/drizzle/enum';
 import { Injectable } from '@nestjs/common';
 import { TLockTransaction } from '@/_repositories/_types/lock.transaction';
 
@@ -34,8 +35,8 @@ export interface GetBuyerOrderGroupsParams {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-  orderStatus?: string;
-  paymentStatus?: string;
+  orderStatus?: TOrderStatus;
+  paymentStatus?: TPaymentStatus;
   search?: string;
   lang?: string;
 }
@@ -263,16 +264,14 @@ export class OrderRepository {
     let filteredGroupIds: string[] | undefined;
 
     if (orderStatus || paymentStatus || search) {
-      const orderConditions: any[] = [eq(ordersTable.userId, userId)];
+      const orderConditions: SQL[] = [eq(ordersTable.userId, userId)];
 
       if (orderStatus) {
-        orderConditions.push(eq(ordersTable.status, orderStatus as any));
+        orderConditions.push(eq(ordersTable.status, orderStatus));
       }
 
       if (paymentStatus) {
-        orderConditions.push(
-          eq(ordersTable.paymentStatus, paymentStatus as any),
-        );
+        orderConditions.push(eq(ordersTable.paymentStatus, paymentStatus));
       }
 
       if (search) {
@@ -292,7 +291,7 @@ export class OrderRepository {
               WHERE oi.order_id = ${ordersTable.id}
               AND LOWER(oi.product_name) LIKE ${searchLower}
             )`,
-          ),
+          )!,
         );
       }
 
@@ -328,7 +327,6 @@ export class OrderRepository {
       sortBy === 'createdAt'
         ? orderGroupsTable.createdAt
         : orderGroupsTable.totalAmount;
-    const orderByFn = sortOrder === 'desc' ? desc : (field: any) => field;
 
     // Fetch groups with orders
     const groups = await this.db.client.query.orderGroupsTable.findMany({
@@ -342,7 +340,7 @@ export class OrderRepository {
                   with: {
                     thumbnail: true,
                     translations: {
-                      where: (t: any) => eq(t.locale, lang),
+                      where: (t) => eq(t.locale, lang),
                     },
                   },
                 },
@@ -355,7 +353,7 @@ export class OrderRepository {
             shop: {
               with: {
                 translations: {
-                  where: (t: any) => eq(t.locale, lang),
+                  where: (t) => eq(t.locale, lang),
                 },
                 logo: true,
               },
@@ -363,7 +361,7 @@ export class OrderRepository {
           },
         },
       },
-      orderBy: orderByFn(orderByField),
+      ...(sortOrder === 'desc' ? { orderBy: desc(orderByField) } : {}),
       limit,
       offset,
     });

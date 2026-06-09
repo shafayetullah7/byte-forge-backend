@@ -97,8 +97,7 @@ export class AdminAuthService {
 
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtAdminAccessSecret,
-      // Validated as duration string (e.g. 15m) in env.schema.ts
-      expiresIn: this.configService.jwtAdminAccessExp as any,
+      expiresIn: this.configService.jwtAdminAccessExp as unknown as number,
     });
   }
 
@@ -111,14 +110,18 @@ export class AdminAuthService {
 
     return this.jwtService.signAsync(payload, {
       secret: this.configService.jwtAdminRefreshSecret,
-      // Validated as duration string (e.g. 7d) in env.schema.ts
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expiresIn: this.configService.jwtAdminRefreshExp as any,
     });
   }
 
   async refreshTokens(currentRefreshToken: string) {
     try {
-      const payload = await this.jwtService.verifyAsync(currentRefreshToken, {
+      const payload = await this.jwtService.verifyAsync<{
+        sub: string;
+        sessionId: string;
+        role: string;
+      }>(currentRefreshToken, {
         secret: this.configService.jwtAdminRefreshSecret,
       });
 
@@ -149,7 +152,7 @@ export class AdminAuthService {
         admin: adminSession.admin,
         session: adminSession.session,
       };
-    } catch (e) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
