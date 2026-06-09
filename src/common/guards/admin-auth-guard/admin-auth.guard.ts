@@ -14,6 +14,14 @@ import { AppConfigService } from '@/common/modules/app-config/app-config.service
 import { AdminAuthService } from '@/api/admin/admin-auth/admin-auth.service';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 
+interface JwtPayload {
+  sessionId: string;
+  adminId: string;
+  email: string;
+}
+
+type RequestWithUser = Request & { user?: AccessAdminAuth };
+
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
   constructor(
@@ -25,15 +33,17 @@ export class AdminAuthGuard implements CanActivate {
     private readonly cookieService: CookieService,
   ) {}
 
-  async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const response = context.switchToHttp().getResponse<Response>();
 
     // 1. CSRF Protection (Double Submit Cookie)
     const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
     if (stateChangingMethods.includes(request.method)) {
-      const xsrfCookie = request.cookies?.['xsrf-token'];
-      const xsrfHeader = request.headers?.['x-xsrf-token'];
+      const xsrfCookie = request.cookies?.['xsrf-token'] as string | undefined;
+      const xsrfHeader = request.headers?.['x-xsrf-token'] as
+        | string
+        | undefined;
 
       if (!xsrfCookie || !xsrfHeader || xsrfCookie !== xsrfHeader) {
         throw new ForbiddenException('Invalid CSRF token');
@@ -41,10 +51,12 @@ export class AdminAuthGuard implements CanActivate {
     }
 
     // 2. JWT Verification
-    const accessToken = request.cookies?.adminAccessToken;
-    const refreshToken = request.cookies?.adminRefreshToken;
+    const accessToken = request.cookies?.adminAccessToken as string | undefined;
+    const refreshToken = request.cookies?.adminRefreshToken as
+      | string
+      | undefined;
 
-    let payload: any;
+    let payload: JwtPayload | undefined;
 
     try {
       if (!accessToken) {
@@ -53,7 +65,7 @@ export class AdminAuthGuard implements CanActivate {
       payload = await this.jwtService.verifyAsync(accessToken, {
         secret: this.configService.jwtAdminAccessSecret,
       });
-    } catch (e) {
+    } catch {
       // Access token expired or missing, try refresh
       if (!refreshToken) {
         throw new UnauthorizedException('Authentication required');
@@ -75,14 +87,14 @@ export class AdminAuthGuard implements CanActivate {
             secret: this.configService.jwtAdminAccessSecret,
           },
         );
-      } catch (refreshError) {
+      } catch {
         throw new UnauthorizedException('Session expired');
       }
     }
 
     // 3. Session Validation in DB
     const adminSession = await this.adminSessionService.getAdminSession(
-      payload.sessionId,
+      payload!.sessionId,
     );
 
     if (!adminSession) {
@@ -99,7 +111,7 @@ export class AdminAuthGuard implements CanActivate {
       session: adminSession.session,
     };
 
-    request.user = requestUser as any;
+    request.user = requestUser;
 
     return true;
   }
