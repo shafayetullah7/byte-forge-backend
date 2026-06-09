@@ -34,7 +34,7 @@ export class CancelOrderService {
       }
 
       // Check if order can be cancelled
-      if (!CANCELABLE_STATUSES.includes(order.status as any)) {
+      if (!(CANCELABLE_STATUSES as readonly string[]).includes(order.status)) {
         throw new BadRequestException(
           `Order cannot be cancelled in ${order.status} status. Only orders in PENDING_PAYMENT, CONFIRMED, or PROCESSING status can be cancelled.`,
         );

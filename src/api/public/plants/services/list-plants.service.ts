@@ -26,7 +26,6 @@ import {
 } from '@/_db/drizzle/schema';
 import { shopTable, shopTranslationsTable } from '@/_db/drizzle/schema/shop';
 import { paginate } from '@/common/utils/pagination.util';
-import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { ListPlantsQueryDto } from '../dto/list-plants-query.dto';
 import {
   CareDifficultyEnum,
@@ -62,31 +61,6 @@ export type PublicPlantListItem = {
     name: string;
     logo: { id: string; url: string } | null;
   } | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type ListRow = {
-  productId: string;
-  slug: string;
-  thumbnailId: string | null;
-  thumbnailUrl: string | null;
-  name: string | null;
-  shortDescription: string | null;
-  scientificName: string | null;
-  commonNames: string | null;
-  price: string | null;
-  inventoryCount: number | null;
-  careDifficulty: string | null;
-  lightRequirement: string | null;
-  wateringFrequency: string | null;
-  humidityLevel: string | null;
-  growthRate: string | null;
-  shopId: string;
-  shopSlug: string;
-  shopName: string | null;
-  shopLogoId: string | null;
-  shopLogoUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

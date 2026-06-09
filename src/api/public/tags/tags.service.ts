@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { tagGroupsTable, tagsTable } from '@/_db/drizzle/schema/taxonomy';
-import { and, eq, isNull, inArray, sql } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 export interface PublicTagResponse {
