@@ -68,7 +68,6 @@ const createTagGroupSchema = z.object({
     )
     .superRefine((tags, ctx) => {
       const slugSet = new Set<string>();
-      const nameSet = new Set<string>();
 
       tags.forEach((tag, index) => {
         if (slugSet.has(tag.slug)) {
@@ -79,9 +78,6 @@ const createTagGroupSchema = z.object({
           });
         }
         slugSet.add(tag.slug);
-
-        // We no longer validate English name strictly here because duplicate names
-        // are allowed across different locales. DB constraints handle duplicates per-locale.
       });
     })
     .optional(),
