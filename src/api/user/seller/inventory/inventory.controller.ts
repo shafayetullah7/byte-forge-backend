@@ -26,10 +26,7 @@ import {
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
-import {
-  ApiAuth,
-  ApiPaginatedResponse,
-} from '@/common/decorators/swagger.decorators';
+import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,

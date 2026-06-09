@@ -65,7 +65,7 @@ export class PasswordResetService {
       }
 
       return payload.email;
-    } catch (error) {
+    } catch {
       throw new CustomException({
         message: this.i18n.t('message.error.invalidRequestToken', { lang }),
         statusCode: HttpStatus.UNAUTHORIZED,
@@ -107,7 +107,7 @@ export class PasswordResetService {
       }
 
       return payload.email;
-    } catch (error) {
+    } catch {
       throw new CustomException({
         message: this.i18n.t('message.error.invalidAccessToken', { lang }),
         statusCode: HttpStatus.UNAUTHORIZED,

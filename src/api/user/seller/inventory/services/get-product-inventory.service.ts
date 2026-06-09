@@ -6,7 +6,6 @@ import {
   productVariantsTable,
   productsTable,
 } from '@/_db/drizzle/schema';
-import { VariantInventoryDto } from '../dto/inventory-response.dto';
 
 @Injectable()
 export class GetProductInventoryService {

@@ -4,7 +4,7 @@ import { DrizzleTx } from '@/_db/drizzle/types';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { ShopVerificationRepository } from '@/_repositories/business/shop.verification.repository/shop.verification.repository';
 import { ApplySellerDto } from './dto/apply.seller.dto';
-import { TNewShop, TNewShopVerification } from '@/_db/drizzle/schema';
+import { TNewShop, TNewShopVerification, TMedia } from '@/_db/drizzle/schema';
 import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
 import { I18nService } from 'nestjs-i18n';
 import { CustomException } from '@/common/exceptions/custom.exception';
@@ -726,7 +726,7 @@ export class ShopService {
       verification.utilityBillDocumentId,
     ].filter(Boolean) as string[];
 
-    const mediaMap: Map<string, any> = new Map();
+    const mediaMap = new Map<string, TMedia>();
     if (mediaIds.length > 0) {
       const medias = await this.mediaRepository.findMediaDetailsByIds(mediaIds);
       medias.forEach((media) => mediaMap.set(media.media.id, media.media));
@@ -742,13 +742,13 @@ export class ShopService {
       tinDocumentId: verification.tinDocumentId,
       utilityBillDocumentId: verification.utilityBillDocumentId,
       tradeLicenseDocument: verification.tradeLicenseDocumentId
-        ? mediaMap.get(verification.tradeLicenseDocumentId)
+        ? (mediaMap.get(verification.tradeLicenseDocumentId) ?? null)
         : null,
       tinDocument: verification.tinDocumentId
-        ? mediaMap.get(verification.tinDocumentId)
+        ? (mediaMap.get(verification.tinDocumentId) ?? null)
         : null,
       utilityBillDocument: verification.utilityBillDocumentId
-        ? mediaMap.get(verification.utilityBillDocumentId)
+        ? (mediaMap.get(verification.utilityBillDocumentId) ?? null)
         : null,
       rejectionReason: verification.rejectionReason,
       verifiedAt: verification.verifiedAt,

@@ -4,7 +4,6 @@ import { ProductStatusEnum } from '@/_db/drizzle/enum';
 import {
   productTranslationSchema,
   plantDetailsSchema,
-  plantDetailsTranslationSchema,
   careGuideSchema,
   UUIDSchema,
 } from './create-plant.dto';

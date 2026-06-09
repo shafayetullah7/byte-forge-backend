@@ -1,5 +1,4 @@
 import { TMedia, TShop, TShopTranslation } from '@/_db/drizzle/schema';
-import { TShopVerification } from '@/_db/drizzle/schema/shop';
 import { TShopContact } from '@/_db/drizzle/schema/shop/shop.contact.schema';
 import { TShopAddress } from '@/_db/drizzle/schema/shop/shop.address.schema';
 import { TShopAddressTranslation } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
