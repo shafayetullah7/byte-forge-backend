@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  integer,
-  pgEnum,
-  index,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, integer, pgEnum, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { productsTable } from './products.schema';
 import { productVariantsTable } from './product-variants.schema';

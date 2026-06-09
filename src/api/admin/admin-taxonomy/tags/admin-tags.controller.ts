@@ -21,11 +21,7 @@ import { TagTranslationParamDto } from './dto/tag-translation-param.dto';
 
 import { AdminAuthGuard } from '@/common/guards/admin-auth-guard/admin-auth.guard';
 import { ResponseService } from '@/common/modules/response/response.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiAuth } from '@/common/decorators/swagger.decorators';
 import {
   ApiBadRequestResponse,

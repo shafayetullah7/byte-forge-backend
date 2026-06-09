@@ -19,9 +19,7 @@ import { eq, and, inArray, desc, like } from 'drizzle-orm';
 import { OrderStatusEnum, PaymentStatusEnum } from '@/_db/drizzle/enum';
 import type { TPaymentMethod } from '@/_db/drizzle/enum/payment-method.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
-import {
-  computeStockStatus,
-} from '@/api/user/buyer/cart/cart.utils';
+import { computeStockStatus } from '@/api/user/buyer/cart/cart.utils';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 
 export interface PlaceOrderItem {

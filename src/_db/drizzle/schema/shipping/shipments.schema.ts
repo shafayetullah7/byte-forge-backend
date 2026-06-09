@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  varchar,
-  timestamp,
-  index,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { ordersTable } from '../order/orders.schema';
 import { ShippingStatusEnum } from '../../enum';
