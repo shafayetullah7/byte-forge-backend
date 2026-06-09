@@ -21,6 +21,15 @@ export interface PublicCategoryResponse {
   updatedAt: Date;
 }
 
+export type PublicCategoryTreeNode = {
+  id: string;
+  slug: string;
+  name: string;
+  childrenCount: number;
+  parentId: string | null;
+  children: PublicCategoryTreeNode[];
+};
+
 @Injectable()
 export class PublicCategoriesService {
   constructor(private readonly db: DrizzleService) {}
@@ -149,21 +158,18 @@ export class PublicCategoriesService {
       };
     });
 
-    const categoryMap = new Map();
-    const tree: any[] = [];
+    const categoryMap = new Map<string, PublicCategoryTreeNode>();
+    const tree: PublicCategoryTreeNode[] = [];
 
     localizedCategories.forEach((cat) => {
-      categoryMap.set(cat.id, { ...cat, children: null });
+      categoryMap.set(cat.id, { ...cat, children: [] });
     });
 
     localizedCategories.forEach((cat) => {
-      const node = categoryMap.get(cat.id);
+      const node = categoryMap.get(cat.id)!;
       if (cat.parentId) {
         const parent = categoryMap.get(cat.parentId);
         if (parent) {
-          if (!parent.children) {
-            parent.children = [];
-          }
           parent.children.push(node);
         } else {
           tree.push(node);
@@ -173,8 +179,10 @@ export class PublicCategoriesService {
       }
     });
 
-    const calculateTotalDescendants = (node: any): number => {
-      if (!node.children || node.children.length === 0) {
+    const calculateTotalDescendants = (
+      node: PublicCategoryTreeNode,
+    ): number => {
+      if (node.children.length === 0) {
         return 0;
       }
       let count = node.children.length;
