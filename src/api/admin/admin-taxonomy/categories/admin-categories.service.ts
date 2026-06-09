@@ -18,7 +18,6 @@ import {
 import {
   eq,
   and,
-  ne,
   sql,
   desc,
   isNull,
@@ -31,6 +30,16 @@ import {
 
 import { paginate } from '@/common/utils/pagination.util';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+
+export type CategoryTreeNode = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  childrenCount: number;
+  parentId: string | null;
+  children: CategoryTreeNode[];
+};
 
 @Injectable()
 export class AdminCategoriesService {
@@ -116,7 +125,7 @@ export class AdminCategoriesService {
         return { ...newCat, name: baseEnglishName, translations };
       });
     } catch (error: any) {
-      if (error.code === '23505') {
+      if ((error as { code?: string }).code === '23505') {
         throw new BadRequestException(
           `Category with slug '${createCategoryDto.slug}' already exists.`,
         );
@@ -221,15 +230,15 @@ export class AdminCategoriesService {
       };
     });
 
-    const categoryMap = new Map();
-    const tree: any[] = [];
+    const categoryMap = new Map<string, CategoryTreeNode>();
+    const tree: CategoryTreeNode[] = [];
 
     localizedCategories.forEach((cat) => {
       categoryMap.set(cat.id, { ...cat, children: [] });
     });
 
     localizedCategories.forEach((cat) => {
-      const node = categoryMap.get(cat.id);
+      const node = categoryMap.get(cat.id)!;
       if (cat.parentId) {
         const parent = categoryMap.get(cat.parentId);
         if (parent) {
@@ -498,8 +507,8 @@ export class AdminCategoriesService {
 
         return this.findOne(id, lang);
       });
-    } catch (error: any) {
-      if (error.code === '23505') {
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === '23505') {
         throw new BadRequestException(
           `Category with slug '${catData.slug}' already exists.`,
         );
