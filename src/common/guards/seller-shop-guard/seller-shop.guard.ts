@@ -7,11 +7,13 @@ import {
 import { Request } from 'express';
 import { AccessUserAuth } from '@/common/types';
 
+type RequestWithUser = Request & { user?: AccessUserAuth };
+
 @Injectable()
 export class SellerShopGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const auth = request.user as AccessUserAuth | undefined;
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const auth = request.user;
 
     if (!auth?.shop) {
       throw new ForbiddenException('No active shop found for this seller');

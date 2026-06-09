@@ -7,6 +7,9 @@ import {
 import { Request } from 'express';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
+import { AccessUserAuth } from '@/common/types';
+
+type RequestWithUser = Request & { user?: AccessUserAuth };
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
@@ -15,9 +18,9 @@ export class UserAuthGuard implements CanActivate {
     private readonly sessionRepository: SessionRepository,
   ) {}
 
-  async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
-    const sessionId = request.cookies?.sessionId as undefined | string;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const sessionId = request.cookies?.sessionId as string | undefined;
 
     if (!sessionId) {
       throw new UnauthorizedException('Unauthorized access');
@@ -37,7 +40,10 @@ export class UserAuthGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized access. Session expired.');
     }
 
-    request.user = { ...userSession };
+    request.user = {
+      user: userSession.user,
+      session: userSession.session,
+    };
 
     return true;
   }

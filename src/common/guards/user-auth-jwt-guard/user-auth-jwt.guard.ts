@@ -9,7 +9,15 @@ import { UserAuthV2Service } from '@/api/user/user-auth/user-auth-v2.service';
 import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfigService } from '@/common/modules/app-config/app-config.service';
+import { AccessUserAuth } from '@/common/types';
 import * as crypto from 'crypto';
+
+interface JwtPayload {
+  sessionId: string;
+  exp: number;
+}
+
+type RequestWithUser = Request & { user?: AccessUserAuth };
 
 @Injectable()
 export class UserAuthJWtGuard implements CanActivate {
@@ -21,7 +29,7 @@ export class UserAuthJWtGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const response = context.switchToHttp().getResponse<Response>();
     const accessToken = request.cookies?.userAccessToken as string | undefined;
 
@@ -44,13 +52,13 @@ export class UserAuthJWtGuard implements CanActivate {
           this.cookieService.setUserXsrfToken(response, xsrfToken);
 
           // Attach user info to request
-          (request as any).user = {
+          request.user = {
             user,
             session: { id: session.id },
-          };
+          } as AccessUserAuth;
 
           return true;
-        } catch (error) {
+        } catch {
           // If refresh fails, clear tokens and throw unauthorized
           this.cookieService.clearUserTokens(response);
           throw new UnauthorizedException(
@@ -64,9 +72,13 @@ export class UserAuthJWtGuard implements CanActivate {
 
     try {
       // Verify the access token
-      const payload = await this.jwtService.verifyAsync(accessToken, {
-        secret: this.configService.jwtUserAccessSecret,
-      });
+      const verifiedPayload: unknown = await this.jwtService.verifyAsync(
+        accessToken,
+        {
+          secret: this.configService.jwtUserAccessSecret,
+        },
+      );
+      const payload = verifiedPayload as JwtPayload;
 
       // If token is valid, check if it's close to expiration and refresh if needed
       const tokenExpiration = payload.exp * 1000; // Convert to milliseconds
@@ -95,10 +107,10 @@ export class UserAuthJWtGuard implements CanActivate {
             this.cookieService.setUserXsrfToken(response, xsrfToken);
 
             // Attach user info to request
-            (request as any).user = { user, session };
+            request.user = { user, session };
 
             return true;
-          } catch (refreshError) {
+          } catch {
             // If refresh fails, clear tokens and throw unauthorized
             this.cookieService.clearUserTokens(response);
             throw new UnauthorizedException(
@@ -117,13 +129,13 @@ export class UserAuthJWtGuard implements CanActivate {
         throw new UnauthorizedException('Session not found');
       }
 
-      (request as any).user = {
+      request.user = {
         user: userSession.user,
         session: userSession.session,
       };
 
       return true;
-    } catch (error) {
+    } catch {
       // If access token is invalid, try to refresh
       const refreshToken = request.cookies?.userRefreshToken as
         | string
@@ -142,10 +154,10 @@ export class UserAuthJWtGuard implements CanActivate {
           this.cookieService.setUserXsrfToken(response, xsrfToken);
 
           // Attach user info to request
-          (request as any).user = { user, session };
+          request.user = { user, session };
 
           return true;
-        } catch (refreshError) {
+        } catch {
           // If refresh fails, clear tokens and throw unauthorized
           this.cookieService.clearUserTokens(response);
           throw new UnauthorizedException(

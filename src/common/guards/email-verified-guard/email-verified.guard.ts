@@ -9,11 +9,13 @@ import { AccessUserAuth } from '@/common/types';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 
+type RequestWithUser = Request & { user?: AccessUserAuth };
+
 @Injectable()
 export class EmailVerifiedGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const auth = request.user as AccessUserAuth;
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const auth = request.user;
 
     if (!auth) {
       return true; // Let other guards handle auth
