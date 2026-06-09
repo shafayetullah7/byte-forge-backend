@@ -4,11 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AccessAdminAuth, AuthenticAdmin } from '../types';
+import { AuthenticAdmin } from '../types';
 
 export const AuthenticAdminUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthenticAdmin => {
-    const req = ctx.switchToHttp().getRequest();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { user?: AuthenticAdmin }>();
 
     const auth = req.user;
     if (!auth) {
