@@ -22,6 +22,7 @@ export class GetOrdersService {
   constructor(private readonly orderRepository: OrderRepository) {}
 
   async execute(userId: string, filters: OrdersFilterDto, lang: string = 'en') {
+    // const unused_variable = '';
     const result = await this.orderRepository.getBuyerOrderGroupsPaginated({
       userId,
       page: filters.page ?? 1,
