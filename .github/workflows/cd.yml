@@ -1,0 +1,46 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Join Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy
+        env:
+          APP_PORT: ${{ vars.APP_PORT }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+          ENV_FILE: ${{ vars.ENV_FILE }}
+        run: |
+          tailscale ssh shafayet@home-server << EOF
+            set -e
+
+            cd $DEPLOY_DIR
+
+            git pull origin main
+
+            export DOCKER_BUILD_TARGET=production
+
+            docker compose --env-file $ENV_FILE build --no-cache app
+            docker compose --env-file $ENV_FILE up -d --remove-orphans
+
+            # Health check
+            sleep 5
+
+            docker compose ps
+
+            curl -f http://localhost:$APP_PORT || exit 1
+          EOF
