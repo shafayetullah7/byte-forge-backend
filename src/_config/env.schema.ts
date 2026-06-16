@@ -15,7 +15,7 @@ export const envSchema = z
     DB_PASSWORD: z.string(),
     DB_NAME: z.string(),
 
-    DATABASE_URL: z.string().url().optional(),
+    // DATABASE_URL: z.string().url().optional(),
     // === Docker Compose ===
     COMPOSE_PROJECT_NAME: z.string(),
     APP_EXTERNAL_PORT: z.coerce.number(),
@@ -77,14 +77,14 @@ export const envSchema = z
         'Invalid duration format (e.g. 15m, 1h, 7d)',
       ),
   })
-  .transform((data) => {
-    const dbUrl = data.DATABASE_URL;
-    if (dbUrl) return data;
-    const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = data;
-    return {
-      ...data,
-      DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-    };
-  });
+  // .transform((data) => {
+  //   const dbUrl = data.DATABASE_URL;
+  //   if (dbUrl) return data;
+  //   const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = data;
+  //   return {
+  //     ...data,
+  //     DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
+  //   };
+  // });
 
 export type AppEnv = z.infer<typeof envSchema>;

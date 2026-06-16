@@ -40,9 +40,9 @@ export class AppEnvService {
     return this.configService.get('DB_NAME', { infer: true });
   }
 
-  get DATABASE_URL() {
-    return this.configService.get('DATABASE_URL', { infer: true });
-  }
+  // get DATABASE_URL() {
+  //   return this.configService.get('DATABASE_URL', { infer: true });
+  // }
 
   // === Docker Compose ===
   get COMPOSE_PROJECT_NAME() {

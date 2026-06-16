@@ -1,0 +1,145 @@
+name: CD
+
+on:
+push:
+branches: [main]
+
+permissions:
+contents: read
+
+jobs:
+deploy:
+runs-on: ubuntu-latest
+environment: production
+
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Join Tailscale
+    uses: tailscale/github-action@v3
+    with:
+      oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+      oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+      tags: tag:ci
+
+  - name: Deploy
+    env:
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+
+      NODE_ENV: ${{ vars.NODE_ENV }}
+      PORT: ${{ vars.PORT }}
+      APP_NAME: ${{ vars.APP_NAME }}
+
+      DB_HOST: ${{ vars.DB_HOST }}
+      DB_PORT: ${{ vars.DB_PORT }}
+      DB_USER: ${{ vars.DB_USER }}
+      DB_NAME: ${{ vars.DB_NAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
+      APP_EXTERNAL_PORT: ${{ vars.APP_EXTERNAL_PORT }}
+      DB_EXTERNAL_PORT: ${{ vars.DB_EXTERNAL_PORT }}
+      DOCKER_BUILD_TARGET: ${{ vars.DOCKER_BUILD_TARGET }}
+
+      SALT_ROUNDS: ${{ vars.SALT_ROUNDS }}
+
+      CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ vars.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+      MAIL_PROVIDER: ${{ vars.MAIL_PROVIDER }}
+      MAIL_HOST: ${{ vars.MAIL_HOST }}
+      MAIL_PORT: ${{ vars.MAIL_PORT }}
+      MAIL_SECURE: ${{ vars.MAIL_SECURE }}
+      MAIL_USER: ${{ vars.MAIL_USER }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+      MAIL_FROM_EMAIL: ${{ vars.MAIL_FROM_EMAIL }}
+
+      JWT_SECRET_RESET_REQUEST: ${{ secrets.JWT_SECRET_RESET_REQUEST }}
+      JWT_SECRET_RESET_ACCESS: ${{ secrets.JWT_SECRET_RESET_ACCESS }}
+
+      SESSION_MAX_AGE: ${{ vars.SESSION_MAX_AGE }}
+      COOKIE_DOMAIN: ${{ vars.COOKIE_DOMAIN }}
+
+      JWT_ADMIN_ACCESS_SECRET: ${{ secrets.JWT_ADMIN_ACCESS_SECRET }}
+      JWT_ADMIN_ACCESS_EXP: ${{ vars.JWT_ADMIN_ACCESS_EXP }}
+      JWT_ADMIN_REFRESH_SECRET: ${{ secrets.JWT_ADMIN_REFRESH_SECRET }}
+      JWT_ADMIN_REFRESH_EXP: ${{ vars.JWT_ADMIN_REFRESH_EXP }}
+
+      JWT_USER_ACCESS_SECRET: ${{ secrets.JWT_USER_ACCESS_SECRET }}
+      JWT_USER_ACCESS_EXP: ${{ vars.JWT_USER_ACCESS_EXP }}
+      JWT_USER_REFRESH_SECRET: ${{ secrets.JWT_USER_REFRESH_SECRET }}
+      JWT_USER_REFRESH_EXP: ${{ vars.JWT_USER_REFRESH_EXP }}
+
+    run: |
+      tailscale ssh shafayet@home-server << EOF
+        set -euo pipefail
+
+        cd "$DEPLOY_DIR"
+
+        git pull origin main
+
+        cat > .env.production << EOL
+```
+
+NODE_ENV=$NODE_ENV
+PORT=$PORT
+APP_NAME=$APP_NAME
+
+DB_HOST=$DB_HOST
+DB_PORT=$DB_PORT
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+DB_NAME=$DB_NAME
+
+COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
+APP_EXTERNAL_PORT=$APP_EXTERNAL_PORT
+DB_EXTERNAL_PORT=$DB_EXTERNAL_PORT
+DOCKER_BUILD_TARGET=$DOCKER_BUILD_TARGET
+
+SALT_ROUNDS=$SALT_ROUNDS
+
+CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET
+
+MAIL_PROVIDER=$MAIL_PROVIDER
+MAIL_HOST=$MAIL_HOST
+MAIL_PORT=$MAIL_PORT
+MAIL_SECURE=$MAIL_SECURE
+MAIL_USER=$MAIL_USER
+MAIL_PASSWORD=$MAIL_PASSWORD
+MAIL_FROM_NAME=$MAIL_FROM_NAME
+MAIL_FROM_EMAIL=$MAIL_FROM_EMAIL
+
+JWT_SECRET_RESET_REQUEST=$JWT_SECRET_RESET_REQUEST
+JWT_SECRET_RESET_ACCESS=$JWT_SECRET_RESET_ACCESS
+
+SESSION_MAX_AGE=$SESSION_MAX_AGE
+COOKIE_DOMAIN=$COOKIE_DOMAIN
+
+JWT_ADMIN_ACCESS_SECRET=$JWT_ADMIN_ACCESS_SECRET
+JWT_ADMIN_ACCESS_EXP=$JWT_ADMIN_ACCESS_EXP
+JWT_ADMIN_REFRESH_SECRET=$JWT_ADMIN_REFRESH_SECRET
+JWT_ADMIN_REFRESH_EXP=$JWT_ADMIN_REFRESH_EXP
+
+JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET
+JWT_USER_ACCESS_EXP=$JWT_USER_ACCESS_EXP
+JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET
+JWT_USER_REFRESH_EXP=$JWT_USER_REFRESH_EXP
+EOL
+
+```
+        docker compose --env-file .env.production build --no-cache app
+        docker compose --env-file .env.production up -d --remove-orphans
+
+        sleep 10
+
+        docker compose ps
+
+        curl -fsS http://localhost:$APP_EXTERNAL_PORT
+      EOF
+```
