@@ -1,14 +1,20 @@
 name: CD
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
+
+concurrency:
+  group: production
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: production
 
@@ -26,7 +32,6 @@ jobs:
       - name: Deploy
         env:
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
-
           NODE_ENV: ${{ vars.NODE_ENV }}
           PORT: ${{ vars.PORT }}
           APP_NAME: ${{ vars.APP_NAME }}
@@ -60,9 +65,9 @@ jobs:
           JWT_USER_REFRESH_EXP: ${{ vars.JWT_USER_REFRESH_EXP }}
 
           CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
 
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
           JWT_SECRET_RESET_REQUEST: ${{ secrets.JWT_SECRET_RESET_REQUEST }}
@@ -79,14 +84,38 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "$DEPLOY_DIR" ]; then
-            echo "DEPLOY_DIR is not set in GitHub Variables"
-            exit 1
+          echo "Deploy triggered"
+
+          tailscale ssh shafayet@home-server bash -s <<EOF
+          set -euo pipefail
+
+          DEPLOY_DIR="${DEPLOY_DIR}"
+          REPO_URL="git@github.com:shafayetullah7/byte-forge-auth.git"
+
+          mkdir -p "$DEPLOY_DIR"
+          cd "$DEPLOY_DIR"
+
+          # =========================
+          # BOOTSTRAP
+          # =========================
+          if [ ! -d ".git" ]; then
+            echo "Fresh clone..."
+
+            rm -rf "$DEPLOY_DIR"/*
+            git clone "$REPO_URL" .
           fi
 
-          echo "Building .env.production"
+          # =========================
+          # UPDATE CODE
+          # =========================
+          git fetch --prune origin main
+          git reset --hard origin/main
+          git clean -fdx
 
-          cat > .env.production <<EOF
+          # =========================
+          # WRITE ENV FILE (FIXED)
+          # =========================
+          cat > .env.production <<ENV
           NODE_ENV=$NODE_ENV
           PORT=$PORT
           APP_NAME=$APP_NAME
@@ -133,43 +162,25 @@ jobs:
 
           JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET
           JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET
-          EOF
+          ENV
 
-          echo "Uploading env file..."
-
-          tailscale ssh shafayet@home-server "mkdir -p $DEPLOY_DIR && cat > $DEPLOY_DIR/.env.production" < .env.production
-
-          echo "Deploying on server..."
-
-          tailscale ssh shafayet@home-server bash -s <<EOF
-          set -euo pipefail
-
-          DEPLOY_DIR="$DEPLOY_DIR"
-
-          mkdir -p "$DEPLOY_DIR"
-          cd "$DEPLOY_DIR"
-
-          if [ ! -d ".git" ]; then
-            echo "No git repo found. Cloning..."
-            rm -rf ./*
-            git clone git@github.com:shafayetullah7/byte-forge-auth.git .
-          fi
-
-          git fetch --prune origin main
-          git reset --hard origin/main
-          git clean -fdx
-
+          # =========================
+          # DEPLOY
+          # =========================
           docker compose --env-file .env.production up -d --build --remove-orphans
 
-          echo "Waiting for health check..."
+          # =========================
+          # HEALTH CHECK
+          # =========================
+          echo "Waiting..."
           for i in \$(seq 1 30); do
             if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
-              echo "Health check passed"
+              echo "OK"
               exit 0
             fi
             sleep 2
           done
 
-          echo "Health check failed"
+          echo "FAILED"
           exit 1
           EOF
