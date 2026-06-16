@@ -34,9 +34,9 @@ export class AppConfigService {
   get dbName(): AppEnv['DB_NAME'] {
     return this.configService.getOrThrow('DB_NAME');
   }
-  get databaseUrl(): AppEnv['DATABASE_URL'] {
-    return this.configService.getOrThrow('DATABASE_URL');
-  }
+  // get databaseUrl(): AppEnv['DATABASE_URL'] {
+  //   return this.configService.getOrThrow('DATABASE_URL');
+  // }
 
   // === Docker Compose ===
   get composeProjectName(): AppEnv['COMPOSE_PROJECT_NAME'] {
