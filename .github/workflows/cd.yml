@@ -25,8 +25,11 @@ jobs:
 
       - name: Deploy
         env:
-          # ===== vars =====
+          # =====================
+          # REQUIRED CONFIG
+          # =====================
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+
           NODE_ENV: ${{ vars.NODE_ENV }}
           PORT: ${{ vars.PORT }}
           APP_NAME: ${{ vars.APP_NAME }}
@@ -62,7 +65,9 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
 
-          # ===== secrets =====
+          # =====================
+          # SECRETS
+          # =====================
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
@@ -78,65 +83,90 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
 
         run: |
-          # Write env file to server (safe + simple)
-          printf "%s\n" \
-            "NODE_ENV=$NODE_ENV" \
-            "PORT=$PORT" \
-            "APP_NAME=$APP_NAME" \
-            "DB_HOST=$DB_HOST" \
-            "DB_PORT=$DB_PORT" \
-            "DB_USER=$DB_USER" \
-            "DB_PASSWORD=$DB_PASSWORD" \
-            "DB_NAME=$DB_NAME" \
-            "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
-            "APP_EXTERNAL_PORT=$APP_EXTERNAL_PORT" \
-            "DB_EXTERNAL_PORT=$DB_EXTERNAL_PORT" \
-            "DOCKER_BUILD_TARGET=$DOCKER_BUILD_TARGET" \
-            "SALT_ROUNDS=$SALT_ROUNDS" \
-            "MAIL_PROVIDER=$MAIL_PROVIDER" \
-            "MAIL_HOST=$MAIL_HOST" \
-            "MAIL_PORT=$MAIL_PORT" \
-            "MAIL_SECURE=$MAIL_SECURE" \
-            "MAIL_USER=$MAIL_USER" \
-            "MAIL_PASSWORD=$MAIL_PASSWORD" \
-            "MAIL_FROM_NAME=$MAIL_FROM_NAME" \
-            "MAIL_FROM_EMAIL=$MAIL_FROM_EMAIL" \
-            "SESSION_MAX_AGE=$SESSION_MAX_AGE" \
-            "COOKIE_DOMAIN=$COOKIE_DOMAIN" \
-            "JWT_ADMIN_ACCESS_EXP=$JWT_ADMIN_ACCESS_EXP" \
-            "JWT_ADMIN_REFRESH_EXP=$JWT_ADMIN_REFRESH_EXP" \
-            "JWT_USER_ACCESS_EXP=$JWT_USER_ACCESS_EXP" \
-            "JWT_USER_REFRESH_EXP=$JWT_USER_REFRESH_EXP" \
-            "CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME" \
-            "CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY" \
-            "CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET" \
-            "JWT_SECRET_RESET_REQUEST=$JWT_SECRET_RESET_REQUEST" \
-            "JWT_SECRET_RESET_ACCESS=$JWT_SECRET_RESET_ACCESS" \
-            "JWT_ADMIN_ACCESS_SECRET=$JWT_ADMIN_ACCESS_SECRET" \
-            "JWT_ADMIN_REFRESH_SECRET=$JWT_ADMIN_REFRESH_SECRET" \
-            "JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET" \
-            "JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET" \
-            | tailscale ssh shafayet@home-server "cat > $DEPLOY_DIR/.env.production"
+          set -euo pipefail
 
-          # Deploy on server
-          tailscale ssh shafayet@home-server << EOF
-            set -euo pipefail
+          if [ -z "$DEPLOY_DIR" ]; then
+            echo "DEPLOY_DIR is not set in GitHub Variables"
+            exit 1
+          fi
 
-            cd "$DEPLOY_DIR"
+          echo "Building .env.production"
 
-            git fetch --prune origin main
-            git reset --hard origin/main
-            git clean -fdx
+          cat > .env.production <<EOF
+          NODE_ENV=$NODE_ENV
+          PORT=$PORT
+          APP_NAME=$APP_NAME
 
-            docker compose --env-file .env.production up -d --build --remove-orphans
+          DB_HOST=$DB_HOST
+          DB_PORT=$DB_PORT
+          DB_USER=$DB_USER
+          DB_PASSWORD=$DB_PASSWORD
+          DB_NAME=$DB_NAME
 
-            for i in \$(seq 1 30); do
-              if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
-                echo "Health check passed"
-                break
-              fi
-              sleep 2
-            done
+          COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
+          APP_EXTERNAL_PORT=$APP_EXTERNAL_PORT
+          DB_EXTERNAL_PORT=$DB_EXTERNAL_PORT
+          DOCKER_BUILD_TARGET=$DOCKER_BUILD_TARGET
 
-            curl -fsS http://localhost:$APP_EXTERNAL_PORT || exit 1
+          SALT_ROUNDS=$SALT_ROUNDS
+
+          MAIL_PROVIDER=$MAIL_PROVIDER
+          MAIL_HOST=$MAIL_HOST
+          MAIL_PORT=$MAIL_PORT
+          MAIL_SECURE=$MAIL_SECURE
+          MAIL_USER=$MAIL_USER
+          MAIL_PASSWORD=$MAIL_PASSWORD
+          MAIL_FROM_NAME=$MAIL_FROM_NAME
+          MAIL_FROM_EMAIL=$MAIL_FROM_EMAIL
+
+          SESSION_MAX_AGE=$SESSION_MAX_AGE
+          COOKIE_DOMAIN=$COOKIE_DOMAIN
+
+          JWT_ADMIN_ACCESS_EXP=$JWT_ADMIN_ACCESS_EXP
+          JWT_ADMIN_REFRESH_EXP=$JWT_ADMIN_REFRESH_EXP
+          JWT_USER_ACCESS_EXP=$JWT_USER_ACCESS_EXP
+          JWT_USER_REFRESH_EXP=$JWT_USER_REFRESH_EXP
+
+          CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME
+          CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY
+          CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET
+
+          JWT_SECRET_RESET_REQUEST=$JWT_SECRET_RESET_REQUEST
+          JWT_SECRET_RESET_ACCESS=$JWT_SECRET_RESET_ACCESS
+
+          JWT_ADMIN_ACCESS_SECRET=$JWT_ADMIN_ACCESS_SECRET
+          JWT_ADMIN_REFRESH_SECRET=$JWT_ADMIN_REFRESH_SECRET
+
+          JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET
+          JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET
+          EOF
+
+          echo "Uploading env file to server..."
+
+          tailscale ssh shafayet@home-server "cat > $DEPLOY_DIR/.env.production" < .env.production
+
+          echo "Deploying on server..."
+
+          tailscale ssh shafayet@home-server bash -s <<EOF
+          set -euo pipefail
+
+          cd "$DEPLOY_DIR"
+
+          git fetch --prune origin main
+          git reset --hard origin/main
+          git clean -fdx
+
+          docker compose --env-file .env.production up -d --build --remove-orphans
+
+          echo "Waiting for health check..."
+          for i in \$(seq 1 30); do
+            if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Health check failed"
+          exit 1
           EOF
