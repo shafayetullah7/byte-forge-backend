@@ -25,9 +25,6 @@ jobs:
 
       - name: Deploy
         env:
-          # =====================
-          # REQUIRED CONFIG
-          # =====================
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
 
           NODE_ENV: ${{ vars.NODE_ENV }}
@@ -65,9 +62,6 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
 
-          # =====================
-          # SECRETS
-          # =====================
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
@@ -141,16 +135,25 @@ jobs:
           JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET
           EOF
 
-          echo "Uploading env file to server..."
+          echo "Uploading env file..."
 
-          tailscale ssh shafayet@home-server "cat > $DEPLOY_DIR/.env.production" < .env.production
+          tailscale ssh shafayet@home-server "mkdir -p $DEPLOY_DIR && cat > $DEPLOY_DIR/.env.production" < .env.production
 
           echo "Deploying on server..."
 
           tailscale ssh shafayet@home-server bash -s <<EOF
           set -euo pipefail
 
+          DEPLOY_DIR="$DEPLOY_DIR"
+
+          mkdir -p "$DEPLOY_DIR"
           cd "$DEPLOY_DIR"
+
+          if [ ! -d ".git" ]; then
+            echo "No git repo found. Cloning..."
+            rm -rf ./*
+            git clone git@github.com:shafayetullah7/byte-forge-auth.git .
+          fi
 
           git fetch --prune origin main
           git reset --hard origin/main
