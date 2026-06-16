@@ -25,20 +25,60 @@ jobs:
 
       - name: Deploy
         env:
+          # ===== vars =====
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
           NODE_ENV: ${{ vars.NODE_ENV }}
           PORT: ${{ vars.PORT }}
           APP_NAME: ${{ vars.APP_NAME }}
+
           DB_HOST: ${{ vars.DB_HOST }}
           DB_PORT: ${{ vars.DB_PORT }}
           DB_USER: ${{ vars.DB_USER }}
           DB_NAME: ${{ vars.DB_NAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
           APP_EXTERNAL_PORT: ${{ vars.APP_EXTERNAL_PORT }}
+          DB_EXTERNAL_PORT: ${{ vars.DB_EXTERNAL_PORT }}
           DOCKER_BUILD_TARGET: ${{ vars.DOCKER_BUILD_TARGET }}
 
+          SALT_ROUNDS: ${{ vars.SALT_ROUNDS }}
+
+          MAIL_PROVIDER: ${{ vars.MAIL_PROVIDER }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+          MAIL_PORT: ${{ vars.MAIL_PORT }}
+          MAIL_SECURE: ${{ vars.MAIL_SECURE }}
+          MAIL_USER: ${{ vars.MAIL_USER }}
+          MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+          MAIL_FROM_EMAIL: ${{ vars.MAIL_FROM_EMAIL }}
+
+          SESSION_MAX_AGE: ${{ vars.SESSION_MAX_AGE }}
+          COOKIE_DOMAIN: ${{ vars.COOKIE_DOMAIN }}
+
+          JWT_ADMIN_ACCESS_EXP: ${{ vars.JWT_ADMIN_ACCESS_EXP }}
+          JWT_ADMIN_REFRESH_EXP: ${{ vars.JWT_ADMIN_REFRESH_EXP }}
+          JWT_USER_ACCESS_EXP: ${{ vars.JWT_USER_ACCESS_EXP }}
+          JWT_USER_REFRESH_EXP: ${{ vars.JWT_USER_REFRESH_EXP }}
+
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+
+          # ===== secrets =====
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+          JWT_SECRET_RESET_REQUEST: ${{ secrets.JWT_SECRET_RESET_REQUEST }}
+          JWT_SECRET_RESET_ACCESS: ${{ secrets.JWT_SECRET_RESET_ACCESS }}
+
+          JWT_ADMIN_ACCESS_SECRET: ${{ secrets.JWT_ADMIN_ACCESS_SECRET }}
+          JWT_ADMIN_REFRESH_SECRET: ${{ secrets.JWT_ADMIN_REFRESH_SECRET }}
+
+          JWT_USER_ACCESS_SECRET: ${{ secrets.JWT_USER_ACCESS_SECRET }}
+          JWT_USER_REFRESH_SECRET: ${{ secrets.JWT_USER_REFRESH_SECRET }}
+
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+
         run: |
-          # Pass env file via SSH pipe (no heredoc complexity)
+          # Write env file to server (safe + simple)
           printf "%s\n" \
             "NODE_ENV=$NODE_ENV" \
             "PORT=$PORT" \
@@ -48,37 +88,55 @@ jobs:
             "DB_USER=$DB_USER" \
             "DB_PASSWORD=$DB_PASSWORD" \
             "DB_NAME=$DB_NAME" \
+            "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
             "APP_EXTERNAL_PORT=$APP_EXTERNAL_PORT" \
+            "DB_EXTERNAL_PORT=$DB_EXTERNAL_PORT" \
             "DOCKER_BUILD_TARGET=$DOCKER_BUILD_TARGET" \
+            "SALT_ROUNDS=$SALT_ROUNDS" \
+            "MAIL_PROVIDER=$MAIL_PROVIDER" \
+            "MAIL_HOST=$MAIL_HOST" \
+            "MAIL_PORT=$MAIL_PORT" \
+            "MAIL_SECURE=$MAIL_SECURE" \
+            "MAIL_USER=$MAIL_USER" \
+            "MAIL_PASSWORD=$MAIL_PASSWORD" \
+            "MAIL_FROM_NAME=$MAIL_FROM_NAME" \
+            "MAIL_FROM_EMAIL=$MAIL_FROM_EMAIL" \
+            "SESSION_MAX_AGE=$SESSION_MAX_AGE" \
+            "COOKIE_DOMAIN=$COOKIE_DOMAIN" \
+            "JWT_ADMIN_ACCESS_EXP=$JWT_ADMIN_ACCESS_EXP" \
+            "JWT_ADMIN_REFRESH_EXP=$JWT_ADMIN_REFRESH_EXP" \
+            "JWT_USER_ACCESS_EXP=$JWT_USER_ACCESS_EXP" \
+            "JWT_USER_REFRESH_EXP=$JWT_USER_REFRESH_EXP" \
+            "CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME" \
+            "CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY" \
+            "CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET" \
+            "JWT_SECRET_RESET_REQUEST=$JWT_SECRET_RESET_REQUEST" \
+            "JWT_SECRET_RESET_ACCESS=$JWT_SECRET_RESET_ACCESS" \
+            "JWT_ADMIN_ACCESS_SECRET=$JWT_ADMIN_ACCESS_SECRET" \
+            "JWT_ADMIN_REFRESH_SECRET=$JWT_ADMIN_REFRESH_SECRET" \
+            "JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET" \
+            "JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET" \
             | tailscale ssh shafayet@home-server "cat > $DEPLOY_DIR/.env.production"
 
-          # Deploy commands
+          # Deploy on server
           tailscale ssh shafayet@home-server << EOF
             set -euo pipefail
 
-            # Export variables for remote use (CRITICAL for health check)
-            export APP_EXTERNAL_PORT="$APP_EXTERNAL_PORT"
-            export DEPLOY_DIR="$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
 
-            cd "\$DEPLOY_DIR"
-
-            # Clean git state (remove everything, including ignored files)
             git fetch --prune origin main
             git reset --hard origin/main
             git clean -fdx
 
             docker compose --env-file .env.production up -d --build --remove-orphans
 
-            # Health check with ISO timestamp logging
             for i in \$(seq 1 30); do
-              if curl -fsS http://localhost:\$APP_EXTERNAL_PORT >/dev/null; then
-                echo "[$(date -Is)] Health check passed on attempt \$i"
+              if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
+                echo "Health check passed"
                 break
               fi
-              echo "[$(date -Is)] Waiting for service... (attempt \$i/30)"
               sleep 2
             done
 
-            # Final verification
-            curl -fsS http://localhost:\$APP_EXTERNAL_PORT || exit 1
+            curl -fsS http://localhost:$APP_EXTERNAL_PORT || exit 1
           EOF
