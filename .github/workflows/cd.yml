@@ -80,11 +80,11 @@ jobs:
           set -euo pipefail
 
           if [ -z "$DEPLOY_DIR" ]; then
-            echo "DEPLOY_DIR is not set in GitHub Variables"
+            echo "DEPLOY_DIR is not set"
             exit 1
           fi
 
-          echo "Building .env.production"
+          echo "Creating env file..."
 
           cat > .env.production <<EOF
           NODE_ENV=$NODE_ENV
@@ -136,31 +136,47 @@ jobs:
           EOF
 
           echo "Uploading env file..."
+          tailscale ssh shafayet@home-server "mkdir -p $DEPLOY_DIR" \
+            && tailscale ssh shafayet@home-server "cat > $DEPLOY_DIR/.env.production" < .env.production
 
-          tailscale ssh shafayet@home-server "mkdir -p $DEPLOY_DIR && cat > $DEPLOY_DIR/.env.production" < .env.production
-
-          echo "Deploying on server..."
+          echo "Deploying..."
 
           tailscale ssh shafayet@home-server bash -s <<EOF
           set -euo pipefail
 
           DEPLOY_DIR="$DEPLOY_DIR"
+          REPO_URL="git@github.com:shafayetullah7/byte-forge-auth.git"
 
           mkdir -p "$DEPLOY_DIR"
           cd "$DEPLOY_DIR"
 
+          # =========================
+          # BOOTSTRAP (FIRST RUN ONLY)
+          # =========================
           if [ ! -d ".git" ]; then
-            echo "No git repo found. Cloning..."
-            rm -rf ./*
-            git clone git@github.com:shafayetullah7/byte-forge-auth.git .
+            echo "Cloning repository..."
+
+            # wipe only if NOT git repo
+            rm -rf ./* .[^.]* 2>/dev/null || true
+
+            git clone "$REPO_URL" .
           fi
 
+          # =========================
+          # UPDATE CODE
+          # =========================
           git fetch --prune origin main
           git reset --hard origin/main
           git clean -fdx
 
+          # =========================
+          # DEPLOY
+          # =========================
           docker compose --env-file .env.production up -d --build --remove-orphans
 
+          # =========================
+          # HEALTH CHECK
+          # =========================
           echo "Waiting for health check..."
           for i in \$(seq 1 30); do
             if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
