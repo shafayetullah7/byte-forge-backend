@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { PaymentMethodRepository } from '@/_repositories/payment/payment-method.repository';
-import { MediaRepository } from '@/_repositories/providers/media/media.repository/media.repository';
 import { CreatePaymentMethodDto } from '../dto/create-payment-method.dto';
 import {
   PaymentMethodResponse,
@@ -14,7 +13,6 @@ export class CreatePaymentMethodService {
   constructor(
     private readonly repository: PaymentMethodRepository,
     private readonly logoService: PaymentMethodLogoService,
-    private readonly mediaRepository: MediaRepository,
     private readonly db: DrizzleService,
   ) {}
 
@@ -31,16 +29,18 @@ export class CreatePaymentMethodService {
     }
 
     const row = await this.db.client.transaction(async (tx) => {
-      if (dto.logoId) {
-        await this.logoService.validateLogoId(dto.logoId, adminId, tx);
-        await this.mediaRepository.incrementMediaUsage([dto.logoId], tx);
-      }
+      const logoId = await this.logoService.applyLogoChange(
+        null,
+        dto.logoId ?? null,
+        adminId,
+        tx,
+      );
 
       return this.repository.create(
         {
           key: dto.key,
           displayName: dto.displayName,
-          logoId: dto.logoId ?? null,
+          logoId: logoId ?? null,
           description: dto.description ?? null,
           status: 'INACTIVE',
         },
