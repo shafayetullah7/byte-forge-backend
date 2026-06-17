@@ -533,6 +533,20 @@
       "when": 1780552995620,
       "tag": "0077_lumpy_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1781709041362,
+      "tag": "0078_premium_ultimo",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1781709702217,
+      "tag": "0079_gigantic_vengeance",
+      "breakpoints": true
     }
   ]
 }

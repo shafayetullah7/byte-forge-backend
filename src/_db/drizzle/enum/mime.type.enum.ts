@@ -27,3 +27,11 @@ export const AllowedMimeType = {
 
 export type TAllowedMimeType =
   (typeof AllowedMimeType)[keyof typeof AllowedMimeType];
+
+export const ImageMimeType = [
+  AllowedMimeType.JPEG,
+  AllowedMimeType.PNG,
+  AllowedMimeType.GIF,
+  AllowedMimeType.WEBP,
+  AllowedMimeType.SVG,
+] as const satisfies readonly TAllowedMimeType[];
