@@ -6,6 +6,7 @@ import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { ShippingRatesModule } from './shipping-rates/shipping-rates.module';
 import { SellerOrdersModule } from './orders/orders.module';
+import { SellerReviewsModule } from './reviews/seller-reviews.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SellerOrdersModule } from './orders/orders.module';
     InventoryModule,
     ShippingRatesModule,
     SellerOrdersModule,
+    SellerReviewsModule,
   ],
   exports: [ShopModule],
 })

@@ -19,6 +19,9 @@ import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
 import { mapStatusHistoryActor } from '@/api/user/seller/orders/map-status-history-actor.util';
 import type { TPaymentMethodRow } from '@/_db/drizzle/schema/payment/payment-methods.schema';
+import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
+import { OrderStatusEnum } from '@/_db/drizzle/enum';
+import type { TReview } from '@/_db/drizzle/schema';
 
 // ─── Query Result Types ──────────────────────────────────────────────────────
 
@@ -65,7 +68,10 @@ interface OrderGroupWithRelations extends TOrderGroup {
 
 @Injectable()
 export class GetOrderGroupService {
-  constructor(private readonly db: DrizzleService) {}
+  constructor(
+    private readonly db: DrizzleService,
+    private readonly reviewRepository: ReviewRepository,
+  ) {}
 
   async execute(userId: string, groupId: string, lang: string = 'en') {
     const group = await this.fetchGroupWithDetails(groupId, userId, lang);
@@ -74,7 +80,13 @@ export class GetOrderGroupService {
       throw new NotFoundException('Order group not found');
     }
 
-    return this.mapGroupResponse(group, lang, userId);
+    const itemIds = group.orders.flatMap((order) =>
+      order.items.map((item) => item.id),
+    );
+    const reviewByOrderItem =
+      await this.reviewRepository.getReviewStatusesForOrderItems(itemIds);
+
+    return this.mapGroupResponse(group, lang, userId, reviewByOrderItem);
   }
 
   private async fetchGroupWithDetails(
@@ -135,6 +147,7 @@ export class GetOrderGroupService {
     group: OrderGroupWithRelations,
     lang: string,
     userId: string,
+    reviewByOrderItem: Map<string, TReview>,
   ) {
     return {
       id: group.id,
@@ -142,7 +155,7 @@ export class GetOrderGroupService {
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
       orders: group.orders.map((order) =>
-        this.mapOrderResponse(order, lang, userId),
+        this.mapOrderResponse(order, lang, userId, reviewByOrderItem),
       ),
     };
   }
@@ -151,6 +164,7 @@ export class GetOrderGroupService {
     order: OrderWithRelations,
     lang: string,
     userId: string,
+    reviewByOrderItem: Map<string, TReview>,
   ) {
     const shopTranslation = resolveTranslation<TShopTranslation>(
       order.shop?.translations,
@@ -197,7 +211,9 @@ export class GetOrderGroupService {
             deliveryInstructions: order.address.deliveryInstructions,
           }
         : null,
-      items: order.items.map((item) => this.mapItemResponse(item, lang)),
+      items: order.items.map((item) =>
+        this.mapItemResponse(item, lang, order.status, reviewByOrderItem),
+      ),
       statusHistory: order.statusHistory.map((history) => {
         const { actor, actorLabel } = mapStatusHistoryActor(
           history,
@@ -230,13 +246,24 @@ export class GetOrderGroupService {
     };
   }
 
-  private mapItemResponse(item: OrderItemWithProduct, lang: string) {
+  private mapItemResponse(
+    item: OrderItemWithProduct,
+    lang: string,
+    orderStatus: string,
+    reviewByOrderItem: Map<string, TReview>,
+  ) {
     const productTranslation = resolveTranslation<TProductTranslation>(
       item.product?.translations,
       lang,
     );
+    const review = reviewByOrderItem.get(item.id);
+    const isReviewableStatus =
+      orderStatus === OrderStatusEnum.DELIVERED ||
+      orderStatus === OrderStatusEnum.COMPLETED;
+
     return {
       id: item.id,
+      productId: item.productId,
       productName: productTranslation?.name ?? item.productName,
       variantTitle: item.variantTitle,
       sku: item.sku,
@@ -246,6 +273,9 @@ export class GetOrderGroupService {
       thumbnail: item.product?.thumbnail
         ? { id: item.product.thumbnail.id, url: item.product.thumbnail.url }
         : null,
+      canReview: isReviewableStatus && !review,
+      reviewId: review?.id ?? null,
+      reviewStatus: review?.status ?? null,
     };
   }
 }

@@ -9,6 +9,7 @@ import { AdminLanguagesModule } from './admin-i18n/languages/admin-languages.mod
 import { AdminShopModule } from './admin-shop/admin-shop.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { AdminMediaModule } from './media/admin-media.module';
+import { AdminReviewsModule } from './reviews/admin-reviews.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AdminMediaModule } from './media/admin-media.module';
     AdminShopModule,
     PaymentMethodsModule,
     AdminMediaModule,
+    AdminReviewsModule,
   ],
   exports: [
     AdminModule,
@@ -34,6 +36,7 @@ import { AdminMediaModule } from './media/admin-media.module';
     AdminShopModule,
     PaymentMethodsModule,
     AdminMediaModule,
+    AdminReviewsModule,
   ],
 })
 export class AdminApiModule {}

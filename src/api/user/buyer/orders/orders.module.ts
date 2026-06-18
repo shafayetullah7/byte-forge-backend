@@ -8,6 +8,7 @@ import { ConfirmDeliveryService } from './services/confirm-delivery.service';
 import { OrderRepositoryModule } from '@/_repositories/user/order.repository/order.repository.module';
 import { OrderServicesModule } from '@/common/services/order/order-services.module';
 import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
+import { ReviewRepositoryModule } from '@/_repositories/review/review.repository/review.repository.module';
 
 @Module({
   controllers: [OrdersController],
@@ -18,6 +19,11 @@ import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
     CancelOrderService,
     ConfirmDeliveryService,
   ],
-  imports: [OrderRepositoryModule, OrderServicesModule, DrizzleModule],
+  imports: [
+    OrderRepositoryModule,
+    OrderServicesModule,
+    DrizzleModule,
+    ReviewRepositoryModule,
+  ],
 })
 export class OrdersModule {}

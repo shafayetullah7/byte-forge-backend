@@ -5,6 +5,7 @@ import { PublicPlantsModule } from './plants/plants.module';
 import { PublicLocationModule } from './location/location.module';
 import { PublicShopsModule } from './shops/shops.module';
 import { PublicPaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { PublicReviewsModule } from './reviews/public-reviews.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PublicPaymentMethodsModule } from './payment-methods/payment-methods.mo
     PublicLocationModule,
     PublicShopsModule,
     PublicPaymentMethodsModule,
+    PublicReviewsModule,
   ],
   exports: [
     PublicCategoriesModule,
@@ -22,6 +24,7 @@ import { PublicPaymentMethodsModule } from './payment-methods/payment-methods.mo
     PublicLocationModule,
     PublicShopsModule,
     PublicPaymentMethodsModule,
+    PublicReviewsModule,
   ],
 })
 export class PublicApiModule {}
