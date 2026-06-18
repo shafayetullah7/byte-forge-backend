@@ -47,4 +47,18 @@ export class PublicReviewsController {
       data,
     });
   }
+
+  @ApiOperation({ summary: 'List featured reviews for landing pages' })
+  @Get('featured')
+  async getFeaturedReviews(@Query('limit') limit?: string) {
+    const parsedLimit = Number(limit ?? 10);
+    const data = await this.publicReviewsService.getFeaturedReviews(
+      Number.isFinite(parsedLimit) ? parsedLimit : 10,
+    );
+
+    return this.responseService.success({
+      message: 'Featured reviews retrieved successfully',
+      data,
+    });
+  }
 }

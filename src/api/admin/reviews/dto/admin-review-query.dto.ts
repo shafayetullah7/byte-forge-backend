@@ -13,6 +13,11 @@ const adminReviewQuerySchema = z.object({
     ])
     .optional(),
   rating: z.coerce.number().int().min(1).max(5).optional(),
+  minRating: z.coerce.number().int().min(1).max(5).optional(),
+  maxRating: z.coerce.number().int().min(1).max(5).optional(),
+  reportedOnly: z.coerce.boolean().optional(),
+  featuredOnly: z.coerce.boolean().optional(),
+  removedOnly: z.coerce.boolean().optional(),
 });
 
 export class AdminReviewQueryDto extends createZodDto(adminReviewQuerySchema) {}

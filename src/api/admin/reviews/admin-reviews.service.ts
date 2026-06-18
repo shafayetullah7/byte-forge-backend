@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
-import { ReviewStatusEnum } from '@/_db/drizzle/enum';
 import { AdminReviewQueryDto } from './dto/admin-review-query.dto';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import type { TProductTranslation, TShopTranslation } from '@/_db/drizzle/schema';
@@ -26,30 +25,46 @@ export class AdminReviewsService {
     return this.mapAdminReview(review, lang);
   }
 
-  async approveReview(reviewId: string) {
-    const review = await this.reviewRepository.updateReviewStatus(
-      reviewId,
-      ReviewStatusEnum.APPROVED,
+  async featureReview(reviewId: string, adminId: string) {
+    return this.requireReview(
+      this.reviewRepository.setReviewFeatured(reviewId, adminId, true),
     );
-
-    if (!review) {
-      throw new NotFoundException('Review not found');
-    }
-
-    return review;
   }
 
-  async rejectReview(reviewId: string) {
-    const review = await this.reviewRepository.updateReviewStatus(
-      reviewId,
-      ReviewStatusEnum.REJECTED,
+  async unfeatureReview(reviewId: string) {
+    return this.requireReview(
+      this.reviewRepository.setReviewFeatured(reviewId, '', false),
+    );
+  }
+
+  async removeReview(reviewId: string, adminId: string, reason: string) {
+    return this.requireReview(
+      this.reviewRepository.setReviewRemovedByAdmin(reviewId, adminId, true, reason),
+    );
+  }
+
+  async restoreReview(reviewId: string) {
+    return this.requireReview(
+      this.reviewRepository.setReviewRemovedByAdmin(reviewId, '', false),
+    );
+  }
+
+  async updateReportStatus(
+    reportId: string,
+    status: 'OPEN' | 'RESOLVED' | 'DISMISSED',
+    adminId: string,
+  ) {
+    const report = await this.reviewRepository.updateReviewReportStatus(
+      reportId,
+      status,
+      adminId,
     );
 
-    if (!review) {
-      throw new NotFoundException('Review not found');
+    if (!report) {
+      throw new NotFoundException('Review report not found');
     }
 
-    return review;
+    return report;
   }
 
   private mapAdminReview(review: any, lang: string) {
@@ -73,6 +88,9 @@ export class AdminReviewsService {
       comment: review.comment,
       isVerifiedPurchase: review.isVerifiedPurchase,
       status: review.status,
+      isFeatured: review.isFeatured,
+      isRemovedByAdmin: review.isRemovedByAdmin,
+      removedReason: review.removedReason,
       createdAt: review.createdAt,
       updatedAt: review.updatedAt,
       customer: review.user
@@ -116,6 +134,26 @@ export class AdminReviewsService {
           ? { id: image.media.id, url: image.media.url }
           : null,
       })),
+      reports: (review.reports ?? []).map((report: any) => ({
+        id: report.id,
+        reason: report.reason,
+        details: report.details,
+        status: report.status,
+        createdAt: report.createdAt,
+        reportedBySeller: report.reportedBySeller
+          ? {
+              id: report.reportedBySeller.id,
+              name: `${report.reportedBySeller.firstName} ${report.reportedBySeller.lastName}`.trim(),
+              userName: report.reportedBySeller.userName,
+            }
+          : null,
+      })),
     };
+  }
+
+  private async requireReview<T>(promise: Promise<T | null>) {
+    const review = await promise;
+    if (!review) throw new NotFoundException('Review not found');
+    return review;
   }
 }

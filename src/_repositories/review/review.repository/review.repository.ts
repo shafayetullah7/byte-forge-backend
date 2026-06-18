@@ -13,9 +13,12 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   orderItemsTable,
   productsTable,
+  reviewReportsTable,
   reviewImagesTable,
   reviewsTable,
+  TNewReviewReport,
   TNewReview,
+  TReviewReport,
   TReview,
 } from '@/_db/drizzle/schema';
 import {
@@ -30,6 +33,11 @@ export type ReviewListParams = {
   limit?: number;
   status?: TReviewStatus;
   rating?: number;
+  minRating?: number;
+  maxRating?: number;
+  reportedOnly?: boolean;
+  featuredOnly?: boolean;
+  removedOnly?: boolean;
 };
 
 export type CreateReviewInput = {
@@ -38,6 +46,13 @@ export type CreateReviewInput = {
   rating: number;
   title?: string | null;
   comment?: string | null;
+};
+
+export type CreateReviewReportInput = {
+  reviewId: string;
+  reportedBySellerUserId: string;
+  reason: string;
+  details?: string | null;
 };
 
 const REVIEWABLE_ORDER_STATUSES: TOrderStatus[] = [
@@ -104,7 +119,7 @@ export class ReviewRepository {
       title: input.title?.trim() || null,
       comment: input.comment?.trim() || null,
       isVerifiedPurchase: true,
-      status: ReviewStatusEnum.PENDING,
+      status: ReviewStatusEnum.APPROVED,
     };
 
     const [review] = await this.db.client
@@ -213,7 +228,10 @@ export class ReviewRepository {
 
   async getProductReviewSummary(productId: string, publicOnly = true) {
     const conditions: SQL[] = [eq(reviewsTable.productId, productId)];
-    if (publicOnly) conditions.push(eq(reviewsTable.status, ReviewStatusEnum.APPROVED));
+    if (publicOnly) {
+      conditions.push(eq(reviewsTable.isRemovedByAdmin, false));
+      conditions.push(eq(reviewsTable.status, ReviewStatusEnum.APPROVED));
+    }
     const where = and(...conditions);
 
     const [summary] = await this.db.client
@@ -259,6 +277,11 @@ export class ReviewRepository {
 
     if (params.status) conditions.push(eq(reviewsTable.status, params.status));
     if (params.rating) conditions.push(eq(reviewsTable.rating, params.rating));
+    if (params.minRating) conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
+    if (params.maxRating) conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
+    if (params.featuredOnly === true) conditions.push(eq(reviewsTable.isFeatured, true));
+    if (params.removedOnly === true) conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
+    if (params.removedOnly === false) conditions.push(eq(reviewsTable.isRemovedByAdmin, false));
 
     const where = and(...conditions);
 
@@ -291,6 +314,9 @@ export class ReviewRepository {
             media: true,
           },
         },
+        reports: {
+          orderBy: desc(reviewReportsTable.createdAt),
+        },
       },
     });
 
@@ -309,6 +335,7 @@ export class ReviewRepository {
     return this.listProductReviews(productId, {
       ...params,
       status: ReviewStatusEnum.APPROVED,
+      removedOnly: false,
     });
   }
 
@@ -320,6 +347,40 @@ export class ReviewRepository {
       .limit(1);
 
     return Boolean(product);
+  }
+
+  async getReviewByIdForSeller(reviewId: string) {
+    return this.db.client.query.reviewsTable.findFirst({
+      where: eq(reviewsTable.id, reviewId),
+      with: {
+        product: true,
+      },
+    });
+  }
+
+  async createReviewReport(input: CreateReviewReportInput) {
+    const payload: TNewReviewReport = {
+      reviewId: input.reviewId,
+      reportedBySellerUserId: input.reportedBySellerUserId,
+      reason: input.reason.trim(),
+      details: input.details?.trim() || null,
+      status: 'OPEN',
+    };
+
+    const [report] = await this.db.client
+      .insert(reviewReportsTable)
+      .values(payload)
+      .returning();
+
+    return report;
+  }
+
+  async listReviewReportsForReview(reviewId: string): Promise<TReviewReport[]> {
+    return this.db.client
+      .select()
+      .from(reviewReportsTable)
+      .where(eq(reviewReportsTable.reviewId, reviewId))
+      .orderBy(desc(reviewReportsTable.createdAt));
   }
 
   async listAdminReviews(params: ReviewListParams = {}) {
@@ -353,6 +414,13 @@ export class ReviewRepository {
             media: true,
           },
         },
+        reports: {
+          orderBy: desc(reviewReportsTable.createdAt),
+          with: {
+            reportedBySeller: true,
+            resolvedByAdmin: true,
+          },
+        },
       },
     });
   }
@@ -365,6 +433,75 @@ export class ReviewRepository {
       .returning();
 
     return review ?? null;
+  }
+
+  async setReviewFeatured(reviewId: string, adminId: string, featured: boolean) {
+    const [review] = await this.db.client
+      .update(reviewsTable)
+      .set({
+        isFeatured: featured,
+        featuredAt: featured ? new Date() : null,
+        featuredByAdminId: featured ? adminId : null,
+      })
+      .where(eq(reviewsTable.id, reviewId))
+      .returning();
+
+    return review ?? null;
+  }
+
+  async setReviewRemovedByAdmin(
+    reviewId: string,
+    adminId: string,
+    removed: boolean,
+    removedReason?: string,
+  ) {
+    const [review] = await this.db.client
+      .update(reviewsTable)
+      .set({
+        isRemovedByAdmin: removed,
+        removedByAdminAt: removed ? new Date() : null,
+        removedByAdminId: removed ? adminId : null,
+        removedReason: removed ? (removedReason?.trim() || null) : null,
+      })
+      .where(eq(reviewsTable.id, reviewId))
+      .returning();
+
+    return review ?? null;
+  }
+
+  async updateReviewReportStatus(
+    reportId: string,
+    status: 'OPEN' | 'RESOLVED' | 'DISMISSED',
+    adminId: string,
+  ) {
+    const [report] = await this.db.client
+      .update(reviewReportsTable)
+      .set({
+        status,
+        resolvedAt: status === 'OPEN' ? null : new Date(),
+        resolvedByAdminId: status === 'OPEN' ? null : adminId,
+      })
+      .where(eq(reviewReportsTable.id, reportId))
+      .returning();
+
+    return report ?? null;
+  }
+
+  async listFeaturedPublicReviews(limit = 10) {
+    return this.db.client.query.reviewsTable.findMany({
+      where: and(eq(reviewsTable.isFeatured, true), eq(reviewsTable.isRemovedByAdmin, false)),
+      orderBy: desc(reviewsTable.featuredAt),
+      limit,
+      with: {
+        user: true,
+        product: {
+          with: {
+            translations: true,
+            thumbnail: true,
+          },
+        },
+      },
+    });
   }
 
   async getReviewStatusesForOrderItems(orderItemIds: string[]) {
@@ -386,6 +523,15 @@ export class ReviewRepository {
 
     if (params.status) conditions.push(eq(reviewsTable.status, params.status));
     if (params.rating) conditions.push(eq(reviewsTable.rating, params.rating));
+    if (params.minRating) conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
+    if (params.maxRating) conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
+    if (params.featuredOnly === true) conditions.push(eq(reviewsTable.isFeatured, true));
+    if (params.removedOnly === true) conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
+    if (params.reportedOnly === true) {
+      conditions.push(
+        sql`exists (select 1 from review_reports rr where rr.review_id = ${reviewsTable.id})`,
+      );
+    }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -421,6 +567,13 @@ export class ReviewRepository {
           orderBy: asc(reviewImagesTable.displayOrder),
           with: {
             media: true,
+          },
+        },
+        reports: {
+          orderBy: desc(reviewReportsTable.createdAt),
+          with: {
+            reportedBySeller: true,
+            resolvedByAdmin: true,
           },
         },
       },

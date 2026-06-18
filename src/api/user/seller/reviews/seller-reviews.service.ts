@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { SellerReviewQueryDto } from './dto/seller-review-query.dto';
+import { ReportReviewDto } from './dto/report-review.dto';
 
 @Injectable()
 export class SellerReviewsService {
@@ -49,6 +50,26 @@ export class SellerReviewsService {
       })),
       meta: reviews.meta,
     };
+  }
+
+  async reportReview(userId: string, reviewId: string, body: ReportReviewDto) {
+    const shop = await this.resolveShop(userId);
+    const review = await this.reviewRepository.getReviewByIdForSeller(reviewId);
+
+    if (!review || !review.product) {
+      throw new NotFoundException('Review not found');
+    }
+
+    if (review.product.shopId !== shop.id) {
+      throw new NotFoundException('Review not found');
+    }
+
+    return this.reviewRepository.createReviewReport({
+      reviewId,
+      reportedBySellerUserId: userId,
+      reason: body.reason,
+      details: body.details,
+    });
   }
 
   private async resolveShop(userId: string) {

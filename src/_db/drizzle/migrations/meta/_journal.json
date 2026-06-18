@@ -561,6 +561,13 @@
       "when": 1781756644919,
       "tag": "0081_silky_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1781795496310,
+      "tag": "0082_spooky_human_fly",
+      "breakpoints": true
     }
   ]
 }

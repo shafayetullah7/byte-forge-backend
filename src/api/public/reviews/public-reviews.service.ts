@@ -28,6 +28,26 @@ export class PublicReviewsService {
     return this.getProductReviews(productId, query);
   }
 
+  async getFeaturedReviews(limit = 10) {
+    const rows = await this.reviewRepository.listFeaturedPublicReviews(limit);
+    return rows.map((review: any) => ({
+      ...this.mapPublicReview(review),
+      product: review.product
+        ? {
+            id: review.product.id,
+            slug: review.product.slug,
+            thumbnail: review.product.thumbnail
+              ? {
+                  id: review.product.thumbnail.id,
+                  url: review.product.thumbnail.url,
+                }
+              : null,
+          }
+        : null,
+      featuredAt: review.featuredAt,
+    }));
+  }
+
   private mapPublicReview(review: any) {
     const customerName = review.user
       ? `${review.user.firstName} ${review.user.lastName}`.trim()
