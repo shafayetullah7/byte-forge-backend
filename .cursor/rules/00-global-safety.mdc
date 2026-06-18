@@ -1,0 +1,7 @@
+# Global Safety Rules
+
+- Never commit secrets, credentials, or env files.
+- Keep edits scoped to the requested feature; avoid opportunistic refactors.
+- Preserve API contracts unless task explicitly allows contract change.
+- Prefer consistency with existing module patterns over introducing new style.
+- For stateful mutations, prioritize correctness and transactional safety.

@@ -1,0 +1,7 @@
+# Auth and Access Rules
+
+- User endpoints: apply user auth guard stack.
+- Seller endpoints: enforce shop ownership/scope checks in addition to auth.
+- Admin endpoints: use admin auth boundaries and modules.
+- Keep actor boundaries explicit; do not share assumptions across user/admin contexts.
+- Apply access checks before performing side-effecting mutations.

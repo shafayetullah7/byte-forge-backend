@@ -1,0 +1,10 @@
+# Testing and Done Criteria Rules
+
+A backend change is complete only when:
+
+- Typecheck passes (`npx tsc --noEmit --incremental false`)
+- Lint passes for touched files
+- Relevant tests are executed for changed behavior
+- i18n updates are present in both locales when needed
+- API contract remains stable unless change is explicitly planned
+- Lifecycle/status changes preserve transition validity and history writes
