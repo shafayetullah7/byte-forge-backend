@@ -1,10 +1,20 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
+
+const expectedUpdatedAtSchema = z.string().datetime().optional();
 
 export const UpdateOrderStatusSchema = z.object({
-  status: z.nativeEnum(OrderStatusEnum),
+  status: z.enum([
+    'PENDING_PAYMENT',
+    'CONFIRMED',
+    'PROCESSING',
+    'SHIPPED',
+    'DELIVERED',
+    'CANCELLED',
+    'EXPIRED',
+  ]),
   notes: z.string().max(1000).optional(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
 export class UpdateOrderStatusDto extends createZodDto(UpdateOrderStatusSchema) {}

@@ -9,8 +9,13 @@ import { OrderStatusTransitionService } from '@/common/services/order/order-stat
 import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
 import { ShippingStatusEnum } from '@/_db/drizzle/enum/shipping-status.enum';
+import type { TAuthorizedShop } from '@/common/types';
 import { ShipOrderDto } from '../dto/ship-order.dto';
-import { mapSellerOrder } from '../seller-orders.mapper';
+import {
+  buildMapSellerOrderContext,
+  mapSellerOrder,
+} from '../seller-orders.mapper';
+import { assertOrderNotStale } from '../assert-order-not-stale.util';
 
 @Injectable()
 export class ShipSellerOrderService {
@@ -22,7 +27,7 @@ export class ShipSellerOrderService {
   ) {}
 
   async execute(
-    shopId: string,
+    shop: TAuthorizedShop,
     orderId: string,
     sellerUserId: string,
     dto: ShipOrderDto,
@@ -31,13 +36,15 @@ export class ShipSellerOrderService {
     return await this.db.transaction(async (tx) => {
       const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
-        shopId,
+        shop.id,
         { tx, lock: true },
       );
 
       if (!order) {
         throw new NotFoundException('Order not found');
       }
+
+      assertOrderNotStale(order.updatedAt, dto.expectedUpdatedAt);
 
       if (order.status === OrderStatusEnum.SHIPPED) {
         const existingShipment =
@@ -108,7 +115,7 @@ export class ShipSellerOrderService {
 
       const updated = await this.orderRepository.getSellerOrderDetail(
         orderId,
-        shopId,
+        shop.id,
         lang,
       );
 
@@ -116,7 +123,11 @@ export class ShipSellerOrderService {
         throw new NotFoundException('Order not found after shipping');
       }
 
-      return mapSellerOrder(updated, lang);
+      return mapSellerOrder(
+        updated,
+        lang,
+        buildMapSellerOrderContext(shop, lang),
+      );
     });
   }
 }

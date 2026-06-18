@@ -74,6 +74,61 @@ export interface SellerOrderStats {
   revenue: string;
 }
 
+export type OrderPaymentMethodCatalog = {
+  id: string;
+  key: string;
+  displayName: string;
+  logo: TMedia | null;
+} | null;
+
+export type SellerOrderWithRelations = TOrder & {
+  items: (TOrderItem & {
+    product:
+      | (TProduct & {
+          thumbnail: TMedia | null;
+          translations: TProductTranslation[];
+        })
+      | null;
+  })[];
+  address: TOrderAddress | null | undefined;
+  statusHistory: (TOrderStatusHistory & {
+    changedByUser: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  })[];
+  shipment: TShipment | null;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    userName: string;
+    localAuth: { email: string } | null;
+  } | null;
+  paymentMethodCatalog: OrderPaymentMethodCatalog;
+};
+
+export type BuyerOrderWithRelations = TOrder & {
+  items: (TOrderItem & {
+    product:
+      | (TProduct & {
+          thumbnail: TMedia | null;
+          translations: TProductTranslation[];
+        })
+      | null;
+  })[];
+  address: TOrderAddress | null | undefined;
+  statusHistory: TOrderStatusHistory[];
+  shop:
+    | (TShop & {
+        translations: TShopTranslation[];
+        logo: TMedia | null;
+      })
+    | null;
+  paymentMethodCatalog: OrderPaymentMethodCatalog;
+};
+
 @Injectable()
 export class OrderRepository {
   constructor(private readonly db: DrizzleService) {}
@@ -316,24 +371,7 @@ export class OrderRepository {
     params: GetBuyerOrderGroupsParams,
   ): Promise<{
     groups: (TOrderGroup & {
-      orders: (TOrder & {
-        items: (TOrderItem & {
-          product:
-            | (TProduct & {
-                thumbnail: TMedia | null;
-                translations: TProductTranslation[];
-              })
-            | null;
-        })[];
-        address: TOrderAddress | undefined;
-        statusHistory: TOrderStatusHistory[];
-        shop:
-          | (TShop & {
-              translations: TShopTranslation[];
-              logo: TMedia | null;
-            })
-          | null;
-      })[];
+      orders: BuyerOrderWithRelations[];
     })[];
     total: number;
   }> {
@@ -498,32 +536,7 @@ export class OrderRepository {
   }
 
   async getSellerOrdersPaginated(params: GetSellerOrdersParams): Promise<{
-    orders: (TOrder & {
-      items: (TOrderItem & {
-        product:
-          | (TProduct & {
-              thumbnail: TMedia | null;
-              translations: TProductTranslation[];
-            })
-          | null;
-      })[];
-      address: TOrderAddress | undefined;
-      statusHistory: TOrderStatusHistory[];
-      shipment: TShipment | null;
-      user: {
-        id: string;
-        firstName: string;
-        lastName: string;
-        userName: string;
-        localAuth: { email: string } | null;
-      } | null;
-      paymentMethodCatalog: {
-        id: string;
-        key: string;
-        displayName: string;
-        logo: TMedia | null;
-      } | null;
-    })[];
+    orders: SellerOrderWithRelations[];
     total: number;
   }> {
     const {
@@ -610,6 +623,15 @@ export class OrderRepository {
         address: true,
         statusHistory: {
           orderBy: orderStatusHistoryTable.createdAt,
+          with: {
+            changedByUser: {
+              columns: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
         },
         shipment: true,
         paymentMethodCatalog: {
@@ -640,7 +662,7 @@ export class OrderRepository {
     orderId: string,
     shopId: string,
     lang: string = 'en',
-  ) {
+  ): Promise<SellerOrderWithRelations | null> {
     const [order] = await this.db.client.query.ordersTable.findMany({
       where: and(eq(ordersTable.id, orderId), eq(ordersTable.shopId, shopId)),
       with: {
@@ -659,6 +681,15 @@ export class OrderRepository {
         address: true,
         statusHistory: {
           orderBy: orderStatusHistoryTable.createdAt,
+          with: {
+            changedByUser: {
+              columns: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
         },
         shipment: true,
         paymentMethodCatalog: {

@@ -1,23 +1,49 @@
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
-import type { TProductTranslation } from '@/_db/drizzle/schema';
+import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
+import type { TProductTranslation, TShopTranslation } from '@/_db/drizzle/schema';
+import type { SellerOrderWithRelations } from '@/_repositories/user/order.repository/order.repository';
+import type { TShopStatus } from '@/_db/drizzle/enum/shop.status.enum';
+import {
+  buildSellerActionDescriptors,
+  buildSellerPaymentContext,
+  isSellerOrderReadOnly,
+} from './seller-order-actions.util';
+import { mapStatusHistoryActor } from './map-status-history-actor.util';
 
-type SellerOrderRecord = Awaited<
-  ReturnType<
-    import('@/_repositories/user/order.repository/order.repository').OrderRepository['getSellerOrderDetail']
-  >
->;
+export type MapSellerOrderContext = {
+  shop: {
+    id: string;
+    status: TShopStatus;
+    name?: string | null;
+    ownerUserId?: string | null;
+  };
+};
 
-export function mapSellerOrder(order: NonNullable<SellerOrderRecord>, lang: string) {
+const transitionService = new OrderStatusTransitionService();
+
+export function mapSellerOrder(
+  order: SellerOrderWithRelations,
+  lang: string,
+  context?: MapSellerOrderContext,
+) {
   const customerName = order.user
     ? `${order.user.firstName} ${order.user.lastName}`.trim()
     : (order.address?.recipientName ?? 'Unknown Customer');
   const customerEmail = order.user?.localAuth?.email ?? null;
   const customerPhone = order.address?.phone ?? '';
+  const buyerUserId = order.user?.id ?? null;
+  const shopContext = context?.shop ?? {
+    id: order.shopId,
+    status: 'ACTIVE' as TShopStatus,
+    name: null,
+    ownerUserId: null,
+  };
 
   return {
     id: order.id,
     orderNumber: order.orderNumber,
+    groupId: order.groupId,
     status: order.status,
     paymentStatus: order.paymentStatus,
     ...mapOrderPaymentMethod(
@@ -47,6 +73,8 @@ export function mapSellerOrder(order: NonNullable<SellerOrderRecord>, lang: stri
           state: order.address.state,
           postalCode: order.address.postalCode,
           country: order.address.country,
+          companyName: order.address.companyName,
+          deliveryInstructions: order.address.deliveryInstructions,
         }
       : null,
     items: order.items.map((item) => {
@@ -57,6 +85,7 @@ export function mapSellerOrder(order: NonNullable<SellerOrderRecord>, lang: stri
       return {
         id: item.id,
         productId: item.productId,
+        variantId: item.variantId,
         productName: productTranslation?.name ?? item.productName,
         variantTitle: item.variantTitle,
         sku: item.sku,
@@ -66,13 +95,23 @@ export function mapSellerOrder(order: NonNullable<SellerOrderRecord>, lang: stri
         imageUrl: item.product?.thumbnail?.url ?? null,
       };
     }),
-    statusHistory: order.statusHistory.map((history) => ({
-      id: history.id,
-      fromStatus: history.fromStatus,
-      toStatus: history.toStatus,
-      notes: history.notes,
-      createdAt: history.createdAt,
-    })),
+    statusHistory: order.statusHistory.map((history) => {
+      const { actor, actorLabel } = mapStatusHistoryActor(
+        history,
+        buyerUserId,
+        shopContext.ownerUserId,
+        shopContext.name ?? null,
+      );
+      return {
+        id: history.id,
+        fromStatus: history.fromStatus,
+        toStatus: history.toStatus,
+        notes: history.notes,
+        createdAt: history.createdAt,
+        actor,
+        actorLabel,
+      };
+    }),
     shipment: order.shipment
       ? {
           id: order.shipment.id,
@@ -84,11 +123,23 @@ export function mapSellerOrder(order: NonNullable<SellerOrderRecord>, lang: stri
           estimatedDelivery: order.shipment.estimatedDelivery,
         }
       : null,
+    isReadOnly: isSellerOrderReadOnly(order.status),
+    availableActions: buildSellerActionDescriptors(transitionService, {
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      shipment: order.shipment,
+      shopStatus: shopContext.status,
+    }),
+    payment: buildSellerPaymentContext(order.paymentMethod),
+    shop: {
+      id: shopContext.id,
+      status: shopContext.status,
+    },
   };
 }
 
 export function mapSellerOrderSummary(
-  order: NonNullable<SellerOrderRecord>,
+  order: SellerOrderWithRelations,
   lang: string,
 ) {
   const mapped = mapSellerOrder(order, lang);
@@ -111,5 +162,29 @@ export function mapSellerOrderSummary(
       quantity: item.quantity,
       imageUrl: item.imageUrl,
     })),
+  };
+}
+
+export function buildMapSellerOrderContext(
+  shop: {
+    id: string;
+    status: TShopStatus;
+    ownerId: string;
+    translations?: TShopTranslation[];
+  },
+  lang: string,
+): MapSellerOrderContext {
+  const translation = resolveTranslation<TShopTranslation>(
+    shop.translations ?? [],
+    lang,
+  );
+
+  return {
+    shop: {
+      id: shop.id,
+      status: shop.status,
+      name: translation?.name ?? null,
+      ownerUserId: shop.ownerId,
+    },
   };
 }

@@ -7,8 +7,13 @@ import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
 import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
+import type { TAuthorizedShop } from '@/common/types';
 import { CancelSellerOrderDto } from '../dto/cancel-order.dto';
-import { mapSellerOrder } from '../seller-orders.mapper';
+import {
+  buildMapSellerOrderContext,
+  mapSellerOrder,
+} from '../seller-orders.mapper';
+import { assertOrderNotStale } from '../assert-order-not-stale.util';
 
 @Injectable()
 export class CancelSellerOrderService {
@@ -20,7 +25,7 @@ export class CancelSellerOrderService {
   ) {}
 
   async execute(
-    shopId: string,
+    shop: TAuthorizedShop,
     orderId: string,
     sellerUserId: string,
     dto: CancelSellerOrderDto,
@@ -29,7 +34,7 @@ export class CancelSellerOrderService {
     return await this.db.transaction(async (tx) => {
       const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
-        shopId,
+        shop.id,
         { tx, lock: true },
       );
 
@@ -37,19 +42,25 @@ export class CancelSellerOrderService {
         throw new NotFoundException('Order not found');
       }
 
+      assertOrderNotStale(order.updatedAt, dto.expectedUpdatedAt);
+
       if (
         order.status === OrderStatusEnum.CANCELLED ||
         order.status === OrderStatusEnum.EXPIRED
       ) {
         const existing = await this.orderRepository.getSellerOrderDetail(
           orderId,
-          shopId,
+          shop.id,
           lang,
         );
         if (!existing) {
           throw new NotFoundException('Order not found');
         }
-        return mapSellerOrder(existing, lang);
+        return mapSellerOrder(
+          existing,
+          lang,
+          buildMapSellerOrderContext(shop, lang),
+        );
       }
 
       this.orderStatusTransitionService.assertSellerCanCancel(order.status);
@@ -96,7 +107,7 @@ export class CancelSellerOrderService {
 
       const updated = await this.orderRepository.getSellerOrderDetail(
         orderId,
-        shopId,
+        shop.id,
         lang,
       );
 
@@ -104,7 +115,11 @@ export class CancelSellerOrderService {
         throw new NotFoundException('Order not found after cancellation');
       }
 
-      return mapSellerOrder(updated, lang);
+      return mapSellerOrder(
+        updated,
+        lang,
+        buildMapSellerOrderContext(shop, lang),
+      );
     });
   }
 }

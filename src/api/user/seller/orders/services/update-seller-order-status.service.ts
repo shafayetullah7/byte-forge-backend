@@ -9,8 +9,13 @@ import { OrderStatusTransitionService } from '@/common/services/order/order-stat
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
 import { PaymentStatusEnum } from '@/_db/drizzle/enum/payment-status.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
+import type { TAuthorizedShop } from '@/common/types';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
-import { mapSellerOrder } from '../seller-orders.mapper';
+import {
+  buildMapSellerOrderContext,
+  mapSellerOrder,
+} from '../seller-orders.mapper';
+import { assertOrderNotStale } from '../assert-order-not-stale.util';
 
 @Injectable()
 export class UpdateSellerOrderStatusService {
@@ -21,7 +26,7 @@ export class UpdateSellerOrderStatusService {
   ) {}
 
   async execute(
-    shopId: string,
+    shop: TAuthorizedShop,
     orderId: string,
     sellerUserId: string,
     dto: UpdateOrderStatusDto,
@@ -30,13 +35,15 @@ export class UpdateSellerOrderStatusService {
     return await this.db.transaction(async (tx) => {
       const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
-        shopId,
+        shop.id,
         { tx, lock: true },
       );
 
       if (!order) {
         throw new NotFoundException('Order not found');
       }
+
+      assertOrderNotStale(order.updatedAt, dto.expectedUpdatedAt);
 
       if (order.status === dto.status) {
         throw new BadRequestException(`Order is already ${dto.status}`);
@@ -85,7 +92,7 @@ export class UpdateSellerOrderStatusService {
 
       const updated = await this.orderRepository.getSellerOrderDetail(
         orderId,
-        shopId,
+        shop.id,
         lang,
       );
 
@@ -93,7 +100,11 @@ export class UpdateSellerOrderStatusService {
         throw new NotFoundException('Order not found after update');
       }
 
-      return mapSellerOrder(updated, lang);
+      return mapSellerOrder(
+        updated,
+        lang,
+        buildMapSellerOrderContext(shop, lang),
+      );
     });
   }
 }

@@ -106,7 +106,7 @@ export class SellerOrdersController {
     @I18nLang() lang: string,
   ) {
     const data = await this.getSellerOrderService.execute(
-      shop.id,
+      shop,
       params.orderId,
       lang,
     );
@@ -132,7 +132,7 @@ export class SellerOrdersController {
     @I18nLang() lang: string,
   ) {
     const data = await this.updateSellerOrderStatusService.execute(
-      shop.id,
+      shop,
       params.orderId,
       authUser.user.id,
       body,
@@ -160,7 +160,7 @@ export class SellerOrdersController {
     @I18nLang() lang: string,
   ) {
     const data = await this.shipSellerOrderService.execute(
-      shop.id,
+      shop,
       params.orderId,
       authUser.user.id,
       body,
@@ -188,7 +188,7 @@ export class SellerOrdersController {
     @I18nLang() lang: string,
   ) {
     const data = await this.cancelSellerOrderService.execute(
-      shop.id,
+      shop,
       params.orderId,
       authUser.user.id,
       body,

@@ -1,15 +1,16 @@
-import type { TPaymentMethodRow } from '@/_db/drizzle/schema/payment/payment-methods.schema';
 import type { TMedia } from '@/_db/drizzle/schema/media/media.schema';
 import type { TPaymentMethod } from '@/_db/drizzle/enum/payment-method.enum';
 
-type PaymentMethodCatalog = TPaymentMethodRow & {
+export type PaymentMethodCatalogInput = {
+  key: TPaymentMethod | string;
+  displayName: string;
   logo?: TMedia | null;
-};
+} | null | undefined;
 
 export function mapOrderPaymentMethod(
   paymentMethod: TPaymentMethod | null,
   paymentMethodId: string | null,
-  catalog?: PaymentMethodCatalog | null,
+  catalog?: PaymentMethodCatalogInput,
 ) {
   return {
     paymentMethod,
