@@ -219,6 +219,21 @@ export class OrderRepository {
     return shipment;
   }
 
+  async updateShipment(
+    orderId: string,
+    data: Partial<TShipment>,
+    transaction?: TLockTransaction,
+  ): Promise<TShipment> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const [shipment] = await executor
+      .update(shipmentsTable)
+      .set(data)
+      .where(eq(shipmentsTable.orderId, orderId))
+      .returning()
+      .execute();
+    return shipment;
+  }
+
   async updateOrder(
     id: string,
     data: Partial<TOrder>,
@@ -344,9 +359,10 @@ export class OrderRepository {
 
     const activeStatuses = [
       'PENDING_PAYMENT',
-      'CONFIRMED',
       'PROCESSING',
+      'CONFIRMED',
       'SHIPPED',
+      'DELIVERED',
     ];
 
     return {
@@ -355,13 +371,15 @@ export class OrderRepository {
         g.orders.some((o) => activeStatuses.includes(o.status)),
       ).length,
       delivered: allGroups.filter((g) =>
-        g.orders.some((o) => o.status === 'DELIVERED'),
+        g.orders.some(
+          (o) => o.status === 'DELIVERED' || o.status === 'COMPLETED',
+        ),
       ).length,
       cancelled: allGroups.filter((g) =>
         g.orders.some((o) => o.status === 'CANCELLED'),
       ).length,
       totalSpent: allGroups
-        .filter((g) => g.orders.some((o) => o.status === 'DELIVERED'))
+        .filter((g) => g.orders.some((o) => o.status === 'COMPLETED'))
         .reduce((sum, g) => sum + parseFloat(g.totalAmount), 0)
         .toFixed(0),
     };
@@ -516,8 +534,8 @@ export class OrderRepository {
       .where(eq(ordersTable.shopId, shopId))
       .execute();
 
-    const pendingStatuses = ['PENDING_PAYMENT', 'CONFIRMED'];
-    const processingStatuses = ['PROCESSING'];
+    const pendingStatuses = ['PENDING_PAYMENT'];
+    const processingStatuses = ['PROCESSING', 'CONFIRMED'];
 
     return {
       total: orders.length,
@@ -526,10 +544,12 @@ export class OrderRepository {
         processingStatuses.includes(o.status),
       ).length,
       shipped: orders.filter((o) => o.status === 'SHIPPED').length,
-      delivered: orders.filter((o) => o.status === 'DELIVERED').length,
+      delivered: orders.filter(
+        (o) => o.status === 'DELIVERED' || o.status === 'COMPLETED',
+      ).length,
       cancelled: orders.filter((o) => o.status === 'CANCELLED').length,
       revenue: orders
-        .filter((o) => o.status === 'DELIVERED')
+        .filter((o) => o.status === 'COMPLETED')
         .reduce((sum, o) => sum + parseFloat(o.total), 0)
         .toFixed(2),
     };

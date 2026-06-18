@@ -26,6 +26,7 @@ export const orderStatusEnum = pgEnum('order_status_enum', [
   OrderStatusEnum.PROCESSING,
   OrderStatusEnum.SHIPPED,
   OrderStatusEnum.DELIVERED,
+  OrderStatusEnum.COMPLETED,
   OrderStatusEnum.CANCELLED,
   OrderStatusEnum.EXPIRED,
 ]);
@@ -84,6 +85,10 @@ export const ordersTable = pgTable(
       withTimezone: true,
     }),
     cancelledReason: text('cancelled_reason'),
+    buyerDeliveryConfirmedAt: timestamp('buyer_delivery_confirmed_at', {
+      mode: 'date',
+      withTimezone: true,
+    }),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),

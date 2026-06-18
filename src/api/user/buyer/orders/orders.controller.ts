@@ -12,6 +12,7 @@ import { GetOrdersService } from './services/get-orders.service';
 import { GetOrderStatsService } from './services/get-order-stats.service';
 import { GetOrderGroupService } from './services/get-order-group.service';
 import { CancelOrderService } from './services/cancel-order.service';
+import { ConfirmDeliveryService } from './services/confirm-delivery.service';
 import { OrdersFilterDto } from './dto/orders-pagination.dto';
 import {
   GetOrdersResponseDto,
@@ -42,6 +43,7 @@ export class OrdersController {
     private readonly getOrderStatsService: GetOrderStatsService,
     private readonly getOrderGroupService: GetOrderGroupService,
     private readonly cancelOrderService: CancelOrderService,
+    private readonly confirmDeliveryService: ConfirmDeliveryService,
     private readonly responseService: ResponseService,
     private readonly i18n: I18nService,
   ) {}
@@ -135,7 +137,7 @@ export class OrdersController {
   @ApiOperation({
     summary: 'Cancel an order',
     description:
-      'Cancels an order if it is in a cancellable status (PENDING_PAYMENT, CONFIRMED, or PROCESSING). Records the cancellation in status history.',
+      'Cancels an order if it is in a cancellable status (PENDING_PAYMENT or PROCESSING). Records the cancellation in status history.',
   })
   @ApiUnauthorizedResponse()
   @ApiNotFoundResponse()
@@ -156,6 +158,29 @@ export class OrdersController {
     return this.responseService.success({
       message: this.i18n.t('message.success.orderCancelled', { lang }),
       data: null,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Confirm order delivery',
+    description:
+      'Buyer confirms receipt of a shipped order. Transitions order to DELIVERED.',
+  })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse()
+  @ApiBadRequestResponse('Order is not in SHIPPED status')
+  @Post(':orderId/confirm-delivery')
+  async confirmDelivery(
+    @AuthenticUser() authUser: TAuthenticUser,
+    @Param('orderId') orderId: string,
+    @I18nLang() lang: string,
+  ) {
+    await this.confirmDeliveryService.execute(authUser.user.id, orderId);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.orderDelivered', { lang }),
+      data: { orderId, status: 'DELIVERED' },
     });
   }
 }

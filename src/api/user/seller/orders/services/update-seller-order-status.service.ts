@@ -9,6 +9,7 @@ import { OrderStatusTransitionService } from '@/common/services/order/order-stat
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
 import { PaymentStatusEnum } from '@/_db/drizzle/enum/payment-status.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
+import { ShippingStatusEnum } from '@/_db/drizzle/enum/shipping-status.enum';
 import type { TAuthorizedShop } from '@/common/types';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import {
@@ -58,11 +59,10 @@ export class UpdateSellerOrderStatusService {
         status: dto.status,
       };
 
-      if (
-        dto.status === OrderStatusEnum.DELIVERED &&
-        order.paymentMethod === PaymentMethodEnum.COD
-      ) {
-        updateData.paymentStatus = PaymentStatusEnum.COMPLETED;
+      if (dto.status === OrderStatusEnum.COMPLETED) {
+        if (order.paymentMethod === PaymentMethodEnum.COD) {
+          updateData.paymentStatus = PaymentStatusEnum.COMPLETED;
+        }
       }
 
       if (dto.status === OrderStatusEnum.SHIPPED) {
@@ -79,12 +79,39 @@ export class UpdateSellerOrderStatusService {
 
       await this.orderRepository.updateOrder(orderId, updateData, { tx });
 
+      if (dto.status === OrderStatusEnum.DELIVERED) {
+        const shipment =
+          await this.orderRepository.getShipmentByOrderId(orderId);
+        if (shipment) {
+          await this.orderRepository.updateShipment(
+            orderId,
+            {
+              deliveredAt: new Date(),
+              status: ShippingStatusEnum.DELIVERED,
+            },
+            { tx },
+          );
+        }
+      }
+
+      const historyNotes =
+        dto.notes ??
+        (dto.status === OrderStatusEnum.PROCESSING
+          ? 'Order accepted by seller'
+          : dto.status === OrderStatusEnum.CONFIRMED
+            ? 'Order packed and ready to ship'
+            : dto.status === OrderStatusEnum.DELIVERED
+              ? 'Order marked as delivered by seller'
+              : dto.status === OrderStatusEnum.COMPLETED
+                ? 'COD payment confirmed by seller'
+                : `Status updated to ${dto.status} by seller`);
+
       await this.orderRepository.createOrderStatusHistory(
         {
           orderId,
           fromStatus: order.status,
           toStatus: dto.status,
-          notes: dto.notes ?? `Status updated to ${dto.status} by seller`,
+          notes: historyNotes,
           changedBy: sellerUserId,
         },
         { tx },

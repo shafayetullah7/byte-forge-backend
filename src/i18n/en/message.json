@@ -144,6 +144,7 @@
     "orderStatsRetrieved": "Order statistics retrieved successfully",
     "orderGroupRetrieved": "Order group details retrieved successfully",
     "orderCancelled": "Order cancelled successfully",
+    "orderDelivered": "Delivery confirmed successfully",
     "orderUpdated": "Order updated successfully",
     "orderShipped": "Order shipped successfully",
     "orderPlaced": "Order placed successfully"

@@ -5,10 +5,12 @@ import { OrderStatusTransitionService } from '@/common/services/order/order-stat
 import type { TShipment } from '@/_db/drizzle/schema';
 
 export type SellerOrderActionKey =
-  | 'CONFIRM'
-  | 'START_PROCESSING'
+  | 'ACCEPT'
+  | 'REJECT'
+  | 'MARK_PACKED'
   | 'SHIP'
   | 'MARK_DELIVERED'
+  | 'CONFIRM_PAYMENT'
   | 'CANCEL';
 
 export interface SellerOrderActionDescriptor {
@@ -24,7 +26,7 @@ export interface SellerOrderActionDescriptor {
 }
 
 const TERMINAL_STATUSES: readonly TOrderStatus[] = [
-  OrderStatusEnum.DELIVERED,
+  OrderStatusEnum.COMPLETED,
   OrderStatusEnum.CANCELLED,
   OrderStatusEnum.EXPIRED,
 ];
@@ -33,11 +35,16 @@ export function isSellerOrderReadOnly(status: TOrderStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
 }
 
-export function buildSellerPaymentContext(paymentMethod: string | null) {
+export function buildSellerPaymentContext(
+  paymentMethod: string | null,
+  status: TOrderStatus,
+) {
   const isCod = paymentMethod === PaymentMethodEnum.COD;
   return {
     collectOnDelivery: isCod,
-    completesOnDeliver: isCod,
+    completesOnDeliver: false,
+    requiresPaymentConfirmation:
+      isCod && status === OrderStatusEnum.DELIVERED,
   };
 }
 
@@ -62,7 +69,9 @@ export function buildSellerActionDescriptors(
   const transitions = transitionService.getAllowedTransitions(params.status);
   const descriptors: SellerOrderActionDescriptor[] = [];
 
-  const push = (descriptor: Omit<SellerOrderActionDescriptor, 'disabled' | 'disabledReason'>) => {
+  const push = (
+    descriptor: Omit<SellerOrderActionDescriptor, 'disabled' | 'disabledReason'>,
+  ) => {
     descriptors.push({
       ...descriptor,
       disabled: shopInactive,
@@ -70,21 +79,12 @@ export function buildSellerActionDescriptors(
     });
   };
 
-  if (transitions.includes(OrderStatusEnum.CONFIRMED)) {
+  if (
+    params.status === OrderStatusEnum.PENDING_PAYMENT &&
+    transitions.includes(OrderStatusEnum.PROCESSING)
+  ) {
     push({
-      key: 'CONFIRM',
-      method: 'PATCH',
-      endpoint: 'status',
-      targetStatus: OrderStatusEnum.CONFIRMED,
-      requiresConfirmation: false,
-      requiresForm: false,
-      primary: true,
-    });
-  }
-
-  if (transitions.includes(OrderStatusEnum.PROCESSING)) {
-    push({
-      key: 'START_PROCESSING',
+      key: 'ACCEPT',
       method: 'PATCH',
       endpoint: 'status',
       targetStatus: OrderStatusEnum.PROCESSING,
@@ -92,11 +92,42 @@ export function buildSellerActionDescriptors(
       requiresForm: false,
       primary: true,
     });
+    push({
+      key: 'REJECT',
+      method: 'PATCH',
+      endpoint: 'cancel',
+      requiresConfirmation: true,
+      requiresForm: true,
+      primary: false,
+    });
   }
 
   if (
-    transitions.includes(OrderStatusEnum.SHIPPED) &&
     params.status === OrderStatusEnum.PROCESSING &&
+    transitions.includes(OrderStatusEnum.CONFIRMED)
+  ) {
+    push({
+      key: 'MARK_PACKED',
+      method: 'PATCH',
+      endpoint: 'status',
+      targetStatus: OrderStatusEnum.CONFIRMED,
+      requiresConfirmation: false,
+      requiresForm: false,
+      primary: true,
+    });
+    push({
+      key: 'CANCEL',
+      method: 'PATCH',
+      endpoint: 'cancel',
+      requiresConfirmation: true,
+      requiresForm: true,
+      primary: false,
+    });
+  }
+
+  if (
+    params.status === OrderStatusEnum.CONFIRMED &&
+    transitions.includes(OrderStatusEnum.SHIPPED) &&
     !params.shipment
   ) {
     push({
@@ -107,27 +138,6 @@ export function buildSellerActionDescriptors(
       requiresForm: true,
       primary: true,
     });
-  }
-
-  if (transitions.includes(OrderStatusEnum.DELIVERED)) {
-    const isCod = params.paymentMethod === PaymentMethodEnum.COD;
-    push({
-      key: 'MARK_DELIVERED',
-      method: 'PATCH',
-      endpoint: 'status',
-      targetStatus: OrderStatusEnum.DELIVERED,
-      requiresConfirmation: isCod,
-      requiresForm: false,
-      primary: true,
-    });
-  }
-
-  const sellerCancellable =
-    params.status === OrderStatusEnum.PENDING_PAYMENT ||
-    params.status === OrderStatusEnum.CONFIRMED ||
-    params.status === OrderStatusEnum.PROCESSING;
-
-  if (sellerCancellable) {
     push({
       key: 'CANCEL',
       method: 'PATCH',
@@ -135,6 +145,43 @@ export function buildSellerActionDescriptors(
       requiresConfirmation: true,
       requiresForm: true,
       primary: false,
+    });
+  }
+
+  if (
+    params.status === OrderStatusEnum.SHIPPED &&
+    transitions.includes(OrderStatusEnum.DELIVERED)
+  ) {
+    const isSelfDelivery =
+      params.shipment?.shippingMethod === 'SELF_DELIVERY' ||
+      params.shipment?.shippingMethod === 'CUSTOMER_PICKUP';
+
+    if (isSelfDelivery) {
+      push({
+        key: 'MARK_DELIVERED',
+        method: 'PATCH',
+        endpoint: 'status',
+        targetStatus: OrderStatusEnum.DELIVERED,
+        requiresConfirmation: true,
+        requiresForm: false,
+        primary: true,
+      });
+    }
+  }
+
+  if (
+    params.status === OrderStatusEnum.DELIVERED &&
+    transitions.includes(OrderStatusEnum.COMPLETED)
+  ) {
+    const isCod = params.paymentMethod === PaymentMethodEnum.COD;
+    push({
+      key: 'CONFIRM_PAYMENT',
+      method: 'PATCH',
+      endpoint: 'status',
+      targetStatus: OrderStatusEnum.COMPLETED,
+      requiresConfirmation: isCod,
+      requiresForm: false,
+      primary: true,
     });
   }
 

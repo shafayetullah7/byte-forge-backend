@@ -70,13 +70,27 @@ export class ShipSellerOrderService {
       );
 
       const shippedAt = new Date();
+      const shippingMethod = dto.shippingMethod ?? 'COURIER';
+      const shipmentStatus =
+        shippingMethod === 'COURIER'
+          ? ShippingStatusEnum.IN_TRANSIT
+          : ShippingStatusEnum.PENDING;
+
+      const shipNotes =
+        dto.notes?.trim() ||
+        (shippingMethod === 'COURIER'
+          ? `Shipped via ${dto.carrier} (${dto.trackingNumber})`
+          : shippingMethod === 'SELF_DELIVERY'
+            ? 'Self delivery arranged by seller'
+            : 'Customer pickup arranged');
 
       await this.orderRepository.createShipment(
         {
           orderId,
-          carrier: dto.carrier,
-          trackingNumber: dto.trackingNumber,
-          status: ShippingStatusEnum.IN_TRANSIT,
+          carrier: dto.carrier ?? null,
+          trackingNumber: dto.trackingNumber ?? null,
+          shippingMethod,
+          status: shipmentStatus,
           shippedAt,
           estimatedDelivery: dto.estimatedDelivery
             ? new Date(dto.estimatedDelivery)
@@ -107,7 +121,7 @@ export class ShipSellerOrderService {
           orderId,
           fromStatus: order.status,
           toStatus: OrderStatusEnum.SHIPPED,
-          notes: `Shipped via ${dto.carrier} (${dto.trackingNumber})`,
+          notes: shipNotes,
           changedBy: sellerUserId,
         },
         { tx },

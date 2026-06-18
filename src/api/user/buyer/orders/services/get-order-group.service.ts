@@ -17,6 +17,7 @@ import {
 } from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
+import { mapStatusHistoryActor } from '@/api/user/seller/orders/map-status-history-actor.util';
 import type { TPaymentMethodRow } from '@/_db/drizzle/schema/payment/payment-methods.schema';
 
 // ─── Query Result Types ──────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ interface OrderWithRelations extends TOrder {
   statusHistory: TOrderStatusHistory[];
   shop: {
     id: string;
+    ownerId: string;
     logo: TMedia | null;
     translations: TShopTranslation[];
   } | null;
@@ -47,9 +49,11 @@ interface OrderWithRelations extends TOrder {
     id: string;
     trackingNumber: string | null;
     carrier: string | null;
+    shippingMethod: string | null;
     status: string;
     shippedAt: Date | null;
     deliveredAt: Date | null;
+    estimatedDelivery: Date | null;
   } | null;
 }
 
@@ -70,7 +74,7 @@ export class GetOrderGroupService {
       throw new NotFoundException('Order group not found');
     }
 
-    return this.mapGroupResponse(group, lang);
+    return this.mapGroupResponse(group, lang, userId);
   }
 
   private async fetchGroupWithDetails(
@@ -101,6 +105,9 @@ export class GetOrderGroupService {
             address: true,
             statusHistory: {
               orderBy: orderStatusHistoryTable.createdAt,
+              with: {
+                changedByUser: true,
+              },
             },
             shop: {
               with: {
@@ -124,17 +131,27 @@ export class GetOrderGroupService {
     return group ?? null;
   }
 
-  private mapGroupResponse(group: OrderGroupWithRelations, lang: string) {
+  private mapGroupResponse(
+    group: OrderGroupWithRelations,
+    lang: string,
+    userId: string,
+  ) {
     return {
       id: group.id,
       totalAmount: group.totalAmount,
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
-      orders: group.orders.map((order) => this.mapOrderResponse(order, lang)),
+      orders: group.orders.map((order) =>
+        this.mapOrderResponse(order, lang, userId),
+      ),
     };
   }
 
-  private mapOrderResponse(order: OrderWithRelations, lang: string) {
+  private mapOrderResponse(
+    order: OrderWithRelations,
+    lang: string,
+    userId: string,
+  ) {
     const shopTranslation = resolveTranslation<TShopTranslation>(
       order.shop?.translations,
       lang,
@@ -162,6 +179,7 @@ export class GetOrderGroupService {
       notes: order.notes,
       cancelledAt: order.cancelledAt,
       cancelledReason: order.cancelledReason,
+      buyerDeliveryConfirmedAt: order.buyerDeliveryConfirmedAt,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       address: order.address
@@ -180,21 +198,33 @@ export class GetOrderGroupService {
           }
         : null,
       items: order.items.map((item) => this.mapItemResponse(item, lang)),
-      statusHistory: order.statusHistory.map((history) => ({
-        id: history.id,
-        fromStatus: history.fromStatus,
-        toStatus: history.toStatus,
-        notes: history.notes,
-        createdAt: history.createdAt,
-      })),
+      statusHistory: order.statusHistory.map((history) => {
+        const { actor, actorLabel } = mapStatusHistoryActor(
+          history,
+          userId,
+          order.shop?.ownerId ?? null,
+          shopName,
+        );
+        return {
+          id: history.id,
+          fromStatus: history.fromStatus,
+          toStatus: history.toStatus,
+          notes: history.notes,
+          createdAt: history.createdAt,
+          actor,
+          actorLabel,
+        };
+      }),
       shipment: order.shipment
         ? {
             id: order.shipment.id,
             trackingNumber: order.shipment.trackingNumber,
             carrier: order.shipment.carrier,
+            shippingMethod: order.shipment.shippingMethod,
             status: order.shipment.status,
             shippedAt: order.shipment.shippedAt,
             deliveredAt: order.shipment.deliveredAt,
+            estimatedDelivery: order.shipment.estimatedDelivery,
           }
         : null,
     };

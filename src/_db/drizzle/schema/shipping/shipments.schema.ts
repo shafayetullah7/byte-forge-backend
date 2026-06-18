@@ -17,6 +17,7 @@ export const shipmentsTable = pgTable(
       .references(() => ordersTable.id, { onDelete: 'cascade' }),
     trackingNumber: varchar('tracking_number', { length: 100 }).unique(),
     carrier: varchar('carrier', { length: 100 }),
+    shippingMethod: varchar('shipping_method', { length: 50 }),
     status: shipmentStatusEnum('status')
       .default(ShippingStatusEnum.PENDING)
       .notNull(),
