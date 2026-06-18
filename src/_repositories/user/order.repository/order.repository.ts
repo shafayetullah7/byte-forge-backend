@@ -1,4 +1,4 @@
-import { eq, inArray, count, desc, and, or, like, sql, SQL } from 'drizzle-orm';
+import { eq, inArray, count, desc, and, or, like, sql, SQL, gte, lte, asc } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ordersTable,
@@ -21,6 +21,10 @@ import {
   TShopTranslation,
   TProduct,
   TProductTranslation,
+  userTable,
+  shipmentsTable,
+  TNewShipment,
+  TShipment,
 } from '@/_db/drizzle/schema';
 import { TOrderStatus, TPaymentStatus } from '@/_db/drizzle/enum';
 import { Injectable } from '@nestjs/common';
@@ -44,6 +48,30 @@ export interface GetBuyerOrderGroupsParams {
   paymentStatus?: TPaymentStatus;
   search?: string;
   lang?: string;
+}
+
+export interface GetSellerOrdersParams {
+  shopId: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  orderStatus?: TOrderStatus;
+  paymentStatus?: TPaymentStatus;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  lang?: string;
+}
+
+export interface SellerOrderStats {
+  total: number;
+  pending: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+  revenue: string;
 }
 
 @Injectable()
@@ -86,6 +114,54 @@ export class OrderRepository {
     const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
     const [order] = await lockQuery.execute();
     return order;
+  }
+
+  async getOrderByIdAndShopId(
+    id: string,
+    shopId: string,
+    transaction?: TLockTransaction,
+  ): Promise<TOrder | undefined> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const baseQuery = executor
+      .select()
+      .from(ordersTable)
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.shopId, shopId)));
+
+    const lockQuery = transaction?.lock ? baseQuery.for('update') : baseQuery;
+    const [order] = await lockQuery.execute();
+    return order;
+  }
+
+  async getOrderItemsByOrderId(orderId: string): Promise<TOrderItem[]> {
+    return await this.db.client
+      .select()
+      .from(orderItemsTable)
+      .where(eq(orderItemsTable.orderId, orderId))
+      .execute();
+  }
+
+  async createShipment(
+    data: TNewShipment,
+    transaction?: TLockTransaction,
+  ): Promise<TShipment> {
+    const executor = this.db.getExecutor(transaction?.tx);
+    const [shipment] = await executor
+      .insert(shipmentsTable)
+      .values(data)
+      .returning()
+      .execute();
+    return shipment;
+  }
+
+  async getShipmentByOrderId(
+    orderId: string,
+  ): Promise<TShipment | undefined> {
+    const [shipment] = await this.db.client
+      .select()
+      .from(shipmentsTable)
+      .where(eq(shipmentsTable.orderId, orderId))
+      .execute();
+    return shipment;
   }
 
   async updateOrder(
@@ -376,6 +452,11 @@ export class OrderRepository {
                 logo: true,
               },
             },
+            paymentMethodCatalog: {
+              with: {
+                logo: true,
+              },
+            },
           },
         },
       },
@@ -388,5 +469,212 @@ export class OrderRepository {
       groups,
       total: totalResult[0]?.count ?? 0,
     };
+  }
+
+  async getSellerOrderStats(shopId: string): Promise<SellerOrderStats> {
+    const orders = await this.db.client
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.shopId, shopId))
+      .execute();
+
+    const pendingStatuses = ['PENDING_PAYMENT', 'CONFIRMED'];
+    const processingStatuses = ['PROCESSING'];
+
+    return {
+      total: orders.length,
+      pending: orders.filter((o) => pendingStatuses.includes(o.status)).length,
+      processing: orders.filter((o) =>
+        processingStatuses.includes(o.status),
+      ).length,
+      shipped: orders.filter((o) => o.status === 'SHIPPED').length,
+      delivered: orders.filter((o) => o.status === 'DELIVERED').length,
+      cancelled: orders.filter((o) => o.status === 'CANCELLED').length,
+      revenue: orders
+        .filter((o) => o.status === 'DELIVERED')
+        .reduce((sum, o) => sum + parseFloat(o.total), 0)
+        .toFixed(2),
+    };
+  }
+
+  async getSellerOrdersPaginated(params: GetSellerOrdersParams): Promise<{
+    orders: (TOrder & {
+      items: (TOrderItem & {
+        product:
+          | (TProduct & {
+              thumbnail: TMedia | null;
+              translations: TProductTranslation[];
+            })
+          | null;
+      })[];
+      address: TOrderAddress | undefined;
+      statusHistory: TOrderStatusHistory[];
+      shipment: TShipment | null;
+      user: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        userName: string;
+        localAuth: { email: string } | null;
+      } | null;
+      paymentMethodCatalog: {
+        id: string;
+        key: string;
+        displayName: string;
+        logo: TMedia | null;
+      } | null;
+    })[];
+    total: number;
+  }> {
+    const {
+      shopId,
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      orderStatus,
+      paymentStatus,
+      search,
+      dateFrom,
+      dateTo,
+      lang = 'en',
+    } = params;
+
+    const offset = (page - 1) * limit;
+    const conditions: SQL[] = [eq(ordersTable.shopId, shopId)];
+
+    if (orderStatus) {
+      conditions.push(eq(ordersTable.status, orderStatus));
+    }
+
+    if (paymentStatus) {
+      conditions.push(eq(ordersTable.paymentStatus, paymentStatus));
+    }
+
+    if (dateFrom) {
+      conditions.push(gte(ordersTable.createdAt, new Date(dateFrom)));
+    }
+
+    if (dateTo) {
+      conditions.push(lte(ordersTable.createdAt, new Date(`${dateTo}T23:59:59.999Z`)));
+    }
+
+    if (search) {
+      const searchLower = `%${search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          like(ordersTable.orderNumber, searchLower),
+          sql`EXISTS (
+            SELECT 1 FROM ${orderItemsTable} oi
+            WHERE oi.order_id = ${ordersTable.id}
+            AND LOWER(oi.product_name) LIKE ${searchLower}
+          )`,
+          sql`EXISTS (
+            SELECT 1 FROM ${orderAddressTable} oa
+            WHERE oa.order_id = ${ordersTable.id}
+            AND (
+              LOWER(oa.recipient_name) LIKE ${searchLower}
+              OR LOWER(oa.phone) LIKE ${searchLower}
+            )
+          )`,
+        )!,
+      );
+    }
+
+    const whereClause = and(...conditions);
+
+    const totalResult = await this.db.client
+      .select({ count: count() })
+      .from(ordersTable)
+      .where(whereClause)
+      .execute();
+
+    const orderByField =
+      sortBy === 'total' ? ordersTable.total : ordersTable.createdAt;
+
+    const orders = await this.db.client.query.ordersTable.findMany({
+      where: whereClause,
+      with: {
+        items: {
+          with: {
+            product: {
+              with: {
+                thumbnail: true,
+                translations: {
+                  where: (t) => eq(t.locale, lang),
+                },
+              },
+            },
+          },
+        },
+        address: true,
+        statusHistory: {
+          orderBy: orderStatusHistoryTable.createdAt,
+        },
+        shipment: true,
+        paymentMethodCatalog: {
+          with: {
+            logo: true,
+          },
+        },
+        user: {
+          with: {
+            localAuth: true,
+          },
+        },
+      },
+      ...(sortOrder === 'desc'
+        ? { orderBy: desc(orderByField) }
+        : { orderBy: asc(orderByField) }),
+      limit,
+      offset,
+    });
+
+    return {
+      orders,
+      total: totalResult[0]?.count ?? 0,
+    };
+  }
+
+  async getSellerOrderDetail(
+    orderId: string,
+    shopId: string,
+    lang: string = 'en',
+  ) {
+    const [order] = await this.db.client.query.ordersTable.findMany({
+      where: and(eq(ordersTable.id, orderId), eq(ordersTable.shopId, shopId)),
+      with: {
+        items: {
+          with: {
+            product: {
+              with: {
+                thumbnail: true,
+                translations: {
+                  where: (t) => eq(t.locale, lang),
+                },
+              },
+            },
+          },
+        },
+        address: true,
+        statusHistory: {
+          orderBy: orderStatusHistoryTable.createdAt,
+        },
+        shipment: true,
+        paymentMethodCatalog: {
+          with: {
+            logo: true,
+          },
+        },
+        user: {
+          with: {
+            localAuth: true,
+          },
+        },
+      },
+      limit: 1,
+    });
+
+    return order ?? null;
   }
 }

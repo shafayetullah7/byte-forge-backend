@@ -91,6 +91,22 @@ export class PaymentMethodRepository {
     return row ? this.mapRow(row) : null;
   }
 
+  async findActiveByKey(
+    key: TPaymentMethod,
+  ): Promise<PaymentMethodWithLogo | null> {
+    const [row] = await this.baseSelect(this.db.client)
+      .where(
+        and(
+          eq(paymentMethodsTable.key, key),
+          eq(paymentMethodsTable.status, 'ACTIVE'),
+        ),
+      )
+      .limit(1)
+      .execute();
+
+    return row ? this.mapRow(row) : null;
+  }
+
   async create(
     data: TNewPaymentMethodRow,
     tx?: DrizzleTx,

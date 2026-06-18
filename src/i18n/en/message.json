@@ -143,7 +143,10 @@
     "ordersRetrieved": "Orders retrieved successfully",
     "orderStatsRetrieved": "Order statistics retrieved successfully",
     "orderGroupRetrieved": "Order group details retrieved successfully",
-    "orderCancelled": "Order cancelled successfully"
+    "orderCancelled": "Order cancelled successfully",
+    "orderUpdated": "Order updated successfully",
+    "orderShipped": "Order shipped successfully",
+    "orderPlaced": "Order placed successfully"
   },
   "email": {
     "verification": {

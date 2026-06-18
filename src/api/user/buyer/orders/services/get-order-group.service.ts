@@ -16,6 +16,8 @@ import {
   TMedia,
 } from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
+import type { TPaymentMethodRow } from '@/_db/drizzle/schema/payment/payment-methods.schema';
 
 // ─── Query Result Types ──────────────────────────────────────────────────────
 
@@ -35,6 +37,19 @@ interface OrderWithRelations extends TOrder {
     id: string;
     logo: TMedia | null;
     translations: TShopTranslation[];
+  } | null;
+  paymentMethodCatalog:
+    | (TPaymentMethodRow & {
+        logo: TMedia | null;
+      })
+    | null;
+  shipment: {
+    id: string;
+    trackingNumber: string | null;
+    carrier: string | null;
+    status: string;
+    shippedAt: Date | null;
+    deliveredAt: Date | null;
   } | null;
 }
 
@@ -95,6 +110,12 @@ export class GetOrderGroupService {
                 logo: true,
               },
             },
+            paymentMethodCatalog: {
+              with: {
+                logo: true,
+              },
+            },
+            shipment: true,
           },
         },
       },
@@ -129,7 +150,11 @@ export class GetOrderGroupService {
       shopLogo,
       status: order.status,
       paymentStatus: order.paymentStatus,
-      paymentMethod: order.paymentMethod,
+      ...mapOrderPaymentMethod(
+        order.paymentMethod,
+        order.paymentMethodId,
+        order.paymentMethodCatalog,
+      ),
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       tax: order.tax,
@@ -162,6 +187,16 @@ export class GetOrderGroupService {
         notes: history.notes,
         createdAt: history.createdAt,
       })),
+      shipment: order.shipment
+        ? {
+            id: order.shipment.id,
+            trackingNumber: order.shipment.trackingNumber,
+            carrier: order.shipment.carrier,
+            status: order.shipment.status,
+            shippedAt: order.shipment.shippedAt,
+            deliveredAt: order.shipment.deliveredAt,
+          }
+        : null,
     };
   }
 

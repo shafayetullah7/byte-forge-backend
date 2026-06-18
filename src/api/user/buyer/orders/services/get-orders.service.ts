@@ -8,6 +8,7 @@ import {
   TOrderItem,
 } from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
 
 type ItemWithProduct = TOrderItem & {
   product: {
@@ -55,6 +56,11 @@ export class GetOrdersService {
             shopLogo,
             status: order.status,
             paymentStatus: order.paymentStatus,
+            ...mapOrderPaymentMethod(
+              order.paymentMethod,
+              order.paymentMethodId,
+              order.paymentMethodCatalog,
+            ),
             total: order.total,
             createdAt: order.createdAt,
             items: order.items.map((item: ItemWithProduct) => {

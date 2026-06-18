@@ -1,16 +1,17 @@
 import {
   Injectable,
-  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
-import { OrderRepository } from '@/_repositories/user/order.repository/order.repository';
+import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
 import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
+import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
+import { CancelSellerOrderDto } from '../dto/cancel-order.dto';
+import { mapSellerOrder } from '../seller-orders.mapper';
 
 @Injectable()
-export class CancelOrderService {
+export class CancelSellerOrderService {
   constructor(
     private readonly db: DrizzleService,
     private readonly orderRepository: OrderRepository,
@@ -18,11 +19,17 @@ export class CancelOrderService {
     private readonly orderInventoryService: OrderInventoryService,
   ) {}
 
-  async execute(userId: string, orderId: string, reason?: string) {
+  async execute(
+    shopId: string,
+    orderId: string,
+    sellerUserId: string,
+    dto: CancelSellerOrderDto,
+    lang: string,
+  ) {
     return await this.db.transaction(async (tx) => {
-      const order = await this.orderRepository.getOrderByIdAndUserId(
+      const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
-        userId,
+        shopId,
         { tx, lock: true },
       );
 
@@ -34,26 +41,33 @@ export class CancelOrderService {
         order.status === OrderStatusEnum.CANCELLED ||
         order.status === OrderStatusEnum.EXPIRED
       ) {
-        return order;
+        const existing = await this.orderRepository.getSellerOrderDetail(
+          orderId,
+          shopId,
+          lang,
+        );
+        if (!existing) {
+          throw new NotFoundException('Order not found');
+        }
+        return mapSellerOrder(existing, lang);
       }
 
-      this.orderStatusTransitionService.assertBuyerCanCancel(order.status);
+      this.orderStatusTransitionService.assertSellerCanCancel(order.status);
       this.orderStatusTransitionService.assertTransition(
         order.status,
         OrderStatusEnum.CANCELLED,
       );
 
-      const previousStatus = order.status;
       const orderItems = await this.orderRepository.getOrderItemsByOrderId(
         orderId,
       );
 
-      const updatedOrder = await this.orderRepository.updateOrder(
+      await this.orderRepository.updateOrder(
         orderId,
         {
           status: OrderStatusEnum.CANCELLED,
           cancelledAt: new Date(),
-          cancelledReason: reason ?? null,
+          cancelledReason: dto.reason,
         },
         { tx },
       );
@@ -63,25 +77,34 @@ export class CancelOrderService {
           variantId: item.variantId,
           shopId: order.shopId,
           quantity: item.quantity,
-          productName: item.productName,
         })),
         orderId,
-        userId,
+        sellerUserId,
         tx,
       );
 
       await this.orderRepository.createOrderStatusHistory(
         {
           orderId,
-          fromStatus: previousStatus,
+          fromStatus: order.status,
           toStatus: OrderStatusEnum.CANCELLED,
-          notes: reason ?? 'Cancelled by buyer',
-          changedBy: userId,
+          notes: dto.reason,
+          changedBy: sellerUserId,
         },
         { tx },
       );
 
-      return updatedOrder;
+      const updated = await this.orderRepository.getSellerOrderDetail(
+        orderId,
+        shopId,
+        lang,
+      );
+
+      if (!updated) {
+        throw new NotFoundException('Order not found after cancellation');
+      }
+
+      return mapSellerOrder(updated, lang);
     });
   }
 }

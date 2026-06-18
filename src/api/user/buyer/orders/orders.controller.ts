@@ -60,7 +60,6 @@ export class OrdersController {
     @Query() query: OrdersFilterDto,
     @I18nLang() lang: string,
   ) {
-    console.log({ lang });
     const result = await this.getOrdersService.execute(
       authUser.user.id,
       query,
