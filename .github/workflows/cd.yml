@@ -17,11 +17,9 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Join Tailscale
         uses: tailscale/github-action@v3
         with:
@@ -89,98 +87,63 @@ jobs:
           tailscale ssh shafayet@home-server bash -s <<EOF
           set -euo pipefail
 
-          DEPLOY_DIR="${DEPLOY_DIR}"
-          REPO_URL="git@github.com:shafayetullah7/byte-forge-auth.git"
+          export NODE_ENV="$NODE_ENV"
+          export PORT="$PORT"
+          export APP_NAME="$APP_NAME"
 
-          mkdir -p "$DEPLOY_DIR"
+          export DB_HOST="$DB_HOST"
+          export DB_PORT="$DB_PORT"
+          export DB_USER="$DB_USER"
+          export DB_PASSWORD="$DB_PASSWORD"
+          export DB_NAME="$DB_NAME"
+
+          export COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME"
+          export APP_EXTERNAL_PORT="$APP_EXTERNAL_PORT"
+          export DB_EXTERNAL_PORT="$DB_EXTERNAL_PORT"
+          export DOCKER_BUILD_TARGET="$DOCKER_BUILD_TARGET"
+
+          export SALT_ROUNDS="$SALT_ROUNDS"
+
+          export MAIL_PROVIDER="$MAIL_PROVIDER"
+          export MAIL_HOST="$MAIL_HOST"
+          export MAIL_PORT="$MAIL_PORT"
+          export MAIL_SECURE="$MAIL_SECURE"
+          export MAIL_USER="$MAIL_USER"
+          export MAIL_PASSWORD="$MAIL_PASSWORD"
+          export MAIL_FROM_NAME="$MAIL_FROM_NAME"
+          export MAIL_FROM_EMAIL="$MAIL_FROM_EMAIL"
+
+          export SESSION_MAX_AGE="$SESSION_MAX_AGE"
+          export COOKIE_DOMAIN="$COOKIE_DOMAIN"
+
+          export JWT_ADMIN_ACCESS_EXP="$JWT_ADMIN_ACCESS_EXP"
+          export JWT_ADMIN_REFRESH_EXP="$JWT_ADMIN_REFRESH_EXP"
+          export JWT_USER_ACCESS_EXP="$JWT_USER_ACCESS_EXP"
+          export JWT_USER_REFRESH_EXP="$JWT_USER_REFRESH_EXP"
+
+          export CLOUDINARY_CLOUD_NAME="$CLOUDINARY_CLOUD_NAME"
+          export CLOUDINARY_API_KEY="$CLOUDINARY_API_KEY"
+          export CLOUDINARY_API_SECRET="$CLOUDINARY_API_SECRET"
+
+          export JWT_SECRET_RESET_REQUEST="$JWT_SECRET_RESET_REQUEST"
+          export JWT_SECRET_RESET_ACCESS="$JWT_SECRET_RESET_ACCESS"
+
+          export JWT_ADMIN_ACCESS_SECRET="$JWT_ADMIN_ACCESS_SECRET"
+          export JWT_ADMIN_REFRESH_SECRET="$JWT_ADMIN_REFRESH_SECRET"
+
+          export JWT_USER_ACCESS_SECRET="$JWT_USER_ACCESS_SECRET"
+          export JWT_USER_REFRESH_SECRET="$JWT_USER_REFRESH_SECRET"
+
           cd "$DEPLOY_DIR"
 
-          # =========================
-          # BOOTSTRAP
-          # =========================
-          if [ ! -d ".git" ]; then
-            echo "Fresh clone..."
+          test -d .git || { echo "No git repo at $DEPLOY_DIR"; exit 1; }
+          git remote get-url origin | grep -q 'byte-forge-auth' || { echo "Unexpected git remote"; exit 1; }
+          command -v docker >/dev/null || { echo "docker not found"; exit 1; }
+          command -v envsubst >/dev/null || { echo "envsubst not found"; exit 1; }
 
-            rm -rf "$DEPLOY_DIR"/*
-            git clone "$REPO_URL" .
-          fi
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
 
-          # =========================
-          # UPDATE CODE
-          # =========================
-          git fetch --prune origin main
-          git reset --hard origin/main
-          git clean -fdx
-
-          # =========================
-          # WRITE ENV FILE (FIXED)
-          # =========================
-          cat > .env.production <<ENV
-          NODE_ENV=$NODE_ENV
-          PORT=$PORT
-          APP_NAME=$APP_NAME
-
-          DB_HOST=$DB_HOST
-          DB_PORT=$DB_PORT
-          DB_USER=$DB_USER
-          DB_PASSWORD=$DB_PASSWORD
-          DB_NAME=$DB_NAME
-
-          COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
-          APP_EXTERNAL_PORT=$APP_EXTERNAL_PORT
-          DB_EXTERNAL_PORT=$DB_EXTERNAL_PORT
-          DOCKER_BUILD_TARGET=$DOCKER_BUILD_TARGET
-
-          SALT_ROUNDS=$SALT_ROUNDS
-
-          MAIL_PROVIDER=$MAIL_PROVIDER
-          MAIL_HOST=$MAIL_HOST
-          MAIL_PORT=$MAIL_PORT
-          MAIL_SECURE=$MAIL_SECURE
-          MAIL_USER=$MAIL_USER
-          MAIL_PASSWORD=$MAIL_PASSWORD
-          MAIL_FROM_NAME=$MAIL_FROM_NAME
-          MAIL_FROM_EMAIL=$MAIL_FROM_EMAIL
-
-          SESSION_MAX_AGE=$SESSION_MAX_AGE
-          COOKIE_DOMAIN=$COOKIE_DOMAIN
-
-          JWT_ADMIN_ACCESS_EXP=$JWT_ADMIN_ACCESS_EXP
-          JWT_ADMIN_REFRESH_EXP=$JWT_ADMIN_REFRESH_EXP
-          JWT_USER_ACCESS_EXP=$JWT_USER_ACCESS_EXP
-          JWT_USER_REFRESH_EXP=$JWT_USER_REFRESH_EXP
-
-          CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME
-          CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY
-          CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET
-
-          JWT_SECRET_RESET_REQUEST=$JWT_SECRET_RESET_REQUEST
-          JWT_SECRET_RESET_ACCESS=$JWT_SECRET_RESET_ACCESS
-
-          JWT_ADMIN_ACCESS_SECRET=$JWT_ADMIN_ACCESS_SECRET
-          JWT_ADMIN_REFRESH_SECRET=$JWT_ADMIN_REFRESH_SECRET
-
-          JWT_USER_ACCESS_SECRET=$JWT_USER_ACCESS_SECRET
-          JWT_USER_REFRESH_SECRET=$JWT_USER_REFRESH_SECRET
-          ENV
-
-          # =========================
-          # DEPLOY
-          # =========================
-          docker compose --env-file .env.production up -d --build --remove-orphans
-
-          # =========================
-          # HEALTH CHECK
-          # =========================
-          echo "Waiting..."
-          for i in \$(seq 1 30); do
-            if curl -fsS http://localhost:$APP_EXTERNAL_PORT >/dev/null; then
-              echo "OK"
-              exit 0
-            fi
-            sleep 2
-          done
-
-          echo "FAILED"
-          exit 1
+          bash scripts/deploy.sh
           EOF

@@ -8,7 +8,9 @@ import { ReviewRepository } from '@/_repositories/review/review.repository/revie
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListBuyerReviewsQueryDto } from './dto/list-buyer-reviews-query.dto';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { mapReviewImages } from '@/common/utils/map-review-images.util';
 import type { TProductTranslation } from '@/_db/drizzle/schema';
+import type { ReviewWithBuyerRelations } from '@/_repositories/review/review.repository/review.repository.types';
 
 @Injectable()
 export class BuyerReviewsService {
@@ -52,44 +54,41 @@ export class BuyerReviewsService {
     const result = await this.reviewRepository.listBuyerReviews(userId, query);
 
     return {
-      data: result.data.map((review: any) => ({
-        id: review.id,
-        orderItemId: review.orderItemId,
-        productId: review.productId,
-        rating: review.rating,
-        title: review.title,
-        comment: review.comment,
-        isVerifiedPurchase: review.isVerifiedPurchase,
-        status: review.status,
-        createdAt: review.createdAt,
-        updatedAt: review.updatedAt,
-        product: review.product
-          ? {
-              id: review.product.id,
-              slug: review.product.slug,
-              name:
-                resolveTranslation<TProductTranslation>(
-                  review.product.translations,
-                  lang,
-                )?.name ??
-                'Product',
-              thumbnail: review.product.thumbnail
-                ? {
-                    id: review.product.thumbnail.id,
-                    url: review.product.thumbnail.url,
-                  }
-                : null,
-            }
-          : null,
-        images: (review.images ?? []).map((image: any) => ({
-          id: image.id,
-          displayOrder: image.displayOrder,
-          media: image.media
-            ? { id: image.media.id, url: image.media.url }
-            : null,
-        })),
-      })),
+      data: result.data.map((review) => this.mapBuyerReview(review, lang)),
       meta: result.meta,
+    };
+  }
+
+  private mapBuyerReview(review: ReviewWithBuyerRelations, lang: string) {
+    return {
+      id: review.id,
+      orderItemId: review.orderItemId,
+      productId: review.productId,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      isVerifiedPurchase: review.isVerifiedPurchase,
+      status: review.status,
+      createdAt: review.createdAt,
+      updatedAt: review.updatedAt,
+      product: review.product
+        ? {
+            id: review.product.id,
+            slug: review.product.slug,
+            name:
+              resolveTranslation<TProductTranslation>(
+                review.product.translations,
+                lang,
+              )?.name ?? 'Product',
+            thumbnail: review.product.thumbnail
+              ? {
+                  id: review.product.thumbnail.id,
+                  url: review.product.thumbnail.url,
+                }
+              : null,
+          }
+        : null,
+      images: mapReviewImages(review.images),
     };
   }
 }

@@ -50,9 +50,13 @@ export class UpdatePaymentMethodService {
       return this.repository.update(
         id,
         {
-          ...(dto.displayName !== undefined && { displayName: dto.displayName }),
+          ...(dto.displayName !== undefined && {
+            displayName: dto.displayName,
+          }),
           ...(nextLogoId !== undefined && { logoId: nextLogoId }),
-          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.description !== undefined && {
+            description: dto.description,
+          }),
         },
         tx,
       );

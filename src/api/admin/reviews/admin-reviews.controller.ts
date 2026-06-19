@@ -45,10 +45,7 @@ export class AdminReviewsController {
 
   @ApiOperation({ summary: 'Get review details' })
   @Get(':reviewId')
-  async getReview(
-    @Param() params: ReviewIdParamDto,
-    @I18nLang() lang: string,
-  ) {
+  async getReview(@Param() params: ReviewIdParamDto, @I18nLang() lang: string) {
     const data = await this.adminReviewsService.getReview(
       params.reviewId,
       lang,
@@ -78,7 +75,9 @@ export class AdminReviewsController {
   @ApiOperation({ summary: 'Unfeature a review' })
   @Patch(':reviewId/unfeature')
   async unfeatureReview(@Param() params: ReviewIdParamDto) {
-    const data = await this.adminReviewsService.unfeatureReview(params.reviewId);
+    const data = await this.adminReviewsService.unfeatureReview(
+      params.reviewId,
+    );
     return this.responseService.success({
       message: 'Review unfeatured successfully',
       data,

@@ -99,7 +99,8 @@ export class AdminMediaController {
 
   @ApiOperation({
     summary: 'Upload image media',
-    description: 'Upload an image for admin-managed branding and catalog assets.',
+    description:
+      'Upload an image for admin-managed branding and catalog assets.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'Image uploaded successfully' })

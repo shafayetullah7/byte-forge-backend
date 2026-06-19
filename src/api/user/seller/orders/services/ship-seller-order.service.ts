@@ -65,9 +65,8 @@ export class ShipSellerOrderService {
         throw new BadRequestException('Shipment already exists for this order');
       }
 
-      const orderItems = await this.orderRepository.getOrderItemsByOrderId(
-        orderId,
-      );
+      const orderItems =
+        await this.orderRepository.getOrderItemsByOrderId(orderId);
 
       const shippedAt = new Date();
       const shippingMethod = dto.shippingMethod ?? 'COURIER';

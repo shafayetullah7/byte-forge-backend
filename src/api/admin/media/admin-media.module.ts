@@ -7,7 +7,12 @@ import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 import { LoggerModule } from '@/common/modules/logger/logger.module';
 
 @Module({
-  imports: [CloudinaryModule, MediaRepositoryModule, DrizzleModule, LoggerModule],
+  imports: [
+    CloudinaryModule,
+    MediaRepositoryModule,
+    DrizzleModule,
+    LoggerModule,
+  ],
   controllers: [AdminMediaController],
   providers: [AdminMediaService],
   exports: [AdminMediaService],

@@ -56,17 +56,20 @@ export const reviewReportsTable = pgTable(
 export type TReviewReport = typeof reviewReportsTable.$inferSelect;
 export type TNewReviewReport = typeof reviewReportsTable.$inferInsert;
 
-export const reviewReportsRelations = relations(reviewReportsTable, ({ one }) => ({
-  review: one(reviewsTable, {
-    fields: [reviewReportsTable.reviewId],
-    references: [reviewsTable.id],
+export const reviewReportsRelations = relations(
+  reviewReportsTable,
+  ({ one }) => ({
+    review: one(reviewsTable, {
+      fields: [reviewReportsTable.reviewId],
+      references: [reviewsTable.id],
+    }),
+    reportedBySeller: one(userTable, {
+      fields: [reviewReportsTable.reportedBySellerUserId],
+      references: [userTable.id],
+    }),
+    resolvedByAdmin: one(adminTable, {
+      fields: [reviewReportsTable.resolvedByAdminId],
+      references: [adminTable.id],
+    }),
   }),
-  reportedBySeller: one(userTable, {
-    fields: [reviewReportsTable.reportedBySellerUserId],
-    references: [userTable.id],
-  }),
-  resolvedByAdmin: one(adminTable, {
-    fields: [reviewReportsTable.resolvedByAdminId],
-    references: [adminTable.id],
-  }),
-}));
+);

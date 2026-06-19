@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
 import { OrderRepository } from '@/_repositories/user/order.repository/order.repository';
@@ -44,9 +40,8 @@ export class CancelOrderService {
       );
 
       const previousStatus = order.status;
-      const orderItems = await this.orderRepository.getOrderItemsByOrderId(
-        orderId,
-      );
+      const orderItems =
+        await this.orderRepository.getOrderItemsByOrderId(orderId);
 
       const updatedOrder = await this.orderRepository.updateOrder(
         orderId,

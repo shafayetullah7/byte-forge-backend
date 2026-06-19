@@ -11,9 +11,7 @@ import {
 
 @Injectable()
 export class DeactivatePaymentMethodService {
-  constructor(
-    private readonly repository: PaymentMethodRepository,
-  ) {}
+  constructor(private readonly repository: PaymentMethodRepository) {}
 
   async execute(id: string): Promise<PaymentMethodResponse> {
     const existing = await this.repository.findById(id);

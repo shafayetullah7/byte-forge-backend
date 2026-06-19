@@ -31,9 +31,7 @@ export class AdminMediaService {
       allowedMimeTypes: TAllowedMimeType[];
     },
   ): Promise<TMedia> {
-    if (
-      !options.allowedMimeTypes.includes(file.mimetype as TAllowedMimeType)
-    ) {
+    if (!options.allowedMimeTypes.includes(file.mimetype as TAllowedMimeType)) {
       throw new BadRequestException(
         `File type ${file.mimetype} is not allowed for this upload endpoint`,
       );

@@ -3,6 +3,8 @@ import { ReviewRepository } from '@/_repositories/review/review.repository/revie
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
 import { SellerReviewQueryDto } from './dto/seller-review-query.dto';
 import { ReportReviewDto } from './dto/report-review.dto';
+import { mapReviewImages } from '@/common/utils/map-review-images.util';
+import type { ReviewWithPublicRelations } from '@/_repositories/review/review.repository/review.repository.types';
 
 @Injectable()
 export class SellerReviewsService {
@@ -26,28 +28,7 @@ export class SellerReviewsService {
 
     return {
       summary,
-      reviews: reviews.data.map((review: any) => ({
-        id: review.id,
-        productId: review.productId,
-        orderItemId: review.orderItemId,
-        rating: review.rating,
-        title: review.title,
-        comment: review.comment,
-        isVerifiedPurchase: review.isVerifiedPurchase,
-        status: review.status,
-        createdAt: review.createdAt,
-        updatedAt: review.updatedAt,
-        customerName: review.user
-          ? `${review.user.firstName} ${review.user.lastName}`.trim()
-          : 'Buyer',
-        images: (review.images ?? []).map((image: any) => ({
-          id: image.id,
-          displayOrder: image.displayOrder,
-          media: image.media
-            ? { id: image.media.id, url: image.media.url }
-            : null,
-        })),
-      })),
+      reviews: reviews.data.map((review) => this.mapSellerReview(review)),
       meta: reviews.meta,
     };
   }
@@ -70,6 +51,25 @@ export class SellerReviewsService {
       reason: body.reason,
       details: body.details,
     });
+  }
+
+  private mapSellerReview(review: ReviewWithPublicRelations) {
+    return {
+      id: review.id,
+      productId: review.productId,
+      orderItemId: review.orderItemId,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      isVerifiedPurchase: review.isVerifiedPurchase,
+      status: review.status,
+      createdAt: review.createdAt,
+      updatedAt: review.updatedAt,
+      customerName: review.user
+        ? `${review.user.firstName} ${review.user.lastName}`.trim()
+        : 'Buyer',
+      images: mapReviewImages(review.images),
+    };
   }
 
   private async resolveShop(userId: string) {

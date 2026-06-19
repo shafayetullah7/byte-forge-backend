@@ -18,4 +18,6 @@ export const UpdateOrderStatusSchema = z.object({
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
-export class UpdateOrderStatusDto extends createZodDto(UpdateOrderStatusSchema) {}
+export class UpdateOrderStatusDto extends createZodDto(
+  UpdateOrderStatusSchema,
+) {}

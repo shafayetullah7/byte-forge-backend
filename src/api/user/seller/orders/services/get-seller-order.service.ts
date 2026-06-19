@@ -21,10 +21,6 @@ export class GetSellerOrderService {
       throw new NotFoundException('Order not found');
     }
 
-    return mapSellerOrder(
-      order,
-      lang,
-      buildMapSellerOrderContext(shop, lang),
-    );
+    return mapSellerOrder(order, lang, buildMapSellerOrderContext(shop, lang));
   }
 }

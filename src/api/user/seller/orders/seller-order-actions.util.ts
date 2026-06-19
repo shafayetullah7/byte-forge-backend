@@ -1,6 +1,12 @@
-import { OrderStatusEnum, TOrderStatus } from '@/_db/drizzle/enum/order-status.enum';
+import {
+  OrderStatusEnum,
+  TOrderStatus,
+} from '@/_db/drizzle/enum/order-status.enum';
 import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
-import { ShopStatusEnum, TShopStatus } from '@/_db/drizzle/enum/shop.status.enum';
+import {
+  ShopStatusEnum,
+  TShopStatus,
+} from '@/_db/drizzle/enum/shop.status.enum';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
 import type { TShipment } from '@/_db/drizzle/schema';
 
@@ -43,8 +49,7 @@ export function buildSellerPaymentContext(
   return {
     collectOnDelivery: isCod,
     completesOnDeliver: false,
-    requiresPaymentConfirmation:
-      isCod && status === OrderStatusEnum.DELIVERED,
+    requiresPaymentConfirmation: isCod && status === OrderStatusEnum.DELIVERED,
   };
 }
 
@@ -70,7 +75,10 @@ export function buildSellerActionDescriptors(
   const descriptors: SellerOrderActionDescriptor[] = [];
 
   const push = (
-    descriptor: Omit<SellerOrderActionDescriptor, 'disabled' | 'disabledReason'>,
+    descriptor: Omit<
+      SellerOrderActionDescriptor,
+      'disabled' | 'disabledReason'
+    >,
   ) => {
     descriptors.push({
       ...descriptor,

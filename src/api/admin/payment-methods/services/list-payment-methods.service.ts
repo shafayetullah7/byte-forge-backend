@@ -8,9 +8,7 @@ import {
 
 @Injectable()
 export class ListPaymentMethodsService {
-  constructor(
-    private readonly repository: PaymentMethodRepository,
-  ) {}
+  constructor(private readonly repository: PaymentMethodRepository) {}
 
   async execute(
     query: ListPaymentMethodsQueryDto,

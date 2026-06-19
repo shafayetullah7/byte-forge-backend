@@ -2,7 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
 import { AdminReviewQueryDto } from './dto/admin-review-query.dto';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
-import type { TProductTranslation, TShopTranslation } from '@/_db/drizzle/schema';
+import { mapReviewImages } from '@/common/utils/map-review-images.util';
+import type {
+  TProductTranslation,
+  TShopTranslation,
+} from '@/_db/drizzle/schema';
+import type { ReviewWithAdminRelations } from '@/_repositories/review/review.repository/review.repository.types';
 
 @Injectable()
 export class AdminReviewsService {
@@ -11,7 +16,7 @@ export class AdminReviewsService {
   async listReviews(query: AdminReviewQueryDto, lang: string) {
     const result = await this.reviewRepository.listAdminReviews(query);
     return {
-      data: result.data.map((review: any) => this.mapAdminReview(review, lang)),
+      data: result.data.map((review) => this.mapAdminReview(review, lang)),
       meta: result.meta,
     };
   }
@@ -39,7 +44,12 @@ export class AdminReviewsService {
 
   async removeReview(reviewId: string, adminId: string, reason: string) {
     return this.requireReview(
-      this.reviewRepository.setReviewRemovedByAdmin(reviewId, adminId, true, reason),
+      this.reviewRepository.setReviewRemovedByAdmin(
+        reviewId,
+        adminId,
+        true,
+        reason,
+      ),
     );
   }
 
@@ -67,9 +77,12 @@ export class AdminReviewsService {
     return report;
   }
 
-  private mapAdminReview(review: any, lang: string) {
+  private mapAdminReview(review: ReviewWithAdminRelations, lang: string) {
     const productTranslation = review.product
-      ? resolveTranslation<TProductTranslation>(review.product.translations, lang)
+      ? resolveTranslation<TProductTranslation>(
+          review.product.translations,
+          lang,
+        )
       : null;
     const shopTranslation = review.product?.shop
       ? resolveTranslation<TShopTranslation>(
@@ -127,14 +140,8 @@ export class AdminReviewsService {
             status: review.orderItem.order.status,
           }
         : null,
-      images: (review.images ?? []).map((image: any) => ({
-        id: image.id,
-        displayOrder: image.displayOrder,
-        media: image.media
-          ? { id: image.media.id, url: image.media.url }
-          : null,
-      })),
-      reports: (review.reports ?? []).map((report: any) => ({
+      images: mapReviewImages(review.images),
+      reports: review.reports.map((report) => ({
         id: report.id,
         reason: report.reason,
         details: report.details,

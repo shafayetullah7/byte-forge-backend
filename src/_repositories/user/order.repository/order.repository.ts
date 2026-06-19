@@ -1,4 +1,17 @@
-import { eq, inArray, count, desc, and, or, like, sql, SQL, gte, lte, asc } from 'drizzle-orm';
+import {
+  eq,
+  inArray,
+  count,
+  desc,
+  and,
+  or,
+  like,
+  sql,
+  SQL,
+  gte,
+  lte,
+  asc,
+} from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ordersTable,
@@ -21,7 +34,6 @@ import {
   TShopTranslation,
   TProduct,
   TProductTranslation,
-  userTable,
   shipmentsTable,
   TNewShipment,
   TShipment,
@@ -208,9 +220,7 @@ export class OrderRepository {
     return shipment;
   }
 
-  async getShipmentByOrderId(
-    orderId: string,
-  ): Promise<TShipment | undefined> {
+  async getShipmentByOrderId(orderId: string): Promise<TShipment | undefined> {
     const [shipment] = await this.db.client
       .select()
       .from(shipmentsTable)
@@ -540,9 +550,8 @@ export class OrderRepository {
     return {
       total: orders.length,
       pending: orders.filter((o) => pendingStatuses.includes(o.status)).length,
-      processing: orders.filter((o) =>
-        processingStatuses.includes(o.status),
-      ).length,
+      processing: orders.filter((o) => processingStatuses.includes(o.status))
+        .length,
       shipped: orders.filter((o) => o.status === 'SHIPPED').length,
       delivered: orders.filter(
         (o) => o.status === 'DELIVERED' || o.status === 'COMPLETED',
@@ -589,7 +598,9 @@ export class OrderRepository {
     }
 
     if (dateTo) {
-      conditions.push(lte(ordersTable.createdAt, new Date(`${dateTo}T23:59:59.999Z`)));
+      conditions.push(
+        lte(ordersTable.createdAt, new Date(`${dateTo}T23:59:59.999Z`)),
+      );
     }
 
     if (search) {

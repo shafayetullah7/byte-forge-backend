@@ -4,26 +4,27 @@ import {
   TOrderStatus,
 } from '@/_db/drizzle/enum/order-status.enum';
 
-const ORDER_STATUS_TRANSITIONS: Record<TOrderStatus, readonly TOrderStatus[]> = {
-  [OrderStatusEnum.PENDING_PAYMENT]: [
-    OrderStatusEnum.PROCESSING,
-    OrderStatusEnum.CANCELLED,
-    OrderStatusEnum.EXPIRED,
-  ],
-  [OrderStatusEnum.PROCESSING]: [
-    OrderStatusEnum.CONFIRMED,
-    OrderStatusEnum.CANCELLED,
-  ],
-  [OrderStatusEnum.CONFIRMED]: [
-    OrderStatusEnum.SHIPPED,
-    OrderStatusEnum.CANCELLED,
-  ],
-  [OrderStatusEnum.SHIPPED]: [OrderStatusEnum.DELIVERED],
-  [OrderStatusEnum.DELIVERED]: [OrderStatusEnum.COMPLETED],
-  [OrderStatusEnum.COMPLETED]: [],
-  [OrderStatusEnum.CANCELLED]: [],
-  [OrderStatusEnum.EXPIRED]: [],
-};
+const ORDER_STATUS_TRANSITIONS: Record<TOrderStatus, readonly TOrderStatus[]> =
+  {
+    [OrderStatusEnum.PENDING_PAYMENT]: [
+      OrderStatusEnum.PROCESSING,
+      OrderStatusEnum.CANCELLED,
+      OrderStatusEnum.EXPIRED,
+    ],
+    [OrderStatusEnum.PROCESSING]: [
+      OrderStatusEnum.CONFIRMED,
+      OrderStatusEnum.CANCELLED,
+    ],
+    [OrderStatusEnum.CONFIRMED]: [
+      OrderStatusEnum.SHIPPED,
+      OrderStatusEnum.CANCELLED,
+    ],
+    [OrderStatusEnum.SHIPPED]: [OrderStatusEnum.DELIVERED],
+    [OrderStatusEnum.DELIVERED]: [OrderStatusEnum.COMPLETED],
+    [OrderStatusEnum.COMPLETED]: [],
+    [OrderStatusEnum.CANCELLED]: [],
+    [OrderStatusEnum.EXPIRED]: [],
+  };
 
 const BUYER_CANCELLABLE_STATUSES: readonly TOrderStatus[] = [
   OrderStatusEnum.PENDING_PAYMENT,

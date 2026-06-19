@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
@@ -69,9 +66,8 @@ export class CancelSellerOrderService {
         OrderStatusEnum.CANCELLED,
       );
 
-      const orderItems = await this.orderRepository.getOrderItemsByOrderId(
-        orderId,
-      );
+      const orderItems =
+        await this.orderRepository.getOrderItemsByOrderId(orderId);
 
       await this.orderRepository.updateOrder(
         orderId,

@@ -7,9 +7,7 @@ import {
 
 @Injectable()
 export class GetPaymentMethodService {
-  constructor(
-    private readonly repository: PaymentMethodRepository,
-  ) {}
+  constructor(private readonly repository: PaymentMethodRepository) {}
 
   async execute(id: string): Promise<PaymentMethodResponse> {
     const row = await this.repository.findById(id);

@@ -1,7 +1,10 @@
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
-import type { TProductTranslation, TShopTranslation } from '@/_db/drizzle/schema';
+import type {
+  TProductTranslation,
+  TShopTranslation,
+} from '@/_db/drizzle/schema';
 import type { SellerOrderWithRelations } from '@/_repositories/user/order.repository/order.repository';
 import type { TShopStatus } from '@/_db/drizzle/enum/shop.status.enum';
 import {

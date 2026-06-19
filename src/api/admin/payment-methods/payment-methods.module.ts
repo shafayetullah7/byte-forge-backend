@@ -12,7 +12,11 @@ import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 import { PaymentMethodLogoService } from './services/payment-method-logo.service';
 
 @Module({
-  imports: [PaymentMethodRepositoryModule, MediaRepositoryModule, DrizzleModule],
+  imports: [
+    PaymentMethodRepositoryModule,
+    MediaRepositoryModule,
+    DrizzleModule,
+  ],
   controllers: [PaymentMethodsController],
   providers: [
     ListPaymentMethodsService,

@@ -1,6 +1,26 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
 import { PublicReviewQueryDto } from './dto/public-review-query.dto';
+import { mapReviewImages } from '@/common/utils/map-review-images.util';
+import type {
+  ReviewImageWithMedia,
+  ReviewWithFeaturedRelations,
+  ReviewWithPublicRelations,
+} from '@/_repositories/review/review.repository/review.repository.types';
+
+type MappablePublicReview = Pick<
+  ReviewWithPublicRelations,
+  | 'id'
+  | 'productId'
+  | 'rating'
+  | 'title'
+  | 'comment'
+  | 'isVerifiedPurchase'
+  | 'createdAt'
+  | 'user'
+> & {
+  images?: ReviewImageWithMedia[];
+};
 
 @Injectable()
 export class PublicReviewsService {
@@ -14,7 +34,7 @@ export class PublicReviewsService {
 
     return {
       summary,
-      reviews: reviews.data.map((review: any) => this.mapPublicReview(review)),
+      reviews: reviews.data.map((review) => this.mapPublicReview(review)),
       meta: reviews.meta,
     };
   }
@@ -30,7 +50,11 @@ export class PublicReviewsService {
 
   async getFeaturedReviews(limit = 10) {
     const rows = await this.reviewRepository.listFeaturedPublicReviews(limit);
-    return rows.map((review: any) => ({
+    return rows.map((review) => this.mapFeaturedReview(review));
+  }
+
+  private mapFeaturedReview(review: ReviewWithFeaturedRelations) {
+    return {
       ...this.mapPublicReview(review),
       product: review.product
         ? {
@@ -45,10 +69,10 @@ export class PublicReviewsService {
           }
         : null,
       featuredAt: review.featuredAt,
-    }));
+    };
   }
 
-  private mapPublicReview(review: any) {
+  private mapPublicReview(review: MappablePublicReview) {
     const customerName = review.user
       ? `${review.user.firstName} ${review.user.lastName}`.trim()
       : 'Verified buyer';
@@ -62,13 +86,7 @@ export class PublicReviewsService {
       isVerifiedPurchase: review.isVerifiedPurchase,
       createdAt: review.createdAt,
       customerName,
-      images: (review.images ?? []).map((image: any) => ({
-        id: image.id,
-        displayOrder: image.displayOrder,
-        media: image.media
-          ? { id: image.media.id, url: image.media.url }
-          : null,
-      })),
+      images: mapReviewImages(review.images),
     };
   }
 }

@@ -6,4 +6,6 @@ export const CancelSellerOrderSchema = z.object({
   expectedUpdatedAt: z.string().datetime().optional(),
 });
 
-export class CancelSellerOrderDto extends createZodDto(CancelSellerOrderSchema) {}
+export class CancelSellerOrderDto extends createZodDto(
+  CancelSellerOrderSchema,
+) {}

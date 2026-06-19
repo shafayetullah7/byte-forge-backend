@@ -1,14 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  inArray,
-  SQL,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, SQL, sql } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   orderItemsTable,
@@ -27,6 +18,13 @@ import {
   TOrderStatus,
   TReviewStatus,
 } from '@/_db/drizzle/enum';
+import type {
+  ReviewPaginatedResult,
+  ReviewWithAdminRelations,
+  ReviewWithBuyerRelations,
+  ReviewWithFeaturedRelations,
+  ReviewWithPublicRelations,
+} from './review.repository.types';
 
 export type ReviewListParams = {
   page?: number;
@@ -65,21 +63,23 @@ export class ReviewRepository {
   constructor(private readonly db: DrizzleService) {}
 
   async getBuyerOrderItemForReview(userId: string, orderItemId: string) {
-    return this.db.client.query.orderItemsTable.findFirst({
-      where: eq(orderItemsTable.id, orderItemId),
-      with: {
-        order: true,
-        product: {
-          with: {
-            thumbnail: true,
-            translations: true,
+    return this.db.client.query.orderItemsTable
+      .findFirst({
+        where: eq(orderItemsTable.id, orderItemId),
+        with: {
+          order: true,
+          product: {
+            with: {
+              thumbnail: true,
+              translations: true,
+            },
           },
         },
-      },
-    }).then((item) => {
-      if (!item || item.order.userId !== userId) return null;
-      return item;
-    });
+      })
+      .then((item) => {
+        if (!item || item.order.userId !== userId) return null;
+        return item;
+      });
   }
 
   async getReviewByOrderItemId(orderItemId: string): Promise<TReview | null> {
@@ -168,7 +168,10 @@ export class ReviewRepository {
     };
   }
 
-  async listBuyerReviews(userId: string, params: ReviewListParams = {}) {
+  async listBuyerReviews(
+    userId: string,
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithBuyerRelations>> {
     const page = params.page ?? 1;
     const limit = params.limit ?? 10;
     const offset = (page - 1) * limit;
@@ -184,26 +187,27 @@ export class ReviewRepository {
       .from(reviewsTable)
       .where(where);
 
-    const data = await this.db.client.query.reviewsTable.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(reviewsTable.createdAt),
-      with: {
-        product: {
-          with: {
-            thumbnail: true,
-            translations: true,
+    const data: ReviewWithBuyerRelations[] =
+      await this.db.client.query.reviewsTable.findMany({
+        where,
+        limit,
+        offset,
+        orderBy: desc(reviewsTable.createdAt),
+        with: {
+          product: {
+            with: {
+              thumbnail: true,
+              translations: true,
+            },
+          },
+          images: {
+            orderBy: asc(reviewImagesTable.displayOrder),
+            with: {
+              media: true,
+            },
           },
         },
-        images: {
-          orderBy: asc(reviewImagesTable.displayOrder),
-          with: {
-            media: true,
-          },
-        },
-      },
-    });
+      });
 
     return {
       data,
@@ -269,7 +273,10 @@ export class ReviewRepository {
     };
   }
 
-  async listProductReviews(productId: string, params: ReviewListParams = {}) {
+  async listProductReviews(
+    productId: string,
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithPublicRelations>> {
     const page = params.page ?? 1;
     const limit = params.limit ?? 10;
     const offset = (page - 1) * limit;
@@ -277,11 +284,16 @@ export class ReviewRepository {
 
     if (params.status) conditions.push(eq(reviewsTable.status, params.status));
     if (params.rating) conditions.push(eq(reviewsTable.rating, params.rating));
-    if (params.minRating) conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
-    if (params.maxRating) conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
-    if (params.featuredOnly === true) conditions.push(eq(reviewsTable.isFeatured, true));
-    if (params.removedOnly === true) conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
-    if (params.removedOnly === false) conditions.push(eq(reviewsTable.isRemovedByAdmin, false));
+    if (params.minRating)
+      conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
+    if (params.maxRating)
+      conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
+    if (params.featuredOnly === true)
+      conditions.push(eq(reviewsTable.isFeatured, true));
+    if (params.removedOnly === true)
+      conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
+    if (params.removedOnly === false)
+      conditions.push(eq(reviewsTable.isRemovedByAdmin, false));
 
     const where = and(...conditions);
 
@@ -290,35 +302,36 @@ export class ReviewRepository {
       .from(reviewsTable)
       .where(where);
 
-    const data = await this.db.client.query.reviewsTable.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(reviewsTable.createdAt),
-      with: {
-        user: true,
-        product: {
-          with: {
-            thumbnail: true,
-            translations: true,
+    const data: ReviewWithPublicRelations[] =
+      await this.db.client.query.reviewsTable.findMany({
+        where,
+        limit,
+        offset,
+        orderBy: desc(reviewsTable.createdAt),
+        with: {
+          user: true,
+          product: {
+            with: {
+              thumbnail: true,
+              translations: true,
+            },
+          },
+          orderItem: {
+            with: {
+              order: true,
+            },
+          },
+          images: {
+            orderBy: asc(reviewImagesTable.displayOrder),
+            with: {
+              media: true,
+            },
+          },
+          reports: {
+            orderBy: desc(reviewReportsTable.createdAt),
           },
         },
-        orderItem: {
-          with: {
-            order: true,
-          },
-        },
-        images: {
-          orderBy: asc(reviewImagesTable.displayOrder),
-          with: {
-            media: true,
-          },
-        },
-        reports: {
-          orderBy: desc(reviewReportsTable.createdAt),
-        },
-      },
-    });
+      });
 
     return {
       data,
@@ -331,7 +344,10 @@ export class ReviewRepository {
     };
   }
 
-  async listPublicProductReviews(productId: string, params: ReviewListParams = {}) {
+  async listPublicProductReviews(
+    productId: string,
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithPublicRelations>> {
     return this.listProductReviews(productId, {
       ...params,
       status: ReviewStatusEnum.APPROVED,
@@ -343,7 +359,9 @@ export class ReviewRepository {
     const [product] = await this.db.client
       .select({ id: productsTable.id })
       .from(productsTable)
-      .where(and(eq(productsTable.id, productId), eq(productsTable.shopId, shopId)))
+      .where(
+        and(eq(productsTable.id, productId), eq(productsTable.shopId, shopId)),
+      )
       .limit(1);
 
     return Boolean(product);
@@ -383,12 +401,16 @@ export class ReviewRepository {
       .orderBy(desc(reviewReportsTable.createdAt));
   }
 
-  async listAdminReviews(params: ReviewListParams = {}) {
+  async listAdminReviews(
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithAdminRelations>> {
     return this.listProductReviewsForAdmin(params);
   }
 
-  async getReviewById(reviewId: string) {
-    return this.db.client.query.reviewsTable.findFirst({
+  async getReviewById(
+    reviewId: string,
+  ): Promise<ReviewWithAdminRelations | null> {
+    const review = await this.db.client.query.reviewsTable.findFirst({
       where: eq(reviewsTable.id, reviewId),
       with: {
         user: true,
@@ -423,6 +445,8 @@ export class ReviewRepository {
         },
       },
     });
+
+    return review ?? null;
   }
 
   async updateReviewStatus(reviewId: string, status: TReviewStatus) {
@@ -435,7 +459,11 @@ export class ReviewRepository {
     return review ?? null;
   }
 
-  async setReviewFeatured(reviewId: string, adminId: string, featured: boolean) {
+  async setReviewFeatured(
+    reviewId: string,
+    adminId: string,
+    featured: boolean,
+  ) {
     const [review] = await this.db.client
       .update(reviewsTable)
       .set({
@@ -461,7 +489,7 @@ export class ReviewRepository {
         isRemovedByAdmin: removed,
         removedByAdminAt: removed ? new Date() : null,
         removedByAdminId: removed ? adminId : null,
-        removedReason: removed ? (removedReason?.trim() || null) : null,
+        removedReason: removed ? removedReason?.trim() || null : null,
       })
       .where(eq(reviewsTable.id, reviewId))
       .returning();
@@ -487,9 +515,14 @@ export class ReviewRepository {
     return report ?? null;
   }
 
-  async listFeaturedPublicReviews(limit = 10) {
+  async listFeaturedPublicReviews(
+    limit = 10,
+  ): Promise<ReviewWithFeaturedRelations[]> {
     return this.db.client.query.reviewsTable.findMany({
-      where: and(eq(reviewsTable.isFeatured, true), eq(reviewsTable.isRemovedByAdmin, false)),
+      where: and(
+        eq(reviewsTable.isFeatured, true),
+        eq(reviewsTable.isRemovedByAdmin, false),
+      ),
       orderBy: desc(reviewsTable.featuredAt),
       limit,
       with: {
@@ -515,7 +548,9 @@ export class ReviewRepository {
     return new Map(rows.map((review) => [review.orderItemId, review]));
   }
 
-  private async listProductReviewsForAdmin(params: ReviewListParams = {}) {
+  private async listProductReviewsForAdmin(
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithAdminRelations>> {
     const page = params.page ?? 1;
     const limit = params.limit ?? 10;
     const offset = (page - 1) * limit;
@@ -523,10 +558,14 @@ export class ReviewRepository {
 
     if (params.status) conditions.push(eq(reviewsTable.status, params.status));
     if (params.rating) conditions.push(eq(reviewsTable.rating, params.rating));
-    if (params.minRating) conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
-    if (params.maxRating) conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
-    if (params.featuredOnly === true) conditions.push(eq(reviewsTable.isFeatured, true));
-    if (params.removedOnly === true) conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
+    if (params.minRating)
+      conditions.push(sql`${reviewsTable.rating} >= ${params.minRating}`);
+    if (params.maxRating)
+      conditions.push(sql`${reviewsTable.rating} <= ${params.maxRating}`);
+    if (params.featuredOnly === true)
+      conditions.push(eq(reviewsTable.isFeatured, true));
+    if (params.removedOnly === true)
+      conditions.push(eq(reviewsTable.isRemovedByAdmin, true));
     if (params.reportedOnly === true) {
       conditions.push(
         sql`exists (select 1 from review_reports rr where rr.review_id = ${reviewsTable.id})`,
@@ -540,44 +579,45 @@ export class ReviewRepository {
       .from(reviewsTable)
       .where(where);
 
-    const data = await this.db.client.query.reviewsTable.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(reviewsTable.createdAt),
-      with: {
-        user: true,
-        product: {
-          with: {
-            thumbnail: true,
-            translations: true,
-            shop: {
-              with: {
-                translations: true,
+    const data: ReviewWithAdminRelations[] =
+      await this.db.client.query.reviewsTable.findMany({
+        where,
+        limit,
+        offset,
+        orderBy: desc(reviewsTable.createdAt),
+        with: {
+          user: true,
+          product: {
+            with: {
+              thumbnail: true,
+              translations: true,
+              shop: {
+                with: {
+                  translations: true,
+                },
               },
             },
           },
-        },
-        orderItem: {
-          with: {
-            order: true,
+          orderItem: {
+            with: {
+              order: true,
+            },
+          },
+          images: {
+            orderBy: asc(reviewImagesTable.displayOrder),
+            with: {
+              media: true,
+            },
+          },
+          reports: {
+            orderBy: desc(reviewReportsTable.createdAt),
+            with: {
+              reportedBySeller: true,
+              resolvedByAdmin: true,
+            },
           },
         },
-        images: {
-          orderBy: asc(reviewImagesTable.displayOrder),
-          with: {
-            media: true,
-          },
-        },
-        reports: {
-          orderBy: desc(reviewReportsTable.createdAt),
-          with: {
-            reportedBySeller: true,
-            resolvedByAdmin: true,
-          },
-        },
-      },
-    });
+      });
 
     return {
       data,
