@@ -62,7 +62,7 @@ export const shopVerificationTable = pgTable('shop_verification', {
 ### 1.2 Generate Migration
 
 ```bash
-cd byte-forge-auth
+cd byte-forge-backend
 pnpm db:generate
 pnpm db:migrate:docker
 ```

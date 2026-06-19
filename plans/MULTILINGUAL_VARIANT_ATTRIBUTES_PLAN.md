@@ -2,7 +2,7 @@
 
 ## Overview
 
-This plan addresses multilingual support for plant variant attributes in the byte-forge-auth project. The solution uses a **canonical values + translation table** approach to maintain database filtering capabilities while supporting multiple languages.
+This plan addresses multilingual support for plant variant attributes in the byte-forge-backend project. The solution uses a **canonical values + translation table** approach to maintain database filtering capabilities while supporting multiple languages.
 
 ## Architectural Pattern: English-as-Default (Special Case)
 

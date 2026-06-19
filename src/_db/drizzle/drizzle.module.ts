@@ -29,7 +29,7 @@ import { DRIZZLE } from './types/drizzle.token';
           password: dbPass,
           database: dbName,
           ssl:
-            configService.get('NODE_ENV') === 'production'
+            configService.get('DB_SSL') === 'true'
               ? { rejectUnauthorized: false }
               : false,
           max: 20,

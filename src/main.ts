@@ -18,7 +18,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['health'] });
 
   app.use(cookieParser());
   process.on('unhandledRejection', (reason, promise) => {

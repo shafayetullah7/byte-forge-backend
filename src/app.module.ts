@@ -37,6 +37,7 @@ import { JwtModule } from '@nestjs/jwt';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import morgan = require('morgan');
 import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware';
+import { HealthModule } from './common/modules/health/health.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware
     CartAccessGuardModule,
     EventsModule,
     AppEnvModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [

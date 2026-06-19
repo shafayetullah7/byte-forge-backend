@@ -13,6 +13,7 @@ export const envSchema = z.object({
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),
+  DB_SSL: z.enum(['true', 'false']).default('false'),
 
   // DATABASE_URL: z.string().url().optional(),
   // === Docker Compose ===
