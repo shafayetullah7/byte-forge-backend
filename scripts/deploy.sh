@@ -70,7 +70,8 @@ ENVSUBST_VARS='$NODE_ENV $PORT $APP_NAME $DB_HOST $DB_PORT $DB_USER $DB_PASSWORD
 envsubst "$ENVSUBST_VARS" < scripts/deploy.env.template > .env.production
 
 NODE_ENV=production DOCKER_BUILD_TARGET=production \
-  docker compose --env-file .env.production up -d --build --remove-orphans
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+    --env-file .env.production up -d --build --remove-orphans
 
 echo "Waiting for health check..."
 for _ in $(seq 1 30); do
