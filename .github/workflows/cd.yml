@@ -137,7 +137,7 @@ jobs:
           cd "$DEPLOY_DIR"
 
           test -d .git || { echo "No git repo at $DEPLOY_DIR"; exit 1; }
-          git remote get-url origin | grep -q 'byte-forge-auth' || { echo "Unexpected git remote"; exit 1; }
+          git remote get-url origin | grep -q 'byte-forge-backend' || { echo "Unexpected git remote"; exit 1; }
           command -v docker >/dev/null || { echo "docker not found"; exit 1; }
           command -v envsubst >/dev/null || { echo "envsubst not found"; exit 1; }
 
