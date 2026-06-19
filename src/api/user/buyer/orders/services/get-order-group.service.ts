@@ -16,6 +16,12 @@ import {
   TMedia,
 } from '@/_db/drizzle/schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
+import { mapStatusHistoryActor } from '@/api/user/seller/orders/map-status-history-actor.util';
+import type { TPaymentMethodRow } from '@/_db/drizzle/schema/payment/payment-methods.schema';
+import { ReviewRepository } from '@/_repositories/review/review.repository/review.repository';
+import { OrderStatusEnum } from '@/_db/drizzle/enum';
+import type { TReview } from '@/_db/drizzle/schema';
 
 // ─── Query Result Types ──────────────────────────────────────────────────────
 
@@ -33,8 +39,24 @@ interface OrderWithRelations extends TOrder {
   statusHistory: TOrderStatusHistory[];
   shop: {
     id: string;
+    ownerId: string;
     logo: TMedia | null;
     translations: TShopTranslation[];
+  } | null;
+  paymentMethodCatalog:
+    | (TPaymentMethodRow & {
+        logo: TMedia | null;
+      })
+    | null;
+  shipment: {
+    id: string;
+    trackingNumber: string | null;
+    carrier: string | null;
+    shippingMethod: string | null;
+    status: string;
+    shippedAt: Date | null;
+    deliveredAt: Date | null;
+    estimatedDelivery: Date | null;
   } | null;
 }
 
@@ -46,7 +68,10 @@ interface OrderGroupWithRelations extends TOrderGroup {
 
 @Injectable()
 export class GetOrderGroupService {
-  constructor(private readonly db: DrizzleService) {}
+  constructor(
+    private readonly db: DrizzleService,
+    private readonly reviewRepository: ReviewRepository,
+  ) {}
 
   async execute(userId: string, groupId: string, lang: string = 'en') {
     const group = await this.fetchGroupWithDetails(groupId, userId, lang);
@@ -55,7 +80,13 @@ export class GetOrderGroupService {
       throw new NotFoundException('Order group not found');
     }
 
-    return this.mapGroupResponse(group, lang);
+    const itemIds = group.orders.flatMap((order) =>
+      order.items.map((item) => item.id),
+    );
+    const reviewByOrderItem =
+      await this.reviewRepository.getReviewStatusesForOrderItems(itemIds);
+
+    return this.mapGroupResponse(group, lang, userId, reviewByOrderItem);
   }
 
   private async fetchGroupWithDetails(
@@ -86,6 +117,9 @@ export class GetOrderGroupService {
             address: true,
             statusHistory: {
               orderBy: orderStatusHistoryTable.createdAt,
+              with: {
+                changedByUser: true,
+              },
             },
             shop: {
               with: {
@@ -95,6 +129,12 @@ export class GetOrderGroupService {
                 logo: true,
               },
             },
+            paymentMethodCatalog: {
+              with: {
+                logo: true,
+              },
+            },
+            shipment: true,
           },
         },
       },
@@ -103,17 +143,29 @@ export class GetOrderGroupService {
     return group ?? null;
   }
 
-  private mapGroupResponse(group: OrderGroupWithRelations, lang: string) {
+  private mapGroupResponse(
+    group: OrderGroupWithRelations,
+    lang: string,
+    userId: string,
+    reviewByOrderItem: Map<string, TReview>,
+  ) {
     return {
       id: group.id,
       totalAmount: group.totalAmount,
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
-      orders: group.orders.map((order) => this.mapOrderResponse(order, lang)),
+      orders: group.orders.map((order) =>
+        this.mapOrderResponse(order, lang, userId, reviewByOrderItem),
+      ),
     };
   }
 
-  private mapOrderResponse(order: OrderWithRelations, lang: string) {
+  private mapOrderResponse(
+    order: OrderWithRelations,
+    lang: string,
+    userId: string,
+    reviewByOrderItem: Map<string, TReview>,
+  ) {
     const shopTranslation = resolveTranslation<TShopTranslation>(
       order.shop?.translations,
       lang,
@@ -129,7 +181,11 @@ export class GetOrderGroupService {
       shopLogo,
       status: order.status,
       paymentStatus: order.paymentStatus,
-      paymentMethod: order.paymentMethod,
+      ...mapOrderPaymentMethod(
+        order.paymentMethod,
+        order.paymentMethodId,
+        order.paymentMethodCatalog,
+      ),
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       tax: order.tax,
@@ -137,6 +193,7 @@ export class GetOrderGroupService {
       notes: order.notes,
       cancelledAt: order.cancelledAt,
       cancelledReason: order.cancelledReason,
+      buyerDeliveryConfirmedAt: order.buyerDeliveryConfirmedAt,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       address: order.address
@@ -154,24 +211,59 @@ export class GetOrderGroupService {
             deliveryInstructions: order.address.deliveryInstructions,
           }
         : null,
-      items: order.items.map((item) => this.mapItemResponse(item, lang)),
-      statusHistory: order.statusHistory.map((history) => ({
-        id: history.id,
-        fromStatus: history.fromStatus,
-        toStatus: history.toStatus,
-        notes: history.notes,
-        createdAt: history.createdAt,
-      })),
+      items: order.items.map((item) =>
+        this.mapItemResponse(item, lang, order.status, reviewByOrderItem),
+      ),
+      statusHistory: order.statusHistory.map((history) => {
+        const { actor, actorLabel } = mapStatusHistoryActor(
+          history,
+          userId,
+          order.shop?.ownerId ?? null,
+          shopName,
+        );
+        return {
+          id: history.id,
+          fromStatus: history.fromStatus,
+          toStatus: history.toStatus,
+          notes: history.notes,
+          createdAt: history.createdAt,
+          actor,
+          actorLabel,
+        };
+      }),
+      shipment: order.shipment
+        ? {
+            id: order.shipment.id,
+            trackingNumber: order.shipment.trackingNumber,
+            carrier: order.shipment.carrier,
+            shippingMethod: order.shipment.shippingMethod,
+            status: order.shipment.status,
+            shippedAt: order.shipment.shippedAt,
+            deliveredAt: order.shipment.deliveredAt,
+            estimatedDelivery: order.shipment.estimatedDelivery,
+          }
+        : null,
     };
   }
 
-  private mapItemResponse(item: OrderItemWithProduct, lang: string) {
+  private mapItemResponse(
+    item: OrderItemWithProduct,
+    lang: string,
+    orderStatus: string,
+    reviewByOrderItem: Map<string, TReview>,
+  ) {
     const productTranslation = resolveTranslation<TProductTranslation>(
       item.product?.translations,
       lang,
     );
+    const review = reviewByOrderItem.get(item.id);
+    const isReviewableStatus =
+      orderStatus === OrderStatusEnum.DELIVERED ||
+      orderStatus === OrderStatusEnum.COMPLETED;
+
     return {
       id: item.id,
+      productId: item.productId,
       productName: productTranslation?.name ?? item.productName,
       variantTitle: item.variantTitle,
       sku: item.sku,
@@ -181,6 +273,9 @@ export class GetOrderGroupService {
       thumbnail: item.product?.thumbnail
         ? { id: item.product.thumbnail.id, url: item.product.thumbnail.url }
         : null,
+      canReview: isReviewableStatus && !review,
+      reviewId: review?.id ?? null,
+      reviewStatus: review?.status ?? null,
     };
   }
 }

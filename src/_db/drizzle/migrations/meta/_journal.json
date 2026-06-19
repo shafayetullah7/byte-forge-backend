@@ -533,6 +533,41 @@
       "when": 1780552995620,
       "tag": "0077_lumpy_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1781709041362,
+      "tag": "0078_premium_ultimo",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1781709702217,
+      "tag": "0079_gigantic_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1781747755511,
+      "tag": "0080_lame_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1781756644919,
+      "tag": "0081_silky_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1781795496310,
+      "tag": "0082_spooky_human_fly",
+      "breakpoints": true
     }
   ]
 }

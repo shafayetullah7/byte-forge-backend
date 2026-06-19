@@ -1,0 +1,11 @@
+# Structure and Naming Rules
+
+- Place HTTP features under `src/api/<actor>/<feature>/`.
+- Keep data-access logic in `_repositories/**`.
+- Keep shared logic in `src/common/**`.
+- Follow existing naming conventions:
+  - `*.controller.ts`
+  - `*.service.ts`
+  - `*.module.ts`
+  - `dto/*.dto.ts`
+- Reuse existing helpers/services before creating duplicate utilities.

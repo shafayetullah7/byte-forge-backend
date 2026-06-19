@@ -1,0 +1,8 @@
+# Drizzle and DB Safety Rules
+
+- Update schema source under `src/_db/drizzle/schema/**` for data model changes.
+- Keep enums centralized and reused from drizzle enum files.
+- Do not hand-edit generated migration snapshots/journal.
+- Use transactions for coupled multi-step writes.
+- For state-dependent mutations, lock/read current row state before updating.
+- Keep history/audit persistence for lifecycle transitions.

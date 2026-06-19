@@ -17,6 +17,8 @@ import { orderItemsTable } from './order-items.schema';
 import { orderStatusHistoryTable } from './order-status-history.schema';
 import { orderAddressTable } from './order-address.schema';
 import { orderGroupsTable } from './order-groups.schema';
+import { paymentMethodsTable } from '../payment/payment-methods.schema';
+import { shipmentsTable } from '../shipping/shipments.schema';
 
 export const orderStatusEnum = pgEnum('order_status_enum', [
   OrderStatusEnum.PENDING_PAYMENT,
@@ -24,6 +26,7 @@ export const orderStatusEnum = pgEnum('order_status_enum', [
   OrderStatusEnum.PROCESSING,
   OrderStatusEnum.SHIPPED,
   OrderStatusEnum.DELIVERED,
+  OrderStatusEnum.COMPLETED,
   OrderStatusEnum.CANCELLED,
   OrderStatusEnum.EXPIRED,
 ]);
@@ -72,12 +75,20 @@ export const ordersTable = pgTable(
       .default(PaymentStatusEnum.PENDING)
       .notNull(),
     paymentMethod: paymentMethodEnum('payment_method'),
+    paymentMethodId: uuid('payment_method_id').references(
+      () => paymentMethodsTable.id,
+      { onDelete: 'set null' },
+    ),
     notes: text('notes'),
     cancelledAt: timestamp('cancelled_at', {
       mode: 'date',
       withTimezone: true,
     }),
     cancelledReason: text('cancelled_reason'),
+    buyerDeliveryConfirmedAt: timestamp('buyer_delivery_confirmed_at', {
+      mode: 'date',
+      withTimezone: true,
+    }),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -94,6 +105,7 @@ export const ordersTable = pgTable(
     index('orders_order_number_idx').on(t.orderNumber),
     index('orders_created_at_idx').on(t.createdAt),
     index('orders_group_id_idx').on(t.groupId),
+    index('orders_payment_method_id_idx').on(t.paymentMethodId),
   ],
 );
 
@@ -118,5 +130,13 @@ export const ordersRelations = relations(ordersTable, ({ one, many }) => ({
   address: one(orderAddressTable, {
     fields: [ordersTable.id],
     references: [orderAddressTable.orderId],
+  }),
+  paymentMethodCatalog: one(paymentMethodsTable, {
+    fields: [ordersTable.paymentMethodId],
+    references: [paymentMethodsTable.id],
+  }),
+  shipment: one(shipmentsTable, {
+    fields: [ordersTable.id],
+    references: [shipmentsTable.orderId],
   }),
 }));

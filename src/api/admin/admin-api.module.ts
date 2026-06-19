@@ -7,6 +7,9 @@ import { AdminTagsModule } from './admin-taxonomy/tags/admin-tags.module';
 import { AdminCategoriesModule } from './admin-taxonomy/categories/admin-categories.module';
 import { AdminLanguagesModule } from './admin-i18n/languages/admin-languages.module';
 import { AdminShopModule } from './admin-shop/admin-shop.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { AdminMediaModule } from './media/admin-media.module';
+import { AdminReviewsModule } from './reviews/admin-reviews.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { AdminShopModule } from './admin-shop/admin-shop.module';
     AdminCategoriesModule,
     AdminLanguagesModule,
     AdminShopModule,
+    PaymentMethodsModule,
+    AdminMediaModule,
+    AdminReviewsModule,
   ],
   exports: [
     AdminModule,
@@ -28,6 +34,9 @@ import { AdminShopModule } from './admin-shop/admin-shop.module';
     AdminCategoriesModule,
     AdminLanguagesModule,
     AdminShopModule,
+    PaymentMethodsModule,
+    AdminMediaModule,
+    AdminReviewsModule,
   ],
 })
 export class AdminApiModule {}

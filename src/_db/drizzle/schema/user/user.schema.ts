@@ -7,6 +7,8 @@ import {
   boolean,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
+import { userLocalAuthTable } from './user.local.auth.schema';
 
 export const userTable = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -33,3 +35,10 @@ export const userTable = pgTable('users', {
 
 export type TUser = typeof userTable.$inferSelect;
 export type TNewUser = typeof userTable.$inferInsert;
+
+export const userRelations = relations(userTable, ({ one }) => ({
+  localAuth: one(userLocalAuthTable, {
+    fields: [userTable.id],
+    references: [userLocalAuthTable.userId],
+  }),
+}));

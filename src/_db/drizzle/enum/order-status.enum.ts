@@ -4,6 +4,7 @@ export const OrderStatusEnum = {
   PROCESSING: 'PROCESSING',
   SHIPPED: 'SHIPPED',
   DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
   EXPIRED: 'EXPIRED',
 } as const;

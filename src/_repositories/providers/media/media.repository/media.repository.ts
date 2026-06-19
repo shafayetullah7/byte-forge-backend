@@ -7,10 +7,12 @@ import {
 import {
   cloudinaryMediaTable,
   mediaTable,
+  TAdminUploadMedia,
   TCloudinaryMedia,
   TMedia,
   TNewMedia,
   TUserUploadMedia,
+  adminUploadMediaTable,
   userUploadMediaTable,
 } from '@/_db/drizzle/schema';
 import { PgTransaction } from 'drizzle-orm/pg-core';
@@ -31,6 +33,12 @@ import { TAllowedMimeType } from '@/_db/drizzle/enum';
 type SingleMedia = {
   media: TMedia;
   userUploadMedia: TUserUploadMedia;
+  cloudinaryMedia: TCloudinaryMedia | null;
+};
+
+type AdminSingleMedia = {
+  media: TMedia;
+  adminUploadMedia: TAdminUploadMedia;
   cloudinaryMedia: TCloudinaryMedia | null;
 };
 
@@ -74,6 +82,38 @@ export class MediaRepository implements IMediaRepository {
     return tx ? operation(executor) : this.db.transaction(operation);
   }
 
+  async createAdminMedia(
+    payload: {
+      media: TNewMedia;
+      cloudinary?: { publicKey: string };
+      adminId: string;
+    },
+    tx: DrizzleTx,
+  ): Promise<TMedia> {
+    const { media, adminId, cloudinary } = payload;
+    const executor = this.getExecutor(tx);
+
+    const operation = async (t: typeof executor) => {
+      const [createdMedia] = await t
+        .insert(mediaTable)
+        .values(media)
+        .returning();
+      await t
+        .insert(adminUploadMediaTable)
+        .values({ mediaId: createdMedia.id, adminId });
+      if (cloudinary) {
+        await t.insert(cloudinaryMediaTable).values({
+          mediaId: createdMedia.id,
+          publicKey: cloudinary.publicKey,
+        });
+      }
+
+      return createdMedia;
+    };
+
+    return tx ? operation(executor) : this.db.transaction(operation);
+  }
+
   async deleteMedia(
     mediaId: string,
     tx?: PgTransaction<any, any, any>,
@@ -87,6 +127,9 @@ export class MediaRepository implements IMediaRepository {
       await t
         .delete(userUploadMediaTable)
         .where(eq(userUploadMediaTable.mediaId, mediaId));
+      await t
+        .delete(adminUploadMediaTable)
+        .where(eq(adminUploadMediaTable.mediaId, mediaId));
 
       await t.delete(mediaTable).where(eq(mediaTable.id, mediaId));
     };
@@ -198,6 +241,72 @@ export class MediaRepository implements IMediaRepository {
     return mediaRecords;
   }
 
+  async findAdminMediaDetailsById(
+    mediaId: string,
+    transaction?: {
+      tx: DrizzleTx;
+      lock: boolean;
+    },
+  ): Promise<AdminSingleMedia | null> {
+    const executor = this.getExecutor(transaction?.tx);
+
+    const query = executor
+      .select({
+        media: getTableColumns(mediaTable),
+        adminUploadMedia: getTableColumns(adminUploadMediaTable),
+        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
+      })
+      .from(mediaTable)
+      .leftJoin(
+        cloudinaryMediaTable,
+        eq(mediaTable.id, cloudinaryMediaTable.mediaId),
+      )
+      .innerJoin(
+        adminUploadMediaTable,
+        eq(mediaTable.id, adminUploadMediaTable.mediaId),
+      )
+      .where(eq(mediaTable.id, mediaId));
+
+    const [media] = await (
+      transaction?.lock ? query.for('update', { of: mediaTable }) : query
+    ).execute();
+
+    return media ?? null;
+  }
+
+  async findAdminMediaDetailsByIds(
+    mediaIds: string[],
+    transaction?: {
+      tx: DrizzleTx;
+      lock: boolean;
+    },
+  ): Promise<AdminSingleMedia[]> {
+    if (mediaIds.length === 0) return [];
+
+    const executor = this.getExecutor(transaction?.tx);
+
+    const query = executor
+      .select({
+        media: getTableColumns(mediaTable),
+        adminUploadMedia: getTableColumns(adminUploadMediaTable),
+        cloudinaryMedia: getTableColumns(cloudinaryMediaTable),
+      })
+      .from(mediaTable)
+      .leftJoin(
+        cloudinaryMediaTable,
+        eq(mediaTable.id, cloudinaryMediaTable.mediaId),
+      )
+      .innerJoin(
+        adminUploadMediaTable,
+        eq(mediaTable.id, adminUploadMediaTable.mediaId),
+      )
+      .where(inArray(mediaTable.id, mediaIds));
+
+    return (
+      transaction?.lock ? query.for('update', { of: mediaTable }) : query
+    ).execute();
+  }
+
   verifyMediaExistence(
     requestedIds: string[],
     mediaRecords: SingleMedia[],
@@ -265,6 +374,28 @@ export class MediaRepository implements IMediaRepository {
         and(
           eq(userUploadMediaTable.userId, userId),
           inArray(userUploadMediaTable.mediaId, mediaIds),
+        ),
+      );
+
+    const ownedIds = new Set(ownedMedia.map((m) => m.mediaId));
+    return mediaIds.every((id) => ownedIds.has(id));
+  }
+
+  async verifyAdminMediaOwnership(
+    mediaIds: string[],
+    adminId: string,
+    tx: DrizzleTx,
+  ): Promise<boolean> {
+    if (mediaIds.length === 0) return true;
+
+    const executor = this.getExecutor(tx);
+    const ownedMedia = await executor
+      .select({ mediaId: adminUploadMediaTable.mediaId })
+      .from(adminUploadMediaTable)
+      .where(
+        and(
+          eq(adminUploadMediaTable.adminId, adminId),
+          inArray(adminUploadMediaTable.mediaId, mediaIds),
         ),
       );
 

@@ -1,28 +1,21 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { OrderStatusEnum } from '@/_db/drizzle/enum/order-status.enum';
 import { OrderRepository } from '@/_repositories/user/order.repository/order.repository';
-
-const CANCELABLE_STATUSES = [
-  OrderStatusEnum.PENDING_PAYMENT,
-  OrderStatusEnum.CONFIRMED,
-  OrderStatusEnum.PROCESSING,
-];
+import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
+import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
 
 @Injectable()
 export class CancelOrderService {
   constructor(
     private readonly db: DrizzleService,
     private readonly orderRepository: OrderRepository,
+    private readonly orderStatusTransitionService: OrderStatusTransitionService,
+    private readonly orderInventoryService: OrderInventoryService,
   ) {}
 
   async execute(userId: string, orderId: string, reason?: string) {
     return await this.db.transaction(async (tx) => {
-      // Find the order with a row-level lock to prevent concurrent modifications
       const order = await this.orderRepository.getOrderByIdAndUserId(
         orderId,
         userId,
@@ -33,14 +26,6 @@ export class CancelOrderService {
         throw new NotFoundException('Order not found');
       }
 
-      // Check if order can be cancelled
-      if (!(CANCELABLE_STATUSES as readonly string[]).includes(order.status)) {
-        throw new BadRequestException(
-          `Order cannot be cancelled in ${order.status} status. Only orders in PENDING_PAYMENT, CONFIRMED, or PROCESSING status can be cancelled.`,
-        );
-      }
-
-      // If already cancelled or expired, return silently
       if (
         order.status === OrderStatusEnum.CANCELLED ||
         order.status === OrderStatusEnum.EXPIRED
@@ -48,9 +33,16 @@ export class CancelOrderService {
         return order;
       }
 
-      const previousStatus = order.status;
+      this.orderStatusTransitionService.assertBuyerCanCancel(order.status);
+      this.orderStatusTransitionService.assertTransition(
+        order.status,
+        OrderStatusEnum.CANCELLED,
+      );
 
-      // Update order to cancelled
+      const previousStatus = order.status;
+      const orderItems =
+        await this.orderRepository.getOrderItemsByOrderId(orderId);
+
       const updatedOrder = await this.orderRepository.updateOrder(
         orderId,
         {
@@ -61,7 +53,18 @@ export class CancelOrderService {
         { tx },
       );
 
-      // Record status history
+      await this.orderInventoryService.releaseOrderReservation(
+        orderItems.map((item) => ({
+          variantId: item.variantId,
+          shopId: order.shopId,
+          quantity: item.quantity,
+          productName: item.productName,
+        })),
+        orderId,
+        userId,
+        tx,
+      );
+
       await this.orderRepository.createOrderStatusHistory(
         {
           orderId,

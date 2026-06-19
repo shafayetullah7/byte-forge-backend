@@ -18,9 +18,10 @@ import {
 import { eq, and, inArray, desc, like } from 'drizzle-orm';
 import { OrderStatusEnum, PaymentStatusEnum } from '@/_db/drizzle/enum';
 import type { TPaymentMethod } from '@/_db/drizzle/enum/payment-method.enum';
-import { PaymentMethodEnum } from '@/_db/drizzle/enum/payment-method.enum';
 import { computeStockStatus } from '@/api/user/buyer/cart/cart.utils';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
+import { CheckoutPaymentMethodService } from './checkout-payment-method.service';
+import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
 
 export interface PlaceOrderItem {
   id: string;
@@ -59,6 +60,8 @@ export class PlaceOrderService {
     private readonly addressRepository: UserAddressRepository,
     private readonly orderRepository: OrderRepository,
     private readonly db: DrizzleService,
+    private readonly checkoutPaymentMethodService: CheckoutPaymentMethodService,
+    private readonly orderInventoryService: OrderInventoryService,
   ) {}
 
   async execute(
@@ -70,11 +73,10 @@ export class PlaceOrderService {
     notes?: string,
     lang: string = 'en',
   ): Promise<PlaceOrderResult> {
-    if (paymentMethod !== PaymentMethodEnum.COD) {
-      throw new BadRequestException(
-        'Only Cash on Delivery (COD) is currently supported',
+    const catalogMethod =
+      await this.checkoutPaymentMethodService.resolveActivePaymentMethod(
+        paymentMethod,
       );
-    }
 
     const address = await this.addressRepository.findById(addressId);
     if (!address) {
@@ -252,7 +254,8 @@ export class PlaceOrderService {
             tax: tax.toFixed(2),
             total: shopTotal.toFixed(2),
             paymentStatus: PaymentStatusEnum.PENDING,
-            paymentMethod,
+            paymentMethod: catalogMethod.key,
+            paymentMethodId: catalogMethod.id,
             notes: notes ?? null,
           },
           { tx },
@@ -273,6 +276,18 @@ export class PlaceOrderService {
         }));
 
         await this.orderRepository.createOrderItems(orderItemsData, { tx });
+
+        await this.orderInventoryService.reserveForOrder(
+          shopItems.map((item) => ({
+            variantId: item.variantId,
+            shopId: item.shopId,
+            quantity: item.quantity,
+            productName: item.productName,
+          })),
+          order.id,
+          userId,
+          tx,
+        );
 
         await this.orderRepository.createOrderAddress(
           {
@@ -296,7 +311,7 @@ export class PlaceOrderService {
             orderId: order.id,
             fromStatus: null,
             toStatus: OrderStatusEnum.PENDING_PAYMENT,
-            notes: 'Order placed with Cash on Delivery',
+            notes: `Order placed with ${catalogMethod.displayName}`,
             changedBy: userId,
           },
           { tx },

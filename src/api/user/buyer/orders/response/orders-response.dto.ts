@@ -49,6 +49,7 @@ export class GetOrdersResponseDto {
 
 export class OrderItemDetailResponseDto {
   id: string;
+  productId: string;
   productName: string;
   variantTitle: string | null;
   sku: string | null;
@@ -56,6 +57,9 @@ export class OrderItemDetailResponseDto {
   quantity: number;
   subtotal: string;
   thumbnail: { id: string; url: string } | null;
+  canReview: boolean;
+  reviewId: string | null;
+  reviewStatus: string | null;
 }
 
 export class OrderAddressDetailResponseDto {
