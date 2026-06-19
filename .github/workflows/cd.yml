@@ -38,6 +38,7 @@ jobs:
           DB_PORT: ${{ vars.DB_PORT }}
           DB_USER: ${{ vars.DB_USER }}
           DB_NAME: ${{ vars.DB_NAME }}
+          DB_SSL: ${{ vars.DB_SSL }}
 
           COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
           APP_EXTERNAL_PORT: ${{ vars.APP_EXTERNAL_PORT }}
@@ -96,6 +97,7 @@ jobs:
           export DB_USER="$DB_USER"
           export DB_PASSWORD="$DB_PASSWORD"
           export DB_NAME="$DB_NAME"
+          export DB_SSL="$DB_SSL"
 
           export COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME"
           export APP_EXTERNAL_PORT="$APP_EXTERNAL_PORT"

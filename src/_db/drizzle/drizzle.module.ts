@@ -28,10 +28,9 @@ import { DRIZZLE } from './types/drizzle.token';
           user: dbUser,
           password: dbPass,
           database: dbName,
-          ssl:
-            configService.get('NODE_ENV') === 'production'
-              ? { rejectUnauthorized: false }
-              : false,
+          ssl: configService.get('DB_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
           max: 20,
           idleTimeoutMillis: 30000,
           connectionTimeoutMillis: 2000,
