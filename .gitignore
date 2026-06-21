@@ -45,6 +45,9 @@ lerna-debug.log*
 .env.test
 .env.production
 
+# Active docker compose environment (written by docker:* up scripts)
+.compose-active-env
+
 # temp directory
 .temp
 .tmp
