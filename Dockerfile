@@ -27,5 +27,8 @@ FROM base AS production
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/src/_db/drizzle/migrations ./src/_db/drizzle/migrations
+COPY --from=builder /app/src/_db/drizzle/schema ./src/_db/drizzle/schema
 
 CMD ["pnpm", "run", "start:prod"]

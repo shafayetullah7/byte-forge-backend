@@ -77,6 +77,9 @@ echo production > .compose-active-env
 
 pnpm docker:prod
 
+echo "Running database migrations..."
+pnpm db:migrate:docker
+
 echo "Waiting for health check..."
 for _ in $(seq 1 30); do
   if curl -fsS "http://localhost:${APP_EXTERNAL_PORT}/health" >/dev/null; then
