@@ -4,9 +4,13 @@ import { PlantsService } from './plants.service';
 import { CreatePlantService } from './services/create-plant.service';
 import { ListPlantsService } from './services/list-plants.service';
 import { GetPlantByIdService } from './services/get-plant-by-id.service';
+import { UpdatePlantService } from './services/update-plant.service';
+import { UpdatePlantStatusService } from './services/update-plant-status.service';
+import { DeletePlantService } from './services/delete-plant.service';
 import { MediaRepositoryModule } from '@/_repositories/providers/media/media.repository/media.repository.module';
 import { CategoryRepositoryModule } from '@/_repositories/library/taxonomy/category.repository.module';
 import { TagRepositoryModule } from '@/_repositories/library/taxonomy/tag.repository.module';
+import { InventoryRepositoryModule } from '@/_repositories/business/inventory.repository/inventory.repository.module';
 import { VerifiedUserAuthGuardModule } from '@/common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
 import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/shop.repository.module';
 
@@ -17,11 +21,15 @@ import { ShopRepositoryModule } from '@/_repositories/business/shop.repository/s
     CreatePlantService,
     ListPlantsService,
     GetPlantByIdService,
+    UpdatePlantService,
+    UpdatePlantStatusService,
+    DeletePlantService,
   ],
   imports: [
     MediaRepositoryModule,
     CategoryRepositoryModule,
     TagRepositoryModule,
+    InventoryRepositoryModule,
     VerifiedUserAuthGuardModule,
     ShopRepositoryModule,
   ],

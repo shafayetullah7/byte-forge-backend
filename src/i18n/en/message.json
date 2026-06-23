@@ -77,7 +77,11 @@
     "categoryInactive": "Category is not active",
     "invalidTags": "Invalid tags",
     "inactiveTags": "Some tags are not active",
-    "slugTaken": "Slug already exists"
+    "slugTaken": "Slug already exists",
+    "skuTaken": "SKU already exists",
+    "plantNotPublishable": "Plant cannot be published until required catalog fields are complete",
+    "stockFieldNotAllowedOnCatalogUpdate": "Stock fields cannot be updated via the plant catalog API. Use inventory APIs instead",
+    "cannotRemoveVariantWithOrders": "This variant has order history and was deactivated instead of removed"
   },
   "success": {
     "userCreated": "New user created",

@@ -77,7 +77,11 @@
     "categoryInactive": "বিভাগ সক্রিয় নেই",
     "invalidTags": "অবৈধ ট্যাগ",
     "inactiveTags": "কিছু ট্যাগ সক্রিয় নেই",
-    "slugTaken": "স্লাগ ইতিমধ্যে বিদ্যমান"
+    "slugTaken": "স্লাগ ইতিমধ্যে বিদ্যমান",
+    "skuTaken": "SKU ইতিমধ্যে বিদ্যমান",
+    "plantNotPublishable": "প্রয়োজনীয় ক্যাটালগ তথ্য সম্পূর্ণ না হওয়া পর্যন্ত গাছ প্রকাশ করা যাবে না",
+    "stockFieldNotAllowedOnCatalogUpdate": "স্টক ক্ষেত্র প্ল্যান্ট ক্যাটালগ API দিয়ে আপডেট করা যাবে না। ইনভেন্টরি API ব্যবহার করুন",
+    "cannotRemoveVariantWithOrders": "এই ভেরিয়েন্টের অর্ডার ইতিহাস আছে এবং সরানোর পরিবর্তে নিষ্ক্রিয় করা হয়েছে"
   },
   "success": {
     "userCreated": "নতুন ব্যবহারকারী তৈরি হয়েছে",
