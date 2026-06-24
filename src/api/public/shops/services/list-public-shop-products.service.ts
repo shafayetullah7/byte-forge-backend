@@ -37,11 +37,7 @@ export class ListPublicShopProductsService {
       where: eq(shopTable.slug, slug),
     });
 
-    if (
-      !shop ||
-      shop.status !== ShopStatusEnum.ACTIVE ||
-      !shop.isVerified
-    ) {
+    if (!shop || shop.status !== ShopStatusEnum.ACTIVE) {
       throw new NotFoundException('Shop not found');
     }
 

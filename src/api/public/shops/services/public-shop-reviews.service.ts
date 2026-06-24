@@ -16,11 +16,7 @@ export class PublicShopReviewsService {
   private async assertPublicShop(slug: string) {
     const shop = await this.shopRepository.getShopBySlug(slug);
 
-    if (
-      !shop ||
-      shop.status !== ShopStatusEnum.ACTIVE ||
-      !shop.isVerified
-    ) {
+    if (!shop || shop.status !== ShopStatusEnum.ACTIVE) {
       throw new NotFoundException('Shop not found');
     }
 

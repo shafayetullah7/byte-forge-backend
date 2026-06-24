@@ -48,10 +48,7 @@ export class ListPublicShopsService {
     const { page, limit, search, sort } = query;
     const offset = (page - 1) * limit;
 
-    const visibility = and(
-      eq(shopTable.status, ShopStatusEnum.ACTIVE),
-      eq(shopTable.isVerified, true),
-    );
+    const visibility = eq(shopTable.status, ShopStatusEnum.ACTIVE);
 
     const searchFilter = search?.trim()
       ? or(
