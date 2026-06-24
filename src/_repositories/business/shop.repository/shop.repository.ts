@@ -42,7 +42,11 @@ export class ShopRepository {
           translations: true,
           logo: true,
           banner: true,
-          shopAddressTable: true,
+          shopAddressTable: {
+            with: {
+              translations: true,
+            },
+          },
           shopContactTable: true,
         },
       })
@@ -174,6 +178,13 @@ export class ShopRepository {
     return shop;
   }
 
+  async getShopWithTranslations(shopId: string) {
+    return this.db.client.query.shopTable.findFirst({
+      where: eq(shopTable.id, shopId),
+      with: { translations: true },
+    });
+  }
+
   async getShopByOwnerId(
     ownerId: string,
     transaction?: TLockTransaction,
@@ -294,6 +305,10 @@ export class ShopRepository {
           name: payload.name,
           description: payload.description,
           businessHours: payload.businessHours,
+          tagline: payload.tagline,
+          about: payload.about,
+          sellerStory: payload.sellerStory,
+          brandMission: payload.brandMission,
         },
       })
       .returning()

@@ -573,7 +573,15 @@ export class ShopService {
 
       // 8. Upsert translations (both languages)
       if (dto.translations) {
-        // Upsert English translation
+        const shopWithTranslations =
+          await this.shopRepository.getShopWithTranslations(shopId);
+        const enCurrent = shopWithTranslations?.translations?.find(
+          (t) => t.locale === 'en',
+        );
+        const bnCurrent = shopWithTranslations?.translations?.find(
+          (t) => t.locale === 'bn',
+        );
+
         await this.shopRepository.upsertShopTranslation(
           {
             shopId,
@@ -581,11 +589,14 @@ export class ShopService {
             name: dto.translations.en.name,
             description: dto.translations.en.description || null,
             businessHours: dto.translations.en.businessHours || null,
+            tagline: enCurrent?.tagline ?? null,
+            about: enCurrent?.about ?? null,
+            sellerStory: enCurrent?.sellerStory ?? null,
+            brandMission: enCurrent?.brandMission ?? null,
           },
           tx,
         );
 
-        // Upsert Bengali translation
         await this.shopRepository.upsertShopTranslation(
           {
             shopId,
@@ -593,6 +604,10 @@ export class ShopService {
             name: dto.translations.bn.name,
             description: dto.translations.bn.description || null,
             businessHours: dto.translations.bn.businessHours || null,
+            tagline: bnCurrent?.tagline ?? null,
+            about: bnCurrent?.about ?? null,
+            sellerStory: bnCurrent?.sellerStory ?? null,
+            brandMission: bnCurrent?.brandMission ?? null,
           },
           tx,
         );

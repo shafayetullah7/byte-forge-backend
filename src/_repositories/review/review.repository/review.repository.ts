@@ -367,6 +367,121 @@ export class ReviewRepository {
     return Boolean(product);
   }
 
+  async getShopReviewSummary(shopId: string) {
+    const shopProductIds = this.db.client
+      .select({ id: productsTable.id })
+      .from(productsTable)
+      .where(eq(productsTable.shopId, shopId));
+
+    const conditions: SQL[] = [
+      eq(reviewsTable.status, ReviewStatusEnum.APPROVED),
+      eq(reviewsTable.isRemovedByAdmin, false),
+      inArray(reviewsTable.productId, shopProductIds),
+    ];
+    const where = and(...conditions);
+
+    const [summary] = await this.db.client
+      .select({
+        total: count(),
+        average: sql<string>`coalesce(avg(${reviewsTable.rating}), 0)`,
+      })
+      .from(reviewsTable)
+      .where(where);
+
+    const distributionRows = await this.db.client
+      .select({
+        rating: reviewsTable.rating,
+        count: count(),
+      })
+      .from(reviewsTable)
+      .where(where)
+      .groupBy(reviewsTable.rating);
+
+    const total = Number(summary?.total ?? 0);
+    const distribution = [5, 4, 3, 2, 1].map((rating) => {
+      const row = distributionRows.find((item) => item.rating === rating);
+      const value = Number(row?.count ?? 0);
+      return {
+        rating,
+        count: value,
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0,
+      };
+    });
+
+    return {
+      total,
+      average: Number(summary?.average ?? 0),
+      distribution,
+    };
+  }
+
+  async listPublicShopReviews(
+    shopId: string,
+    params: ReviewListParams = {},
+  ): Promise<ReviewPaginatedResult<ReviewWithPublicRelations>> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const offset = (page - 1) * limit;
+
+    const shopProductIds = this.db.client
+      .select({ id: productsTable.id })
+      .from(productsTable)
+      .where(eq(productsTable.shopId, shopId));
+
+    const conditions: SQL[] = [
+      eq(reviewsTable.status, ReviewStatusEnum.APPROVED),
+      eq(reviewsTable.isRemovedByAdmin, false),
+      inArray(reviewsTable.productId, shopProductIds),
+    ];
+    const where = and(...conditions);
+
+    const [totalRow] = await this.db.client
+      .select({ value: count() })
+      .from(reviewsTable)
+      .where(where);
+
+    const data: ReviewWithPublicRelations[] =
+      await this.db.client.query.reviewsTable.findMany({
+        where,
+        limit,
+        offset,
+        orderBy: desc(reviewsTable.createdAt),
+        with: {
+          user: true,
+          product: {
+            with: {
+              thumbnail: true,
+              translations: true,
+            },
+          },
+          orderItem: {
+            with: {
+              order: true,
+            },
+          },
+          images: {
+            orderBy: asc(reviewImagesTable.displayOrder),
+            with: {
+              media: true,
+            },
+          },
+          reports: {
+            orderBy: desc(reviewReportsTable.createdAt),
+          },
+        },
+      });
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total: totalRow?.value ?? 0,
+        pages: Math.ceil((totalRow?.value ?? 0) / limit),
+      },
+    };
+  }
+
   async getReviewByIdForSeller(reviewId: string) {
     return this.db.client.query.reviewsTable.findFirst({
       where: eq(reviewsTable.id, reviewId),

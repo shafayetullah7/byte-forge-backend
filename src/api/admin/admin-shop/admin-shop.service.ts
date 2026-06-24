@@ -93,7 +93,7 @@ export class AdminShopService {
 
       await this.shopRepository.update(
         shopId,
-        { status: ShopStatusEnum.ACTIVE },
+        { status: ShopStatusEnum.ACTIVE, isVerified: true },
         tx,
       );
 
@@ -134,6 +134,12 @@ export class AdminShopService {
       if (!verification) {
         throw new NotFoundException('Verification record not found');
       }
+
+      await this.shopRepository.update(
+        shopId,
+        { status: ShopStatusEnum.REJECTED, isVerified: false },
+        tx,
+      );
 
       await this.shopVerificationHistoryRepository.create(
         {
@@ -471,13 +477,11 @@ export class AdminShopService {
       await this.shopRepository.update(
         shopId,
         {
-          status: ShopStatusEnum.ACTIVE,
-          isVerified: true,
+          status: ShopStatusEnum.SUSPENDED,
+          isVerified: false,
         },
         tx,
       );
-
-      await this.shopVerificationRepository.findOne({ shopId }, tx);
 
       await this.shopVerificationRepository.update(
         { status: ShopVerificationStatusEnum.REJECTED },
@@ -515,8 +519,8 @@ export class AdminShopService {
       await this.shopRepository.update(
         shopId,
         {
-          status: ShopStatusEnum.ACTIVE,
-          isVerified: true,
+          status: ShopStatusEnum.INACTIVE,
+          isVerified: false,
         },
         tx,
       );

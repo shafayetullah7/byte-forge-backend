@@ -16,6 +16,10 @@ export const shopTranslationsTable = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
     businessHours: text('business_hours'),
+    tagline: varchar('tagline', { length: 255 }),
+    about: text('about'),
+    sellerStory: text('seller_story'),
+    brandMission: text('brand_mission'),
   },
   (t) => [unique().on(t.shopId, t.locale)],
 );
