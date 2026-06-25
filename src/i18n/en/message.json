@@ -167,6 +167,99 @@
       "body": "Your password reset code is:",
       "expiry": "This code will expire in <strong>15 minutes</strong>.",
       "ignore": "If you didn't request this code, please ignore this email."
+    },
+    "transactional": {
+      "orderPlacedBuyer": {
+        "subject": "Your Byte Forge order is confirmed",
+        "greeting": "Hello!",
+        "body": "Thank you for your order. Total: ৳{totalAmount}. Order numbers:\n{orderList}",
+        "cta": "View your orders",
+        "footer": "You received this email because you placed an order on Byte Forge."
+      },
+      "orderPlacedSeller": {
+        "subject": "New order {orderNumber} — {shopName}",
+        "greeting": "Hello!",
+        "body": "You have a new order {orderNumber} for ৳{total}. Please review and accept it in your seller dashboard.",
+        "cta": "View order",
+        "footer": "You received this email because you are a seller on Byte Forge."
+      },
+      "orderAccepted": {
+        "subject": "Order {orderNumber} accepted",
+        "greeting": "Hello!",
+        "body": "Good news! The seller has accepted your order {orderNumber} and is preparing it.",
+        "cta": "Track your order",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "orderPacked": {
+        "subject": "Order {orderNumber} packed",
+        "greeting": "Hello!",
+        "body": "Your order {orderNumber} has been packed and is ready to ship.",
+        "cta": "View order",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "orderShipped": {
+        "subject": "Order {orderNumber} shipped",
+        "greeting": "Hello!",
+        "body": "Your order {orderNumber} is on its way. {notes}",
+        "cta": "Track delivery",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "orderDelivered": {
+        "subject": "Order {orderNumber} delivered",
+        "greeting": "Hello!",
+        "body": "Your order {orderNumber} has been marked as delivered.",
+        "cta": "View order",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "orderDeliveryConfirmedSeller": {
+        "subject": "Buyer confirmed delivery — order {orderNumber}",
+        "greeting": "Hello!",
+        "body": "The buyer confirmed delivery for order {orderNumber}. Please confirm COD payment collection to complete the order.",
+        "cta": "Complete order",
+        "footer": "You received this email because of an update to your Byte Forge seller account."
+      },
+      "orderCompleted": {
+        "subject": "Order {orderNumber} completed",
+        "greeting": "Hello!",
+        "body": "Your order {orderNumber} is now complete. Thank you for shopping with Byte Forge!",
+        "cta": "View order",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "orderCancelledByBuyer": {
+        "subject": "Order {orderNumber} cancelled by buyer",
+        "greeting": "Hello!",
+        "body": "Order {orderNumber} was cancelled by the buyer. {notes}",
+        "cta": "View order",
+        "footer": "You received this email because of an update to your Byte Forge seller account."
+      },
+      "orderCancelledBySeller": {
+        "subject": "Order {orderNumber} cancelled",
+        "greeting": "Hello!",
+        "body": "We're sorry — order {orderNumber} was cancelled by the seller. {notes}",
+        "cta": "View order",
+        "footer": "You received this email because of an update to your Byte Forge order."
+      },
+      "shopVerificationSubmitted": {
+        "subject": "Shop verification submitted",
+        "greeting": "Hello!",
+        "body": "Your shop verification documents have been submitted. Our team will review them shortly.",
+        "cta": "View shop",
+        "footer": "You received this email because you submitted shop verification on Byte Forge."
+      },
+      "shopVerificationApproved": {
+        "subject": "Your shop is verified!",
+        "greeting": "Congratulations!",
+        "body": "Your shop has been approved and is now active on Byte Forge. You can start selling to buyers.",
+        "cta": "View shop",
+        "footer": "You received this email because of an update to your Byte Forge seller account."
+      },
+      "shopVerificationRejected": {
+        "subject": "Shop verification update",
+        "greeting": "Hello!",
+        "body": "Your shop verification was not approved. Reason: {reason}. Please update your documents and resubmit.",
+        "cta": "Update verification",
+        "footer": "You received this email because of an update to your Byte Forge seller account."
+      }
     }
   },
   "auth": {

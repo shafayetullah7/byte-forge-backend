@@ -19,6 +19,10 @@ export class AppEnvService {
     return this.configService.get('APP_NAME', { infer: true });
   }
 
+  get FRONTEND_URL() {
+    return this.configService.get('FRONTEND_URL', { infer: true });
+  }
+
   // === Database ===
   get DB_HOST() {
     return this.configService.get('DB_HOST', { infer: true });

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
@@ -16,6 +17,10 @@ import {
   mapSellerOrder,
 } from '../seller-orders.mapper';
 import { assertOrderNotStale } from '../assert-order-not-stale.util';
+import {
+  NotificationEventNames,
+  OrderStatusChangedEvent,
+} from '@/common/modules/events/events';
 
 @Injectable()
 export class ShipSellerOrderService {
@@ -24,6 +29,7 @@ export class ShipSellerOrderService {
     private readonly orderRepository: OrderRepository,
     private readonly orderStatusTransitionService: OrderStatusTransitionService,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -33,7 +39,7 @@ export class ShipSellerOrderService {
     dto: ShipOrderDto,
     lang: string,
   ) {
-    return await this.db.transaction(async (tx) => {
+    const { result, emitPayload } = await this.db.transaction(async (tx) => {
       const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
         shop.id,
@@ -136,11 +142,30 @@ export class ShipSellerOrderService {
         throw new NotFoundException('Order not found after shipping');
       }
 
-      return mapSellerOrder(
-        updated,
-        lang,
-        buildMapSellerOrderContext(shop, lang),
-      );
+      return {
+        result: mapSellerOrder(
+          updated,
+          lang,
+          buildMapSellerOrderContext(shop, lang),
+        ),
+        emitPayload: {
+          orderId,
+          orderNumber: order.orderNumber,
+          fromStatus: order.status,
+          toStatus: OrderStatusEnum.SHIPPED,
+          changedByUserId: sellerUserId,
+          shopId: shop.id,
+          buyerUserId: order.userId,
+          notes: shipNotes,
+        },
+      };
     });
+
+    this.eventEmitter.emit(
+      NotificationEventNames.ORDER_STATUS_CHANGED,
+      new OrderStatusChangedEvent(emitPayload),
+    );
+
+    return result;
   }
 }

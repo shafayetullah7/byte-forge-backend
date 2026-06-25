@@ -22,6 +22,11 @@ import { computeStockStatus } from '@/api/user/buyer/cart/cart.utils';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { CheckoutPaymentMethodService } from './checkout-payment-method.service';
 import { OrderInventoryService } from '@/common/services/order/order-inventory.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  NotificationEventNames,
+  OrderPlacedEvent,
+} from '@/common/modules/events/events';
 
 export interface PlaceOrderItem {
   id: string;
@@ -62,6 +67,7 @@ export class PlaceOrderService {
     private readonly db: DrizzleService,
     private readonly checkoutPaymentMethodService: CheckoutPaymentMethodService,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -197,7 +203,7 @@ export class PlaceOrderService {
 
     const districtName = districtResult[0]?.districtName ?? '';
 
-    return await this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       let groupTotal = 0;
       const orderResults: PlaceOrderResult['orders'] = [];
       const orderNumbers: string[] = [];
@@ -341,5 +347,23 @@ export class PlaceOrderService {
         orders: orderResults,
       };
     });
+
+    this.eventEmitter.emit(
+      NotificationEventNames.ORDER_PLACED,
+      new OrderPlacedEvent({
+        orderGroupId: result.orderGroupId,
+        buyerUserId: userId,
+        totalAmount: result.totalAmount,
+        orders: result.orders.map((o) => ({
+          orderId: o.orderId,
+          orderNumber: o.orderNumber,
+          shopId: o.shopId,
+          shopName: o.shopName,
+          total: o.total,
+        })),
+      }),
+    );
+
+    return result;
   }
 }

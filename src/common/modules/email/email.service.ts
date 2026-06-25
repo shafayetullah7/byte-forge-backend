@@ -95,4 +95,18 @@ export class EmailService {
 
     await this.provider.sendEmail({ to, subject, text, html });
   }
+
+  async sendTransactionalEmail(params: {
+    to: string;
+    subject: string;
+    text: string;
+    html: string;
+  }): Promise<void> {
+    await this.provider.sendEmail({
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    });
+  }
 }

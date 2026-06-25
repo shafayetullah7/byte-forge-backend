@@ -7,6 +7,9 @@ export const envSchema = z.object({
   PORT: z.coerce.number(),
   APP_NAME: z.string(),
 
+  // === Frontend (deep links in transactional emails) ===
+  FRONTEND_URL: z.string().url(),
+
   // === Database ===
   DB_HOST: z.string(),
   DB_PORT: z.coerce.number(),

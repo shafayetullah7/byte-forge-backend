@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { OrderRepository } from '@/_repositories/user/order.repository';
 import { OrderStatusTransitionService } from '@/common/services/order/order-status-transition.service';
@@ -11,6 +12,10 @@ import {
   mapSellerOrder,
 } from '../seller-orders.mapper';
 import { assertOrderNotStale } from '../assert-order-not-stale.util';
+import {
+  NotificationEventNames,
+  OrderStatusChangedEvent,
+} from '@/common/modules/events/events';
 
 @Injectable()
 export class CancelSellerOrderService {
@@ -19,6 +24,7 @@ export class CancelSellerOrderService {
     private readonly orderRepository: OrderRepository,
     private readonly orderStatusTransitionService: OrderStatusTransitionService,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -28,7 +34,7 @@ export class CancelSellerOrderService {
     dto: CancelSellerOrderDto,
     lang: string,
   ) {
-    return await this.db.transaction(async (tx) => {
+    const { result, emitPayload } = await this.db.transaction(async (tx) => {
       const order = await this.orderRepository.getOrderByIdAndShopId(
         orderId,
         shop.id,
@@ -53,11 +59,14 @@ export class CancelSellerOrderService {
         if (!existing) {
           throw new NotFoundException('Order not found');
         }
-        return mapSellerOrder(
-          existing,
-          lang,
-          buildMapSellerOrderContext(shop, lang),
-        );
+        return {
+          result: mapSellerOrder(
+            existing,
+            lang,
+            buildMapSellerOrderContext(shop, lang),
+          ),
+          emitPayload: null,
+        };
       }
 
       this.orderStatusTransitionService.assertSellerCanCancel(order.status);
@@ -111,11 +120,32 @@ export class CancelSellerOrderService {
         throw new NotFoundException('Order not found after cancellation');
       }
 
-      return mapSellerOrder(
-        updated,
-        lang,
-        buildMapSellerOrderContext(shop, lang),
-      );
+      return {
+        result: mapSellerOrder(
+          updated,
+          lang,
+          buildMapSellerOrderContext(shop, lang),
+        ),
+        emitPayload: {
+          orderId,
+          orderNumber: order.orderNumber,
+          fromStatus: order.status,
+          toStatus: OrderStatusEnum.CANCELLED,
+          changedByUserId: sellerUserId,
+          shopId: shop.id,
+          buyerUserId: order.userId,
+          notes: dto.reason,
+        },
+      };
     });
+
+    if (emitPayload) {
+      this.eventEmitter.emit(
+        NotificationEventNames.ORDER_STATUS_CHANGED,
+        new OrderStatusChangedEvent(emitPayload),
+      );
+    }
+
+    return result;
   }
 }

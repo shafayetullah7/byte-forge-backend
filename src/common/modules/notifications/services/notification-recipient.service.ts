@@ -1,0 +1,58 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
+import { ShopContactRepository } from '@/_repositories/business/shop.contact.repository/shop.contact.repository';
+import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
+
+export type ResolvedRecipient = {
+  email: string;
+  lang: string;
+};
+
+@Injectable()
+export class NotificationRecipientService {
+  private readonly logger = new Logger(NotificationRecipientService.name);
+
+  constructor(
+    private readonly userLocalAuthRepository: UserLocalAuthRepository,
+    private readonly shopContactRepository: ShopContactRepository,
+    private readonly shopRepository: ShopRepository,
+  ) {}
+
+  async resolveBuyer(userId: string): Promise<ResolvedRecipient | null> {
+    const auth = await this.userLocalAuthRepository.findOne({ userId });
+    if (!auth?.email) {
+      this.logger.warn(`No email found for buyer userId=${userId}`);
+      return null;
+    }
+    return { email: auth.email, lang: 'en' };
+  }
+
+  async resolveShopOwner(shopId: string): Promise<ResolvedRecipient | null> {
+    const shop = await this.shopRepository.getShopById(shopId);
+    if (!shop) {
+      this.logger.warn(`Shop not found for shopId=${shopId}`);
+      return null;
+    }
+
+    const ownerAuth = await this.userLocalAuthRepository.findOne({
+      userId: shop.ownerId,
+    });
+    if (ownerAuth?.email) {
+      return { email: ownerAuth.email, lang: 'en' };
+    }
+
+    const contact = await this.shopContactRepository.findOne({ shopId });
+    if (contact?.businessEmail) {
+      return { email: contact.businessEmail, lang: 'en' };
+    }
+
+    this.logger.warn(
+      `No email found for shop owner shopId=${shopId} ownerId=${shop.ownerId}`,
+    );
+    return null;
+  }
+
+  async resolveUser(userId: string): Promise<ResolvedRecipient | null> {
+    return this.resolveBuyer(userId);
+  }
+}
