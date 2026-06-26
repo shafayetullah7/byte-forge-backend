@@ -33,6 +33,7 @@ jobs:
           NODE_ENV: ${{ vars.NODE_ENV }}
           PORT: ${{ vars.PORT }}
           APP_NAME: ${{ vars.APP_NAME }}
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
 
           DB_HOST: ${{ vars.DB_HOST }}
           DB_PORT: ${{ vars.DB_PORT }}
@@ -91,6 +92,7 @@ jobs:
           export NODE_ENV="$NODE_ENV"
           export PORT="$PORT"
           export APP_NAME="$APP_NAME"
+          export FRONTEND_URL="$FRONTEND_URL"
 
           export DB_HOST="$DB_HOST"
           export DB_PORT="$DB_PORT"
