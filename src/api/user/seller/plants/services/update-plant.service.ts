@@ -151,7 +151,10 @@ export class UpdatePlantService {
         tx,
       );
 
-      if (previousCategoryId && previousCategoryId !== dto.plantDetails.categoryId) {
+      if (
+        previousCategoryId &&
+        previousCategoryId !== dto.plantDetails.categoryId
+      ) {
         await this.categoryRepository.decrementUsageCount(
           previousCategoryId,
           1,
@@ -371,7 +374,8 @@ export class UpdatePlantService {
         stemCount: variantDto.plantAttributes.stemCount || undefined,
         currentHeight: variantDto.plantAttributes.currentHeight || null,
         currentSpread: variantDto.plantAttributes.currentSpread || null,
-        propagationType: variantDto.plantAttributes.propagationType || undefined,
+        propagationType:
+          variantDto.plantAttributes.propagationType || undefined,
         containerType: variantDto.plantAttributes.containerType || undefined,
         containerSize: variantDto.plantAttributes.containerSize || null,
         bundleType: variantDto.plantAttributes.bundleType || null,

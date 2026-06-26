@@ -25,7 +25,12 @@ export const shopValuePointsTable = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (t) => [index('shop_value_points_shop_display_order_idx').on(t.shopId, t.displayOrder)],
+  (t) => [
+    index('shop_value_points_shop_display_order_idx').on(
+      t.shopId,
+      t.displayOrder,
+    ),
+  ],
 );
 
 export type TShopValuePoint = typeof shopValuePointsTable.$inferSelect;

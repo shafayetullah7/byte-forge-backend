@@ -1,6 +1,9 @@
 import { OtpService } from './otp.service';
 import { OTP_EXPIRY_MINUTES } from './otp.constants';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { I18nService } from 'nestjs-i18n';
 
 describe('OTP_EXPIRY_MINUTES', () => {
   it('is 5 minutes', () => {
@@ -39,9 +42,9 @@ describe('OtpService', () => {
     drizzle.client.select = mockSelect;
 
     service = new OtpService(
-      drizzle as any,
-      hashingService as any,
-      i18n as any,
+      drizzle as unknown as DrizzleService,
+      hashingService as unknown as HashingService,
+      i18n as unknown as I18nService,
     );
   });
 
@@ -80,9 +83,11 @@ describe('OtpService', () => {
         insert: jest.fn().mockReturnValue({ values: insert }),
       };
 
-      drizzle.transaction.mockImplementation(async (fn: (c: typeof conn) => Promise<void>) => {
-        await fn(conn);
-      });
+      drizzle.transaction.mockImplementation(
+        async (fn: (c: typeof conn) => Promise<void>) => {
+          await fn(conn);
+        },
+      );
 
       const before = Date.now();
       const { expiresAt } = await service.createOtp(
@@ -92,8 +97,12 @@ describe('OtpService', () => {
       const after = Date.now();
 
       const expectedMs = OTP_EXPIRY_MINUTES * 60 * 1000;
-      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + expectedMs - 1000);
-      expect(expiresAt.getTime()).toBeLessThanOrEqual(after + expectedMs + 1000);
+      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+        before + expectedMs - 1000,
+      );
+      expect(expiresAt.getTime()).toBeLessThanOrEqual(
+        after + expectedMs + 1000,
+      );
     });
   });
 });

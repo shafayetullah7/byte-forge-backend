@@ -129,7 +129,8 @@ export class UpdatePlantStatusService {
     if (!hasPricedVariant) {
       errors.push({
         field: 'variants',
-        message: 'At least one active variant with price greater than 0 is required',
+        message:
+          'At least one active variant with price greater than 0 is required',
       });
     }
 

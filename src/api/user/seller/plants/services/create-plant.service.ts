@@ -42,7 +42,7 @@ import {
   TNewPlantDetailsTags,
   TNewProductVariantTranslation,
 } from '@/_db/drizzle/schema';
-import { eq, and, like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 
 @Injectable()
 export class CreatePlantService {
@@ -136,7 +136,13 @@ export class CreatePlantService {
       const variants = await this.createVariants(product.id, dto.variants, tx);
 
       // === 12.25. Seed inventory records for variants ===
-      await this.seedInitialInventory(shopId, userId, variants, dto.variants, tx);
+      await this.seedInitialInventory(
+        shopId,
+        userId,
+        variants,
+        dto.variants,
+        tx,
+      );
 
       // === 12.5. Create variant translations (BATCH) ===
       await this.createVariantTranslations(variants, dto, tx);

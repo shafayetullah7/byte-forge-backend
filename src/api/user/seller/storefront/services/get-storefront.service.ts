@@ -20,13 +20,15 @@ function mapListItemForSeller(item: {
 }
 
 function mapProfileTranslations(
-  translations: Array<{
-    locale: string;
-    tagline: string | null;
-    about: string | null;
-    sellerStory: string | null;
-    brandMission: string | null;
-  }> | undefined,
+  translations:
+    | Array<{
+        locale: string;
+        tagline: string | null;
+        about: string | null;
+        sellerStory: string | null;
+        brandMission: string | null;
+      }>
+    | undefined,
 ) {
   const en = translations?.find((t) => t.locale === 'en');
   const bn = translations?.find((t) => t.locale === 'bn');
@@ -63,7 +65,8 @@ export class GetStorefrontService {
         this.shopStorefrontRepository.getCategoriesServed(shopId, 'bn'),
       ]);
 
-    const categoriesPreview = lang === 'bn' ? categoriesServedBn : categoriesServedEn;
+    const categoriesPreview =
+      lang === 'bn' ? categoriesServedBn : categoriesServedEn;
 
     return {
       profile: {

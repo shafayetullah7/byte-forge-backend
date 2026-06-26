@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ordersTable, productsTable, reviewsTable } from '@/_db/drizzle/schema';
-import {
-  shopAddressTable,
-  shopTable,
-  shopTranslationsTable,
-} from '@/_db/drizzle/schema/shop';
+import { shopTable, shopTranslationsTable } from '@/_db/drizzle/schema/shop';
 import {
   ShopStatusEnum,
   OrderStatusEnum,

@@ -15,7 +15,10 @@ export interface AponikaLayoutContent {
   ctaUrl?: string;
 }
 
-export function buildBilingualSubject(en: Record<string, string>, bn: Record<string, string>): string {
+export function buildBilingualSubject(
+  en: Record<string, string>,
+  bn: Record<string, string>,
+): string {
   return `${en.subject ?? ''} · ${bn.subject ?? ''}`;
 }
 
@@ -23,7 +26,14 @@ export function buildAponikaEmail(content: AponikaLayoutContent): {
   html: string;
   text: string;
 } {
-  const { en, bn, shared, enExtraHtml = '', bnExtraHtml = '', ctaUrl = '' } = content;
+  const {
+    en,
+    bn,
+    shared,
+    enExtraHtml = '',
+    bnExtraHtml = '',
+    ctaUrl = '',
+  } = content;
   const ctaLabelEn = en.cta ?? '';
   const ctaLabelBn = bn.cta ?? '';
   const ctaEnHtml = renderCtaButton(ctaLabelEn, ctaUrl);

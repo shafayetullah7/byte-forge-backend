@@ -186,7 +186,7 @@ export class ShopStorefrontRepository {
         const text = item.translations[locale].text.trim();
         await executor
           .insert(shopWhyChooseUsTranslationsTable)
-          .values({ whyChooseUsId: parentId!, locale, text })
+          .values({ whyChooseUsId: parentId, locale, text })
           .onConflictDoUpdate({
             target: [
               shopWhyChooseUsTranslationsTable.whyChooseUsId,
@@ -255,7 +255,7 @@ export class ShopStorefrontRepository {
         const text = item.translations[locale].text.trim();
         await executor
           .insert(shopValuePointTranslationsTable)
-          .values({ valuePointId: parentId!, locale, text })
+          .values({ valuePointId: parentId, locale, text })
           .onConflictDoUpdate({
             target: [
               shopValuePointTranslationsTable.valuePointId,

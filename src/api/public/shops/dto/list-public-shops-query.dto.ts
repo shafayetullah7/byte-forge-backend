@@ -5,7 +5,14 @@ import { PaginationParamsSchema } from '@/common/schemas/pagination.schema';
 export const listPublicShopsQuerySchema = PaginationParamsSchema.extend({
   category: z.string().trim().optional(),
   sort: z
-    .enum(['popular', 'rating', 'products', 'followers', 'engagement', 'newest'])
+    .enum([
+      'popular',
+      'rating',
+      'products',
+      'followers',
+      'engagement',
+      'newest',
+    ])
     .optional()
     .default('popular'),
 }).transform((data) => ({

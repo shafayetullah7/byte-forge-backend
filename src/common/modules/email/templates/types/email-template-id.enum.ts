@@ -27,7 +27,8 @@ export const LEGACY_TRANSACTIONAL_TEMPLATE_KEY_MAP: Record<
   orderPacked: EmailTemplateId.ORDERS_PACKED,
   orderShipped: EmailTemplateId.ORDERS_SHIPPED,
   orderDelivered: EmailTemplateId.ORDERS_DELIVERED,
-  orderDeliveryConfirmedSeller: EmailTemplateId.ORDERS_DELIVERY_CONFIRMED_SELLER,
+  orderDeliveryConfirmedSeller:
+    EmailTemplateId.ORDERS_DELIVERY_CONFIRMED_SELLER,
   orderCompleted: EmailTemplateId.ORDERS_COMPLETED,
   orderCancelledByBuyer: EmailTemplateId.ORDERS_CANCELLED_BY_BUYER,
   orderCancelledBySeller: EmailTemplateId.ORDERS_CANCELLED_BY_SELLER,

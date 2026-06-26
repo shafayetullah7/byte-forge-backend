@@ -1034,9 +1034,8 @@ export class ShopService {
       new ShopVerificationSubmittedEvent({ shopId, ownerId }),
     );
 
-    const updatedShop = await this.shopRepository.getShopByOwnerBranding(
-      ownerId,
-    );
+    const updatedShop =
+      await this.shopRepository.getShopByOwnerBranding(ownerId);
     return this.mapToLocalizedShopDetails(updatedShop!, lang);
   }
 

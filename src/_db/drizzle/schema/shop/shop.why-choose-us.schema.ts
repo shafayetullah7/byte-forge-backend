@@ -25,7 +25,12 @@ export const shopWhyChooseUsTable = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (t) => [index('shop_why_choose_us_shop_display_order_idx').on(t.shopId, t.displayOrder)],
+  (t) => [
+    index('shop_why_choose_us_shop_display_order_idx').on(
+      t.shopId,
+      t.displayOrder,
+    ),
+  ],
 );
 
 export type TShopWhyChooseUs = typeof shopWhyChooseUsTable.$inferSelect;

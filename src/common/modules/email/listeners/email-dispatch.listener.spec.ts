@@ -1,5 +1,6 @@
 import { EmailDispatchListener } from './email-dispatch.listener';
 import { AccountVerificationEmailSendEvent } from '@/common/modules/events/events';
+import { EmailService } from '../email.service';
 
 describe('EmailDispatchListener', () => {
   const emailService = {
@@ -11,7 +12,9 @@ describe('EmailDispatchListener', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    listener = new EmailDispatchListener(emailService as any);
+    listener = new EmailDispatchListener(
+      emailService as unknown as EmailService,
+    );
   });
 
   it('sends account verification email via template service', async () => {

@@ -45,7 +45,7 @@ export function assertNoStockFieldsOnUpdate(body: unknown): void {
   if (!Array.isArray(variants)) return;
 
   for (let i = 0; i < variants.length; i++) {
-    const variant = variants[i];
+    const variant = variants[i] as Record<string, unknown>;
     if (!variant || typeof variant !== 'object') continue;
     for (const key of STOCK_FIELD_KEYS) {
       if (key in variant) {

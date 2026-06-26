@@ -1,6 +1,17 @@
 import { UserAuthService } from './user-auth.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
 import { EmailEventNames } from '@/common/modules/events/events';
+import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { UserLocalAuthService } from './user-local-auth.service';
+import { UserService } from '../user/user.service';
+import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
+import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
+import { OtpService } from '@/common/modules/otp/otp.service';
+import { UserRepository } from '@/_repositories/user/user.repository/user.repository';
+import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { HashingService } from '@/common/modules/hashing/hashing.service';
+import { I18nService } from 'nestjs-i18n';
 
 describe('UserAuthService.sendAccountVerificationOtp', () => {
   const drizzle = {
@@ -38,17 +49,17 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new UserAuthService(
-      drizzle as any,
-      userLocalAuthService as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      otpService as any,
-      {} as any,
-      {} as any,
-      eventEmitter as any,
-      {} as any,
-      i18n as any,
+      drizzle as unknown as DrizzleService,
+      userLocalAuthService as unknown as UserLocalAuthService,
+      {} as unknown as UserService,
+      {} as unknown as UserSessionRepository,
+      {} as unknown as SessionRepository,
+      otpService as unknown as OtpService,
+      {} as unknown as UserRepository,
+      {} as unknown as UserLocalAuthRepository,
+      eventEmitter as unknown as EventEmitter2,
+      {} as unknown as HashingService,
+      i18n as unknown as I18nService,
     );
   });
 

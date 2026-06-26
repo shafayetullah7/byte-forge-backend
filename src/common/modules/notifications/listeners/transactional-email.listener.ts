@@ -50,7 +50,9 @@ export class TransactionalEmailListener {
   }
 
   @OnEvent(NotificationEventNames.ORDER_STATUS_CHANGED)
-  async handleOrderStatusChanged(event: OrderStatusChangedEvent): Promise<void> {
+  async handleOrderStatusChanged(
+    event: OrderStatusChangedEvent,
+  ): Promise<void> {
     try {
       const recipientRole = resolveOrderEmailRecipient(event.payload);
       if (!recipientRole) return;
@@ -88,10 +90,7 @@ export class TransactionalEmailListener {
         event.payload.ownerId,
       );
       if (!recipient) return;
-      await this.transactionalEmailService.sendVerificationSubmitted(
-        recipient,
-        event,
-      );
+      await this.transactionalEmailService.sendVerificationSubmitted(recipient);
     } catch (error) {
       this.logger.error(
         `Failed to send verification submitted email for shop ${event.payload.shopId}`,

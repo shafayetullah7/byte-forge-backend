@@ -14,11 +14,14 @@ export class UpdateStorefrontProfileService {
 
   async execute(shopId: string, dto: UpdateStorefrontProfileDto, lang: string) {
     await this.db.transaction(async (tx) => {
-      const existing = await this.shopRepository.getShopWithTranslations(shopId);
+      const existing =
+        await this.shopRepository.getShopWithTranslations(shopId);
 
       for (const locale of ['en', 'bn'] as const) {
         const translation = dto.translations[locale];
-        const current = existing?.translations?.find((t) => t.locale === locale);
+        const current = existing?.translations?.find(
+          (t) => t.locale === locale,
+        );
 
         if (!current?.name) {
           throw new BadRequestException('Shop translation missing');

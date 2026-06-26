@@ -37,7 +37,7 @@ describe('Email copy files', () => {
         string,
         { en?: string; bn?: string }
       >;
-      for (const [field, value] of Object.entries(copy)) {
+      for (const [, value] of Object.entries(copy)) {
         expect(value?.en).toBeTruthy();
         expect(value?.bn).toBeTruthy();
       }

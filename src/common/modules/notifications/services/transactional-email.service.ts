@@ -9,7 +9,6 @@ import type {
   OrderPlacedEvent,
   OrderStatusChangedEvent,
   ShopVerificationDecidedEvent,
-  ShopVerificationSubmittedEvent,
 } from '@/common/modules/events/events';
 import {
   resolveOrderEmailRecipient,
@@ -37,25 +36,33 @@ export class TransactionalEmailService {
       .map((o) => `• ${o.orderNumber} (${o.shopName}) — ৳${o.total}`)
       .join('\n');
 
-    await this.sendTemplate(recipient.email, EmailTemplateId.ORDERS_PLACED_BUYER, {
-      orderGroupId: payload.orderGroupId,
-      totalAmount: payload.totalAmount,
-      orderList,
-      orderCount: String(payload.orders.length),
-      viewOrdersUrl: `${this.frontendUrl}/app/orders`,
-    });
+    await this.sendTemplate(
+      recipient.email,
+      EmailTemplateId.ORDERS_PLACED_BUYER,
+      {
+        orderGroupId: payload.orderGroupId,
+        totalAmount: payload.totalAmount,
+        orderList,
+        orderCount: String(payload.orders.length),
+        viewOrdersUrl: `${this.frontendUrl}/app/orders`,
+      },
+    );
   }
 
   async sendOrderPlacedSeller(
     recipient: ResolvedRecipient,
     order: OrderPlacedEvent['payload']['orders'][number],
   ): Promise<void> {
-    await this.sendTemplate(recipient.email, EmailTemplateId.ORDERS_PLACED_SELLER, {
-      orderNumber: order.orderNumber,
-      shopName: order.shopName,
-      total: order.total,
-      viewOrderUrl: `${this.frontendUrl}/app/seller/orders/${order.orderId}`,
-    });
+    await this.sendTemplate(
+      recipient.email,
+      EmailTemplateId.ORDERS_PLACED_SELLER,
+      {
+        orderNumber: order.orderNumber,
+        shopName: order.shopName,
+        total: order.total,
+        viewOrderUrl: `${this.frontendUrl}/app/seller/orders/${order.orderId}`,
+      },
+    );
   }
 
   async sendOrderStatusChanged(
@@ -67,8 +74,7 @@ export class TransactionalEmailService {
     const templateId = LEGACY_TRANSACTIONAL_TEMPLATE_KEY_MAP[templateKey];
     if (!templateId) return;
 
-    const isSellerRecipient =
-      resolveOrderEmailRecipient(payload) === 'seller';
+    const isSellerRecipient = resolveOrderEmailRecipient(payload) === 'seller';
 
     const viewOrderUrl = isSellerRecipient
       ? `${this.frontendUrl}/app/seller/orders/${payload.orderId}`
@@ -83,10 +89,7 @@ export class TransactionalEmailService {
     });
   }
 
-  async sendVerificationSubmitted(
-    recipient: ResolvedRecipient,
-    event: ShopVerificationSubmittedEvent,
-  ): Promise<void> {
+  async sendVerificationSubmitted(recipient: ResolvedRecipient): Promise<void> {
     await this.sendTemplate(
       recipient.email,
       EmailTemplateId.SHOP_VERIFICATION_SUBMITTED,

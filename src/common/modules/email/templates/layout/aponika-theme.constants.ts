@@ -2,7 +2,7 @@
 export const APONIKA_EMAIL_THEME = {
   brandName: 'Aponika',
   maxWidth: '600px',
-  fontFamily: "Arial, Helvetica, sans-serif",
+  fontFamily: 'Arial, Helvetica, sans-serif',
   forest800: '#153a24',
   forest600: '#24633e',
   forest500: '#2d7a4d',

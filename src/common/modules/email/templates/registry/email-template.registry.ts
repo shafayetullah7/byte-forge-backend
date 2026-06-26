@@ -40,7 +40,9 @@ class EmailTemplateRegistry {
   constructor() {
     for (const template of ALL_TEMPLATES) {
       if (this.templates.has(template.id)) {
-        throw new Error(`Duplicate email template registration: ${template.id}`);
+        throw new Error(
+          `Duplicate email template registration: ${template.id}`,
+        );
       }
       this.templates.set(template.id, template);
     }

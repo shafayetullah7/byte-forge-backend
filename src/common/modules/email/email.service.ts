@@ -5,7 +5,10 @@ import { GmailProvider } from './providers/gmail.provider';
 import { ConsoleProvider } from './providers/console.provider';
 import { EmailTemplateService } from './services/email-template.service';
 import { EmailTemplateId } from './templates/types/email-template-id.enum';
-import type { EmailRenderArgs, RenderedEmail } from './templates/types/email-template.types';
+import type {
+  EmailRenderArgs,
+  RenderedEmail,
+} from './templates/types/email-template.types';
 import { OTP_EXPIRY_MINUTES } from '@/common/modules/otp/otp.constants';
 
 @Injectable()

@@ -91,10 +91,7 @@ export class PlantsService {
     return this.deletePlantService.execute(shop.id, plantId, lang);
   }
 
-  private guardAgainstStockFieldsOnUpdate(
-    body: unknown,
-    lang: string,
-  ): void {
+  private guardAgainstStockFieldsOnUpdate(body: unknown, lang: string): void {
     try {
       assertNoStockFieldsOnUpdate(body);
     } catch (error) {
