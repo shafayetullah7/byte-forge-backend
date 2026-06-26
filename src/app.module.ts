@@ -86,6 +86,7 @@ import { HealthModule } from './common/modules/health/health.module';
   ],
   controllers: [],
   providers: [
+    GuestTokenMiddleware,
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,

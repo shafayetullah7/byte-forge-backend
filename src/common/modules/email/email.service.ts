@@ -4,6 +4,7 @@ import { IEmailProvider } from './interfaces/email-provider.interface';
 import { GmailProvider } from './providers/gmail.provider';
 import { ConsoleProvider } from './providers/console.provider';
 import { I18nService } from 'nestjs-i18n';
+import { OTP_EXPIRY_MINUTES } from '@/common/modules/otp/otp.constants';
 
 @Injectable()
 export class EmailService {
@@ -44,7 +45,10 @@ export class EmailService {
       lang,
     });
     const body = this.i18n.t('message.email.verification.body', { lang });
-    const expiry = this.i18n.t('message.email.verification.expiry', { lang });
+    const expiry = this.i18n.t('message.email.verification.expiry', {
+      lang,
+      args: { minutes: OTP_EXPIRY_MINUTES },
+    });
     const ignore = this.i18n.t('message.email.verification.ignore', { lang });
 
     const text = `${greeting}\n\n${body} ${otp}\n\n${expiry.replace(/<\/?strong>/g, '')}\n\n${ignore}`;
@@ -76,7 +80,10 @@ export class EmailService {
       lang,
     });
     const body = this.i18n.t('message.email.passwordReset.body', { lang });
-    const expiry = this.i18n.t('message.email.passwordReset.expiry', { lang });
+    const expiry = this.i18n.t('message.email.passwordReset.expiry', {
+      lang,
+      args: { minutes: OTP_EXPIRY_MINUTES },
+    });
     const ignore = this.i18n.t('message.email.passwordReset.ignore', { lang });
 
     const text = `${greeting}\n\n${body} ${otp}\n\n${expiry.replace(/<\/?strong>/g, '')}\n\n${ignore}`;

@@ -24,6 +24,10 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ResponseService } from '@/common/modules/response/response.service';
+import {
+  AccountVerificationRequestedEvent,
+  AuthEventNames,
+} from '@/common/modules/events/events';
 
 // import { LocalLoginDto } from './dto/local-login.dto';
 
@@ -94,6 +98,7 @@ export class UserAuthController {
     });
 
     this.cookieService.setSessionCookie(res, result.id);
+    this.cookieService.setUserXsrfToken(res, crypto.randomUUID());
 
     const guestToken = (req as Request & { guestToken: string }).guestToken;
 
@@ -102,11 +107,27 @@ export class UserAuthController {
       guestToken,
     });
 
+    let verification: { expiresAt: Date; sent?: boolean } | undefined;
+    if (!userAuth.user.emailVerifiedAt) {
+      const results = await this.eventEmitter.emitAsync(
+        AuthEventNames.ACCOUNT_VERIFICATION_REQUESTED,
+        new AccountVerificationRequestedEvent({
+          userId: userAuth.user.id,
+          lang,
+          force: false,
+        }),
+      );
+      verification = results?.[0] as
+        | { expiresAt: Date; sent?: boolean }
+        | undefined;
+    }
+
     return this.responseService.success({
       message: this.i18n.t('message.success.userLoggedIn', { lang }),
       data: {
         session: result,
         user: userAuth.user,
+        verification,
       },
     });
   }
@@ -160,9 +181,10 @@ export class UserAuthController {
     const i18nContext = I18nContext.current();
     const lang = i18nContext ? i18nContext.lang : 'en';
 
-    const { expiresAt } = await this.userAuthService.resendVerification(
+    const { expiresAt } = await this.userAuthService.sendAccountVerificationOtp(
       auth.user.id,
       lang,
+      { force: true },
     );
 
     return this.responseService.success({

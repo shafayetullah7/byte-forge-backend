@@ -1,21 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { Response } from 'express';
+import { CookieOptions, Response } from 'express';
 import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable()
 export class CookieService {
   constructor(private readonly configService: AppConfigService) {}
 
-  setSessionCookie(res: Response, token: string) {
+  /**
+   * Shared cookie options for user-facing cross-domain auth cookies.
+   * Production: Secure + SameSite=None for cross-origin frontends.
+   * Development: relaxed for http://localhost.
+   */
+  private getUserCookieOptions(httpOnly: boolean): CookieOptions {
     const isProduction = this.configService.nodeEnv === 'production';
 
-    res.cookie('sessionId', token, {
-      httpOnly: true,
+    return {
+      httpOnly,
       secure: isProduction,
-      maxAge: this.configService.sessionMaxAge,
-      sameSite: isProduction ? 'strict' : 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       domain: isProduction ? this.configService.cookieDomain : undefined,
       path: '/',
+    };
+  }
+
+  setSessionCookie(res: Response, token: string) {
+    res.cookie('sessionId', token, {
+      ...this.getUserCookieOptions(true),
+      maxAge: this.configService.sessionMaxAge,
     });
   }
 
@@ -98,28 +109,14 @@ export class CookieService {
   }
 
   setUserXsrfToken(res: Response, token: string) {
-    const isProduction = this.configService.nodeEnv === 'production';
-
     res.cookie('userXsrfToken', token, {
-      httpOnly: false, // Must be readable by frontend
-      secure: true,
+      ...this.getUserCookieOptions(false),
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (same as refresh token)
-      sameSite: 'none',
-      domain: isProduction ? this.configService.cookieDomain : undefined,
-      path: '/',
     });
   }
 
   clearSessionCookie(res: Response) {
-    const isProduction = this.configService.nodeEnv === 'production';
-
-    res.clearCookie('sessionId', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
-      domain: isProduction ? this.configService.cookieDomain : undefined,
-      path: '/',
-    });
+    res.clearCookie('sessionId', this.getUserCookieOptions(true));
   }
 
   clearAdminSessionCookie(res: Response) {
@@ -153,7 +150,7 @@ export class CookieService {
   clearUserTokens(res: Response) {
     const isProduction = this.configService.nodeEnv === 'production';
 
-    const options = {
+    const jwtOptions = {
       httpOnly: true,
       secure: true,
       sameSite: 'none' as const,
@@ -161,20 +158,16 @@ export class CookieService {
       path: '/',
     };
 
-    res.clearCookie('userAccessToken', options);
-    res.clearCookie('userRefreshToken', options);
-    res.clearCookie('userXsrfToken', { ...options, httpOnly: false });
+    res.clearCookie('userAccessToken', jwtOptions);
+    res.clearCookie('userRefreshToken', jwtOptions);
+    res.clearCookie('userXsrfToken', this.getUserCookieOptions(false));
   }
 
   clearGuestTokenCookie(res: Response) {
-    const isProduction = this.configService.nodeEnv === 'production';
+    res.clearCookie('guestToken', this.getUserCookieOptions(true));
+  }
 
-    res.clearCookie('guestToken', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      domain: isProduction ? this.configService.cookieDomain : undefined,
-      path: '/',
-    });
+  getGuestTokenCookieOptions(): CookieOptions {
+    return this.getUserCookieOptions(true);
   }
 }

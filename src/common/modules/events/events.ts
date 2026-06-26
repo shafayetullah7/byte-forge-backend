@@ -5,6 +5,20 @@ export class UserLoggedInEvent {
   guestToken?: string;
 }
 
+export const AuthEventNames = {
+  ACCOUNT_VERIFICATION_REQUESTED: 'auth.verification.requested',
+} as const;
+
+export class AccountVerificationRequestedEvent {
+  constructor(
+    public readonly payload: {
+      userId: string;
+      lang: string;
+      force?: boolean;
+    },
+  ) {}
+}
+
 export const NotificationEventNames = {
   ORDER_PLACED: 'order.placed',
   ORDER_STATUS_CHANGED: 'order.status.changed',

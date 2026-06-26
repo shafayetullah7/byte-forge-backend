@@ -8,6 +8,8 @@ import { Request } from 'express';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import { CartContext, AccessUserAuth } from '@/common/types';
+import { AppConfigService } from '@/common/modules/app-config/app-config.service';
+import { assertUserCsrfToken } from '@/common/security/csrf';
 
 type RequestWithCart = Request & {
   guestToken?: string;
@@ -20,10 +22,14 @@ export class CartAccessGuard implements CanActivate {
   constructor(
     private readonly userSessionRepository: UserSessionRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly configService: AppConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithCart>();
+
+    assertUserCsrfToken(request, this.configService.allowedOrigins);
+
     const sessionId = request.cookies?.sessionId as string | undefined;
     const guestToken = request.guestToken;
 

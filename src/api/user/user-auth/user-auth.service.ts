@@ -193,11 +193,11 @@ export class UserAuthService {
     });
   }
 
-  async resendVerification(
+  async sendAccountVerificationOtp(
     userId: string,
     lang: string = 'en',
-  ): Promise<{ expiresAt: Date }> {
-    // Get user's email verification status
+    options?: { force?: boolean },
+  ): Promise<{ expiresAt: Date; sent: boolean }> {
     const [user] = await this.drizzle.client
       .select({
         id: userTable.id,
@@ -207,13 +207,6 @@ export class UserAuthService {
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    console.log(
-      '[DEBUG] resendVerification for user:',
-      userId,
-      'Found:',
-      !!user,
-    );
-
     if (!user) {
       throw new CustomException({
         message: this.i18n.t('message.error.userNotFound', { lang }),
@@ -222,7 +215,6 @@ export class UserAuthService {
       });
     }
 
-    // Check if already verified
     if (user.emailVerifiedAt) {
       throw new CustomException({
         message: this.i18n.t('message.error.emailAlreadyVerified', { lang }),
@@ -231,7 +223,16 @@ export class UserAuthService {
       });
     }
 
-    // Get user's local auth email
+    if (!options?.force) {
+      const existing = await this.otpService.getActiveOtpExpiry(
+        userId,
+        OtpPurpose.ACCOUNT_VERIFICATION,
+      );
+      if (existing) {
+        return { expiresAt: existing, sent: false };
+      }
+    }
+
     const localUser = await this.userLocalAuthService.getLocalUser({
       id: userId,
     });
@@ -244,24 +245,18 @@ export class UserAuthService {
       });
     }
 
-    // Generate and send OTP (handles both initial send and resend)
     const { otp, expiresAt } = await this.otpService.createOtp(
       userId,
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
-    console.log(
-      '[DEBUG] Sending verification email to:',
-      localUser.userLocalAuth.email,
-    );
-    console.log('[DEBUG] OTP generated:', otp); // REMOVE IN PRODUCTION
+
     await this.emailService.sendVerificationEmail(
       localUser.userLocalAuth.email,
       otp,
       lang,
     );
-    console.log('[DEBUG] Verification email sent successfully (service layer)');
 
-    return { expiresAt };
+    return { expiresAt, sent: true };
   }
 
   async logout(sessionId: string): Promise<void> {

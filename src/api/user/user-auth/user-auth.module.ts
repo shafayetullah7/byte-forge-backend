@@ -13,6 +13,7 @@ import { EmailModule } from '@/common/modules/email/email.module';
 import { UserRepositoryModule } from '@/_repositories/user/user.repository/user.repository.module';
 import { UserLocalAuthRepositoryModule } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository.module';
 import { EventsModule } from '@/common/modules/events/events.module';
+import { AccountVerificationEmailListener } from './listeners/account-verification-email.listener';
 
 @Module({
   imports: [
@@ -28,6 +29,11 @@ import { EventsModule } from '@/common/modules/events/events.module';
     EventsModule,
   ],
   controllers: [UserAuthController],
-  providers: [UserAuthService, UserLocalAuthService, UserAuthV2Service],
+  providers: [
+    UserAuthService,
+    UserLocalAuthService,
+    UserAuthV2Service,
+    AccountVerificationEmailListener,
+  ],
 })
 export class UserAuthModule {}

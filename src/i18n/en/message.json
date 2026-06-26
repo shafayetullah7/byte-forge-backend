@@ -158,14 +158,14 @@
       "subject": "Verify your email address",
       "greeting": "Hello!",
       "body": "Your verification code is:",
-      "expiry": "This code will expire in <strong>15 minutes</strong>.",
+      "expiry": "This code will expire in <strong>{minutes} minutes</strong>.",
       "ignore": "If you didn't request this code, please ignore this email."
     },
     "passwordReset": {
       "subject": "Reset your password",
       "greeting": "Hello!",
       "body": "Your password reset code is:",
-      "expiry": "This code will expire in <strong>15 minutes</strong>.",
+      "expiry": "This code will expire in <strong>{minutes} minutes</strong>.",
       "ignore": "If you didn't request this code, please ignore this email."
     },
     "transactional": {

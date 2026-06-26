@@ -10,6 +10,7 @@ import { CookieService } from '@/common/modules/cookie/cookie.service';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfigService } from '@/common/modules/app-config/app-config.service';
 import { AccessUserAuth } from '@/common/types';
+import { assertUserCsrfToken } from '@/common/security/csrf';
 import * as crypto from 'crypto';
 
 interface JwtPayload {
@@ -31,6 +32,9 @@ export class UserAuthJWtGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const response = context.switchToHttp().getResponse<Response>();
+
+    assertUserCsrfToken(request, this.configService.allowedOrigins);
+
     const accessToken = request.cookies?.userAccessToken as string | undefined;
 
     if (!accessToken) {
