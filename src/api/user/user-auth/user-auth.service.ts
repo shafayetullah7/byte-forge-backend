@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { UserLocalAuthService } from './user-local-auth.service';
@@ -7,7 +8,10 @@ import { DeviceInfo, TSession, TUser, userTable } from '@/_db/drizzle/schema';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import { OtpService } from '@/common/modules/otp/otp.service';
-import { EmailService } from '@/common/modules/email/email.service';
+import {
+  AccountVerificationEmailSendEvent,
+  EmailEventNames,
+} from '@/common/modules/events/events';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
@@ -28,9 +32,9 @@ export class UserAuthService {
     private readonly userSessionRepository: UserSessionRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly otpService: OtpService,
-    private readonly emailService: EmailService,
     private readonly userRepository: UserRepository,
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
+    private readonly eventEmitter: EventEmitter2,
 
     private readonly hashingService: HashingService,
     private readonly i18n: I18nService,
@@ -193,11 +197,11 @@ export class UserAuthService {
     });
   }
 
-  async resendVerification(
+  async sendAccountVerificationOtp(
     userId: string,
     lang: string = 'en',
-  ): Promise<{ expiresAt: Date }> {
-    // Get user's email verification status
+    options?: { force?: boolean },
+  ): Promise<{ expiresAt: Date; sent: boolean }> {
     const [user] = await this.drizzle.client
       .select({
         id: userTable.id,
@@ -207,13 +211,6 @@ export class UserAuthService {
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    console.log(
-      '[DEBUG] resendVerification for user:',
-      userId,
-      'Found:',
-      !!user,
-    );
-
     if (!user) {
       throw new CustomException({
         message: this.i18n.t('message.error.userNotFound', { lang }),
@@ -222,7 +219,6 @@ export class UserAuthService {
       });
     }
 
-    // Check if already verified
     if (user.emailVerifiedAt) {
       throw new CustomException({
         message: this.i18n.t('message.error.emailAlreadyVerified', { lang }),
@@ -231,7 +227,16 @@ export class UserAuthService {
       });
     }
 
-    // Get user's local auth email
+    if (!options?.force) {
+      const existing = await this.otpService.getActiveOtpExpiry(
+        userId,
+        OtpPurpose.ACCOUNT_VERIFICATION,
+      );
+      if (existing) {
+        return { expiresAt: existing, sent: false };
+      }
+    }
+
     const localUser = await this.userLocalAuthService.getLocalUser({
       id: userId,
     });
@@ -244,24 +249,21 @@ export class UserAuthService {
       });
     }
 
-    // Generate and send OTP (handles both initial send and resend)
     const { otp, expiresAt } = await this.otpService.createOtp(
       userId,
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
-    console.log(
-      '[DEBUG] Sending verification email to:',
-      localUser.userLocalAuth.email,
-    );
-    console.log('[DEBUG] OTP generated:', otp); // REMOVE IN PRODUCTION
-    await this.emailService.sendVerificationEmail(
-      localUser.userLocalAuth.email,
-      otp,
-      lang,
-    );
-    console.log('[DEBUG] Verification email sent successfully (service layer)');
 
-    return { expiresAt };
+    this.eventEmitter.emit(
+      EmailEventNames.ACCOUNT_VERIFICATION_SEND,
+      new AccountVerificationEmailSendEvent({
+        to: localUser.userLocalAuth.email,
+        otp,
+        lang,
+      }),
+    );
+
+    return { expiresAt, sent: true };
   }
 
   async logout(sessionId: string): Promise<void> {

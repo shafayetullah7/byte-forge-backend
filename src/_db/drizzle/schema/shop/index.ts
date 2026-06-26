@@ -8,4 +8,8 @@ export * from './shop.schema';
 export * from './shop.verification.schema';
 export * from './shop.verification.history.schema';
 export * from './shop.translation.schema';
+export * from './shop.why-choose-us.schema';
+export * from './shop.why-choose-us.translation.schema';
+export * from './shop.value-point.schema';
+export * from './shop.value-point.translation.schema';
 export * from './shop.shipping-rates.schema';

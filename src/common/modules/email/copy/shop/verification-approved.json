@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Your shop is verified! — Aponika",
+    "bn": "আপনার দোকান যাচাইকৃত! — অপনিকা"
+  },
+  "greeting": { "en": "Congratulations!", "bn": "অভিনন্দন!" },
+  "body": {
+    "en": "Your shop has been approved and is now active on Aponika. You can start selling to buyers.",
+    "bn": "আপনার দোকান অনুমোদিত হয়েছে এবং অপনিকায় সক্রিয়। এখন আপনি বিক্রি শুরু করতে পারেন।"
+  },
+  "cta": { "en": "View shop", "bn": "দোকান দেখুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika seller account.",
+    "bn": "আপনার অপনিকা সেলার অ্যাকাউন্ট আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

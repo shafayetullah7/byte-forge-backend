@@ -7,6 +7,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RejectShopDto } from './dto/reject-shop.dto';
 import { ShopQueryDto } from './dto/shop-query.dto';
 import { DeactivateShopDto } from './dto/deactivate-shop.dto';
@@ -24,6 +25,10 @@ import {
   ShopVerificationStatusEnum,
   ShopVerificationActionEnum,
 } from '@/_db/drizzle/enum';
+import {
+  NotificationEventNames,
+  ShopVerificationDecidedEvent,
+} from '@/common/modules/events/events';
 
 @Injectable()
 export class AdminShopService {
@@ -32,6 +37,7 @@ export class AdminShopService {
     private readonly shopRepository: ShopRepository,
     private readonly shopVerificationRepository: ShopVerificationRepository,
     private readonly shopVerificationHistoryRepository: ShopVerificationHistoryRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getPendingVerifications(query: PaginationParams) {
@@ -68,7 +74,7 @@ export class AdminShopService {
   }
 
   async approveShop(shopId: string) {
-    return this.db.transaction(async (tx) => {
+    const ownerId = await this.db.transaction(async (tx) => {
       const currentVerification = await this.shopVerificationRepository.findOne(
         { shopId },
         tx,
@@ -93,7 +99,7 @@ export class AdminShopService {
 
       await this.shopRepository.update(
         shopId,
-        { status: ShopStatusEnum.ACTIVE },
+        { status: ShopStatusEnum.ACTIVE, isVerified: true },
         tx,
       );
 
@@ -107,12 +113,27 @@ export class AdminShopService {
         tx,
       );
 
-      return verification;
+      const shop = await this.shopRepository.getShopById(shopId, { tx });
+      if (!shop) {
+        throw new NotFoundException('Shop not found');
+      }
+      return shop.ownerId;
     });
+
+    this.eventEmitter.emit(
+      NotificationEventNames.SHOP_VERIFICATION_DECIDED,
+      new ShopVerificationDecidedEvent({
+        shopId,
+        ownerId,
+        decision: 'approved',
+      }),
+    );
+
+    return this.shopVerificationRepository.findOne({ shopId });
   }
 
   async rejectShop(shopId: string, dto: RejectShopDto) {
-    return this.db.transaction(async (tx) => {
+    const { ownerId, reason } = await this.db.transaction(async (tx) => {
       const currentVerification = await this.shopVerificationRepository.findOne(
         { shopId },
         tx,
@@ -135,6 +156,12 @@ export class AdminShopService {
         throw new NotFoundException('Verification record not found');
       }
 
+      await this.shopRepository.update(
+        shopId,
+        { status: ShopStatusEnum.REJECTED, isVerified: false },
+        tx,
+      );
+
       await this.shopVerificationHistoryRepository.create(
         {
           shopId,
@@ -147,8 +174,24 @@ export class AdminShopService {
         tx,
       );
 
-      return verification;
+      const shop = await this.shopRepository.getShopById(shopId, { tx });
+      if (!shop) {
+        throw new NotFoundException('Shop not found');
+      }
+      return { ownerId: shop.ownerId, reason: dto.reason };
     });
+
+    this.eventEmitter.emit(
+      NotificationEventNames.SHOP_VERIFICATION_DECIDED,
+      new ShopVerificationDecidedEvent({
+        shopId,
+        ownerId,
+        decision: 'rejected',
+        reason,
+      }),
+    );
+
+    return this.shopVerificationRepository.findOne({ shopId });
   }
 
   async getAllShops(query: ShopQueryDto) {
@@ -471,13 +514,11 @@ export class AdminShopService {
       await this.shopRepository.update(
         shopId,
         {
-          status: ShopStatusEnum.ACTIVE,
-          isVerified: true,
+          status: ShopStatusEnum.SUSPENDED,
+          isVerified: false,
         },
         tx,
       );
-
-      await this.shopVerificationRepository.findOne({ shopId }, tx);
 
       await this.shopVerificationRepository.update(
         { status: ShopVerificationStatusEnum.REJECTED },
@@ -515,8 +556,8 @@ export class AdminShopService {
       await this.shopRepository.update(
         shopId,
         {
-          status: ShopStatusEnum.ACTIVE,
-          isVerified: true,
+          status: ShopStatusEnum.INACTIVE,
+          isVerified: false,
         },
         tx,
       );

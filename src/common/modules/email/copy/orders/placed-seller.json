@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "New order {orderNumber} — {shopName}",
+    "bn": "নতুন অর্ডার {orderNumber} — {shopName}"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "You have a new order {orderNumber} for ৳{total}. Please review and accept it in your seller dashboard.",
+    "bn": "আপনার নতুন অর্ডার {orderNumber}, মোট ৳{total}। অনুগ্রহ করে সেলার ড্যাশবোর্ডে গিয়ে অর্ডারটি গ্রহণ করুন।"
+  },
+  "cta": { "en": "View order", "bn": "অর্ডার দেখুন" },
+  "footer": {
+    "en": "You received this email because you are a seller on Aponika.",
+    "bn": "আপনি অপনিকার একজন বিক্রেতা হওয়ায় এই ইমেইল পেয়েছেন।"
+  }
+}

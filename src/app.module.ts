@@ -31,6 +31,7 @@ import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-
 import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
 import { CartAccessGuardModule } from './common/guards/cart-access-guard/cart-access-guard.module';
 import { EventsModule } from './common/modules/events/events.module';
+import { NotificationsModule } from './common/modules/notifications/notifications.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -79,11 +80,13 @@ import { HealthModule } from './common/modules/health/health.module';
     AdminAuthGuardModule,
     CartAccessGuardModule,
     EventsModule,
+    NotificationsModule,
     AppEnvModule,
     HealthModule,
   ],
   controllers: [],
   providers: [
+    GuestTokenMiddleware,
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,

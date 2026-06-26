@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppEnv } from '@/_config/env.schema';
+import { getAllowedOrigins } from '@/common/security/allowed-origins';
 
 @Injectable()
 export class AppConfigService {
@@ -79,6 +80,9 @@ export class AppConfigService {
   }
   get cookieDomain(): AppEnv['COOKIE_DOMAIN'] {
     return this.configService.getOrThrow('COOKIE_DOMAIN');
+  }
+  get allowedOrigins(): string[] {
+    return getAllowedOrigins();
   }
 
   // === Mail ===

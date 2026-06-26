@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { DrizzleTx } from '@/_db/drizzle/types';
 import { ShopRepository } from '@/_repositories/business/shop.repository/shop.repository';
@@ -26,6 +27,10 @@ import { shopAddressTable } from '@/_db/drizzle/schema/shop/shop.address.schema'
 import { shopAddressTranslationsTable } from '@/_db/drizzle/schema/shop/shop.address.translation.schema';
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import {
+  NotificationEventNames,
+  ShopVerificationSubmittedEvent,
+} from '@/common/modules/events/events';
+import {
   LocalizedShopDetails,
   ShopStatus,
   TShopWithBranding,
@@ -41,6 +46,7 @@ export class ShopService {
     private readonly shopVerificationHistoryRepository: ShopVerificationHistoryRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly i18n: I18nService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async applyAsSeller(userId: string, payload: ApplySellerDto, lang: string) {
@@ -573,7 +579,15 @@ export class ShopService {
 
       // 8. Upsert translations (both languages)
       if (dto.translations) {
-        // Upsert English translation
+        const shopWithTranslations =
+          await this.shopRepository.getShopWithTranslations(shopId);
+        const enCurrent = shopWithTranslations?.translations?.find(
+          (t) => t.locale === 'en',
+        );
+        const bnCurrent = shopWithTranslations?.translations?.find(
+          (t) => t.locale === 'bn',
+        );
+
         await this.shopRepository.upsertShopTranslation(
           {
             shopId,
@@ -581,11 +595,14 @@ export class ShopService {
             name: dto.translations.en.name,
             description: dto.translations.en.description || null,
             businessHours: dto.translations.en.businessHours || null,
+            tagline: enCurrent?.tagline ?? null,
+            about: enCurrent?.about ?? null,
+            sellerStory: enCurrent?.sellerStory ?? null,
+            brandMission: enCurrent?.brandMission ?? null,
           },
           tx,
         );
 
-        // Upsert Bengali translation
         await this.shopRepository.upsertShopTranslation(
           {
             shopId,
@@ -593,6 +610,10 @@ export class ShopService {
             name: dto.translations.bn.name,
             description: dto.translations.bn.description || null,
             businessHours: dto.translations.bn.businessHours || null,
+            tagline: bnCurrent?.tagline ?? null,
+            about: bnCurrent?.about ?? null,
+            sellerStory: bnCurrent?.sellerStory ?? null,
+            brandMission: bnCurrent?.brandMission ?? null,
           },
           tx,
         );
@@ -968,7 +989,7 @@ export class ShopService {
   }
 
   async submitForReview(shopId: string, dto: UpdateShopDto, lang: string) {
-    return this.db.transaction(async (tx) => {
+    const ownerId = await this.db.transaction(async (tx) => {
       // 1. Fetch and Lock
       const shop = await this.shopRepository.getShopById(shopId, {
         tx,
@@ -1005,11 +1026,17 @@ export class ShopService {
         tx,
       );
 
-      const updatedShop = await this.shopRepository.getShopByOwnerBranding(
-        shop.ownerId,
-      );
-      return this.mapToLocalizedShopDetails(updatedShop!, lang);
+      return shop.ownerId;
     });
+
+    this.eventEmitter.emit(
+      NotificationEventNames.SHOP_VERIFICATION_SUBMITTED,
+      new ShopVerificationSubmittedEvent({ shopId, ownerId }),
+    );
+
+    const updatedShop =
+      await this.shopRepository.getShopByOwnerBranding(ownerId);
+    return this.mapToLocalizedShopDetails(updatedShop!, lang);
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await

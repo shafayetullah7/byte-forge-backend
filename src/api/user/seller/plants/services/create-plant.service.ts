@@ -9,6 +9,8 @@ import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { CreatePlantDto } from '../dto/create-plant.dto';
 import { ProductStatusEnum, TProductStatus } from '@/_db/drizzle/enum';
+import { InventoryMovementTypeEnum } from '@/_db/drizzle/enum/inventory-movement-type.enum';
+import { InventoryRepository } from '@/_repositories/business/inventory.repository/inventory.repository';
 import {
   TLightRequirement,
   TWateringFrequency,
@@ -40,7 +42,7 @@ import {
   TNewPlantDetailsTags,
   TNewProductVariantTranslation,
 } from '@/_db/drizzle/schema';
-import { eq, and, like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 
 @Injectable()
 export class CreatePlantService {
@@ -49,6 +51,7 @@ export class CreatePlantService {
     private readonly mediaRepository: MediaRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly tagRepository: TagRepository,
+    private readonly inventoryRepository: InventoryRepository,
     private readonly i18n: I18nService,
   ) {}
 
@@ -79,10 +82,9 @@ export class CreatePlantService {
 
       // === 6. Resolve slug (validate or generate) ===
       const slug = dto.slug
-        ? await this.validateAndReturnSlug(dto.slug, shopId, tx, lang)
+        ? await this.validateAndReturnSlug(dto.slug, tx, lang)
         : await this.generateUniqueSlug(
             dto.translations.find((t) => t.locale === 'en')?.name || 'plant',
-            shopId,
             tx,
           );
 
@@ -132,6 +134,15 @@ export class CreatePlantService {
 
       // === 12. Create variants (BATCH) ===
       const variants = await this.createVariants(product.id, dto.variants, tx);
+
+      // === 12.25. Seed inventory records for variants ===
+      await this.seedInitialInventory(
+        shopId,
+        userId,
+        variants,
+        dto.variants,
+        tx,
+      );
 
       // === 12.5. Create variant translations (BATCH) ===
       await this.createVariantTranslations(variants, dto, tx);
@@ -230,15 +241,11 @@ export class CreatePlantService {
 
   private async validateAndReturnSlug(
     slug: string,
-    shopId: string,
     tx: DrizzleTx,
     lang: string,
   ): Promise<string> {
     const existing = await tx.query.productsTable.findFirst({
-      where: and(
-        eq(productsTable.slug, slug),
-        eq(productsTable.shopId, shopId),
-      ),
+      where: eq(productsTable.slug, slug),
     });
 
     if (existing) {
@@ -346,16 +353,12 @@ export class CreatePlantService {
 
   private async generateUniqueSlug(
     baseName: string,
-    shopId: string,
     tx: DrizzleTx,
   ): Promise<string> {
     const base = this.generateSlug(baseName);
 
     const existing = await tx.query.productsTable.findMany({
-      where: and(
-        eq(productsTable.shopId, shopId),
-        like(productsTable.slug, `${base}%`),
-      ),
+      where: like(productsTable.slug, `${base}%`),
       columns: { slug: true },
     });
 
@@ -367,6 +370,54 @@ export class CreatePlantService {
     let counter = 2;
     while (existingSlugs.has(`${base}-${counter}`)) counter++;
     return `${base}-${counter}`;
+  }
+
+  private async seedInitialInventory(
+    shopId: string,
+    userId: string,
+    createdVariants: Awaited<ReturnType<typeof this.createVariants>>,
+    variantDtos: CreatePlantDto['variants'],
+    tx: DrizzleTx,
+  ) {
+    for (let i = 0; i < createdVariants.length; i++) {
+      const variant = createdVariants[i];
+      const dto = variantDtos[i];
+      const initialCount = dto.inventoryCount ?? 0;
+      const lowStockThreshold = dto.lowStockThreshold ?? 5;
+
+      const inventory = await this.inventoryRepository.getOrCreateInventory(
+        variant.id,
+        shopId,
+        tx,
+        lowStockThreshold,
+      );
+
+      if (initialCount > 0) {
+        await this.inventoryRepository.update(
+          inventory.id,
+          { quantity: initialCount },
+          tx,
+        );
+
+        await this.inventoryRepository.createMovement(
+          {
+            inventoryId: inventory.id,
+            shopId,
+            movementType: InventoryMovementTypeEnum.INITIAL_STOCK,
+            quantityChange: initialCount,
+            previousQuantity: 0,
+            newQuantity: initialCount,
+            previousReserved: 0,
+            newReserved: 0,
+            referenceType: 'plant_create',
+            referenceId: variant.id,
+            reason: 'Initial stock on plant creation',
+            createdBy: userId,
+          },
+          tx,
+        );
+      }
+    }
   }
 
   // === Creation Methods (BATCH Operations) ===

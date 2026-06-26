@@ -9,11 +9,10 @@ import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '../response/dto/error.schema';
 import { HttpStatus } from '@nestjs/common';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import { OTP_EXPIRY_MINUTES } from './otp.constants';
 
 @Injectable()
 export class OtpService {
-  private readonly OTP_EXPIRY_MINUTES = 15;
-
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly hashingService: HashingService,
@@ -25,6 +24,25 @@ export class OtpService {
    */
   generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async getActiveOtpExpiry(
+    userId: string,
+    purpose: OtpPurpose,
+  ): Promise<Date | null> {
+    const [otpRecord] = await this.drizzle.client
+      .select({ expiresAt: otpTable.expiresAt })
+      .from(otpTable)
+      .where(
+        and(
+          eq(otpTable.userId, userId),
+          eq(otpTable.purpose, purpose),
+          gt(otpTable.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    return otpRecord?.expiresAt ?? null;
   }
 
   /**
@@ -39,9 +57,8 @@ export class OtpService {
     const hashedOtp = await this.hashingService.hash(otp);
 
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + this.OTP_EXPIRY_MINUTES);
+    expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
 
-    // Business Logic: Performs multiple writes, so it MUST be in a transaction
     const executeLogic = async (conn: DrizzleTx) => {
       await conn
         .delete(otpTable)
@@ -61,7 +78,7 @@ export class OtpService {
       await this.drizzle.transaction(executeLogic);
     }
 
-    return { otp, expiresAt }; // Return plain OTP and expiry
+    return { otp, expiresAt };
   }
 
   /**
@@ -85,7 +102,6 @@ export class OtpService {
     }
 
     const executeLogic = async (conn: DrizzleTx) => {
-      // Find and lock the OTP record
       const [otpRecord] = await conn
         .select()
         .from(otpTable)
@@ -97,7 +113,7 @@ export class OtpService {
           ),
         )
         .limit(1)
-        .for('update'); // Lock the row to prevent concurrent access
+        .for('update');
 
       if (!otpRecord) {
         throw new CustomException({
@@ -107,7 +123,6 @@ export class OtpService {
         });
       }
 
-      // Verify OTP
       const isValid = await this.hashingService.compare(
         otp,
         otpRecord.hashedOtp,
@@ -121,7 +136,6 @@ export class OtpService {
         });
       }
 
-      // Delete the OTP after successful verification
       await conn.delete(otpTable).where(eq(otpTable.id, otpRecord.id));
 
       return true;

@@ -568,6 +568,13 @@
       "when": 1781795496310,
       "tag": "0082_spooky_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1782273610313,
+      "tag": "0083_lively_shaman",
+      "breakpoints": true
     }
   ]
 }

@@ -77,7 +77,11 @@
     "categoryInactive": "Category is not active",
     "invalidTags": "Invalid tags",
     "inactiveTags": "Some tags are not active",
-    "slugTaken": "Slug already exists"
+    "slugTaken": "Slug already exists",
+    "skuTaken": "SKU already exists",
+    "plantNotPublishable": "Plant cannot be published until required catalog fields are complete",
+    "stockFieldNotAllowedOnCatalogUpdate": "Stock fields cannot be updated via the plant catalog API. Use inventory APIs instead",
+    "cannotRemoveVariantWithOrders": "This variant has order history and was deactivated instead of removed"
   },
   "success": {
     "userCreated": "New user created",
@@ -85,6 +89,7 @@
     "userAuthenticated": "User authenticated",
     "emailVerified": "Email verified successfully",
     "verificationSent": "Verification code sent to your email",
+    "verificationActive": "A verification code is already active. Please wait for it to expire before requesting a new one.",
     "loggedOut": "User logged out successfully",
     "userRetrieved": "User retrieved",
     "passwordResetRequested": "Password reset code sent to your email",
@@ -148,22 +153,6 @@
     "orderUpdated": "Order updated successfully",
     "orderShipped": "Order shipped successfully",
     "orderPlaced": "Order placed successfully"
-  },
-  "email": {
-    "verification": {
-      "subject": "Verify your email address",
-      "greeting": "Hello!",
-      "body": "Your verification code is:",
-      "expiry": "This code will expire in <strong>15 minutes</strong>.",
-      "ignore": "If you didn't request this code, please ignore this email."
-    },
-    "passwordReset": {
-      "subject": "Reset your password",
-      "greeting": "Hello!",
-      "body": "Your password reset code is:",
-      "expiry": "This code will expire in <strong>15 minutes</strong>.",
-      "ignore": "If you didn't request this code, please ignore this email."
-    }
   },
   "auth": {
     "sessionExpired": "Your session has expired",

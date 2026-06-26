@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Shop verification submitted — Aponika",
+    "bn": "দোকান যাচাইকরণ জমা দেওয়া হয়েছে — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Your shop verification documents have been submitted. Our team will review them shortly.",
+    "bn": "আপনার দোকান যাচাইকরণের নথি জমা দেওয়া হয়েছে। আমাদের টিম শীঘ্রই পর্যালোচনা করবে।"
+  },
+  "cta": { "en": "View shop", "bn": "দোকান দেখুন" },
+  "footer": {
+    "en": "You received this email because you submitted shop verification on Aponika.",
+    "bn": "আপনি অপনিকায় দোকান যাচাইকরণ জমা দেওয়ার কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Your Aponika order is confirmed",
+    "bn": "আপনার অপনিকা অর্ডার নিশ্চিত হয়েছে"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Thank you for your order. Total: ৳{totalAmount}. Order numbers:\n{orderList}",
+    "bn": "আপনার অর্ডারের জন্য ধন্যবাদ। মোট: ৳{totalAmount}। অর্ডার নম্বর:\n{orderList}"
+  },
+  "cta": { "en": "View your orders", "bn": "আপনার অর্ডার দেখুন" },
+  "footer": {
+    "en": "You received this email because you placed an order on Aponika.",
+    "bn": "আপনি অপনিকায় অর্ডার করার কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

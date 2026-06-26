@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Order {orderNumber} cancelled — Aponika",
+    "bn": "অর্ডার {orderNumber} বাতিল — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "We're sorry — order {orderNumber} was cancelled by the seller. {notes}",
+    "bn": "দুঃখিত — অর্ডার {orderNumber} বিক্রেতা বাতিল করেছেন। {notes}"
+  },
+  "cta": { "en": "View order", "bn": "অর্ডার দেখুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika order.",
+    "bn": "আপনার অপনিকা অর্ডার আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

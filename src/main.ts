@@ -6,6 +6,7 @@ import { VersioningType } from '@nestjs/common';
 import cookieParser = require('cookie-parser');
 import { AppEnvService } from './_config/app-env/app-env.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { getAllowedOrigins } from './common/security/allowed-origins';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -21,6 +22,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   app.use(cookieParser());
+
+  const appEnv = app.get(AppEnvService);
+
   process.on('unhandledRejection', (reason, promise) => {
     const logger = app.get(AppLoggerService);
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -39,12 +43,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3050',
-      'https://agro.aponika.com',
-    ],
+    origin: getAllowedOrigins(),
     credentials: true,
   });
 
@@ -55,8 +54,6 @@ async function bootstrap() {
   //     transform: true, // transforms to DTO classes
   //   }),
   // );
-
-  const appEnv = app.get(AppEnvService);
 
   // Swagger configuration
   const swaggerConfig = new DocumentBuilder()

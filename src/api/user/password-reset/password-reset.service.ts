@@ -1,14 +1,18 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
 import { UserLocalAuthRepository } from '@/_repositories/user/user.local.auth.repository/user.local.auth.repository';
 import { OtpService } from '@/common/modules/otp/otp.service';
-import { EmailService } from '@/common/modules/email/email.service';
 import { HashingService } from '@/common/modules/hashing/hashing.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
 import { I18nService } from 'nestjs-i18n';
+import {
+  EmailEventNames,
+  PasswordResetEmailSendEvent,
+} from '@/common/modules/events/events';
 
 export interface ResetTokenPayload {
   email: string;
@@ -22,7 +26,7 @@ export class PasswordResetService {
     private readonly configService: ConfigService,
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
     private readonly otpService: OtpService,
-    private readonly emailService: EmailService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly hashingService: HashingService,
     private readonly i18n: I18nService,
   ) {}
@@ -132,8 +136,10 @@ export class PasswordResetService {
         OtpPurpose.PASSWORD_RESET,
       );
 
-      console.log('[DEBUG] Password Reset OTP:', otp);
-      await this.emailService.sendPasswordResetEmail(email, otp, lang);
+      this.eventEmitter.emit(
+        EmailEventNames.PASSWORD_RESET_SEND,
+        new PasswordResetEmailSendEvent({ to: email, otp, lang }),
+      );
     } else {
       // Security: Simulate work to mitigate timing attacks (optional/advanced)
       // For now, we simply do not send the email but proceed to generate a token
@@ -185,15 +191,15 @@ export class PasswordResetService {
     const userLocalAuth = await this.userLocalAuthRepository.findOne({ email });
 
     if (userLocalAuth) {
-      // 3. Generate NEW OTP
       const { otp } = await this.otpService.createOtp(
         userLocalAuth.userId,
         OtpPurpose.PASSWORD_RESET,
       );
 
-      // 4. Send Email
-      console.log('[DEBUG] Resent Password Reset OTP:', otp);
-      await this.emailService.sendPasswordResetEmail(email, otp, lang);
+      this.eventEmitter.emit(
+        EmailEventNames.PASSWORD_RESET_SEND,
+        new PasswordResetEmailSendEvent({ to: email, otp, lang }),
+      );
     }
 
     // 5. Generate NEW Request Token (Always return to keep flow alive)

@@ -5,6 +5,7 @@ import { PlantsModule } from './plants/plants.module';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { ShippingRatesModule } from './shipping-rates/shipping-rates.module';
+import { StorefrontModule } from './storefront/storefront.module';
 import { SellerOrdersModule } from './orders/orders.module';
 import { SellerReviewsModule } from './reviews/seller-reviews.module';
 
@@ -15,6 +16,7 @@ import { SellerReviewsModule } from './reviews/seller-reviews.module';
     ProductsModule,
     InventoryModule,
     ShippingRatesModule,
+    StorefrontModule,
     SellerOrdersModule,
     SellerReviewsModule,
   ],

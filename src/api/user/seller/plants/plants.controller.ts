@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -170,6 +172,67 @@ export class PlantsController {
     return this.responseService.success({
       message: this.i18n.t('message.success.plantCreated', { lang }),
       data: plant,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Update plant',
+    description:
+      'Updates a plant listing. Send full catalog body or status-only for quick publish/archive.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Plant updated successfully',
+    type: PlantDetailResponseDto,
+  })
+  @ApiBadRequestResponse('Validation failed')
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Plant not found')
+  @ApiConflictResponse('Slug or SKU already exists')
+  @Patch(':id')
+  @UseGuards(VerifiedUserAuthGuard)
+  async updatePlant(
+    @Param() params: GetPlantByIdParamsDto,
+    @Body() body: Record<string, unknown>,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    const plant = await this.plantsService.updatePlant(
+      authenticUser.user.id,
+      params.id,
+      body,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantUpdated', { lang }),
+      data: plant,
+    });
+  }
+
+  @ApiAuth()
+  @ApiOperation({
+    summary: 'Delete plant',
+    description: 'Soft-deletes a plant by setting status to ARCHIVED',
+  })
+  @ApiResponse({ status: 200, description: 'Plant deleted successfully' })
+  @ApiUnauthorizedResponse()
+  @ApiNotFoundResponse('Plant not found')
+  @Delete(':id')
+  @UseGuards(VerifiedUserAuthGuard)
+  async deletePlant(
+    @Param() params: GetPlantByIdParamsDto,
+    @AuthenticUser() authenticUser: TAuthenticUser,
+    @I18nLang() lang: string,
+  ) {
+    await this.plantsService.deletePlant(
+      authenticUser.user.id,
+      params.id,
+      lang,
+    );
+    return this.responseService.success({
+      message: this.i18n.t('message.success.plantDeleted', { lang }),
+      data: null,
     });
   }
 }
