@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Shop verification update — Aponika",
+    "bn": "দোকান যাচাইকরণ আপডেট — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Your shop verification was not approved. Reason: {reason}. Please update your documents and resubmit.",
+    "bn": "আপনার দোকান যাচাইকরণ অনুমোদিত হয়নি। কারণ: {reason}। অনুগ্রহ করে নথি আপডেট করে পুনরায় জমা দিন।"
+  },
+  "cta": { "en": "Update verification", "bn": "যাচাইকরণ আপডেট করুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika seller account.",
+    "bn": "আপনার অপনিকা সেলার অ্যাকাউন্ট আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Buyer confirmed delivery — order {orderNumber}",
+    "bn": "ক্রেতা ডেলিভারি নিশ্চিত করেছেন — অর্ডার {orderNumber}"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "The buyer confirmed delivery for order {orderNumber}. Please confirm COD payment collection to complete the order.",
+    "bn": "ক্রেতা অর্ডার {orderNumber}-এর ডেলিভারি নিশ্চিত করেছেন। COD পেমেন্ট সংগ্রহ নিশ্চিত করে অর্ডার সম্পন্ন করুন।"
+  },
+  "cta": { "en": "Complete order", "bn": "অর্ডার সম্পন্ন করুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika seller account.",
+    "bn": "আপনার অপনিকা সেলার অ্যাকাউন্ট আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

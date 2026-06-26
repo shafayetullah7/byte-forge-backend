@@ -1,5 +1,6 @@
 import { UserAuthService } from './user-auth.service';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
+import { EmailEventNames } from '@/common/modules/events/events';
 
 describe('UserAuthService.sendAccountVerificationOtp', () => {
   const drizzle = {
@@ -13,8 +14,8 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
     createOtp: jest.fn(),
   };
 
-  const emailService = {
-    sendVerificationEmail: jest.fn(),
+  const eventEmitter = {
+    emit: jest.fn(),
   };
 
   const userLocalAuthService = {
@@ -43,15 +44,15 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
       {} as any,
       {} as any,
       otpService as any,
-      emailService as any,
       {} as any,
       {} as any,
+      eventEmitter as any,
       {} as any,
       i18n as any,
     );
   });
 
-  it('reuses active OTP without sending email when force is false', async () => {
+  it('reuses active OTP without emitting email when force is false', async () => {
     const existingExpiry = new Date(Date.now() + 2 * 60 * 1000);
     mockUserSelect([{ id: 'user-1', emailVerifiedAt: null }]);
     otpService.getActiveOtpExpiry.mockResolvedValue(existingExpiry);
@@ -65,11 +66,11 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
     expect(otpService.createOtp).not.toHaveBeenCalled();
-    expect(emailService.sendVerificationEmail).not.toHaveBeenCalled();
+    expect(eventEmitter.emit).not.toHaveBeenCalled();
     expect(result).toEqual({ expiresAt: existingExpiry, sent: false });
   });
 
-  it('creates OTP and sends email when force is true', async () => {
+  it('creates OTP and emits email event when force is true', async () => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     mockUserSelect([{ id: 'user-1', emailVerifiedAt: null }]);
     userLocalAuthService.getLocalUser.mockResolvedValue({
@@ -86,15 +87,20 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
       'user-1',
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
-    expect(emailService.sendVerificationEmail).toHaveBeenCalledWith(
-      'user@example.com',
-      '123456',
-      'en',
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      EmailEventNames.ACCOUNT_VERIFICATION_SEND,
+      expect.objectContaining({
+        payload: {
+          to: 'user@example.com',
+          otp: '123456',
+          lang: 'en',
+        },
+      }),
     );
     expect(result).toEqual({ expiresAt, sent: true });
   });
 
-  it('creates OTP when no active OTP exists and force is false', async () => {
+  it('creates OTP and emits email event when no active OTP exists', async () => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     mockUserSelect([{ id: 'user-1', emailVerifiedAt: null }]);
     otpService.getActiveOtpExpiry.mockResolvedValue(null);
@@ -106,7 +112,7 @@ describe('UserAuthService.sendAccountVerificationOtp', () => {
     const result = await service.sendAccountVerificationOtp('user-1', 'en');
 
     expect(otpService.createOtp).toHaveBeenCalled();
-    expect(emailService.sendVerificationEmail).toHaveBeenCalled();
+    expect(eventEmitter.emit).toHaveBeenCalled();
     expect(result).toEqual({ expiresAt, sent: true });
   });
 });

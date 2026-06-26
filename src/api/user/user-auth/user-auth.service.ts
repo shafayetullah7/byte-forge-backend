@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { CreateLocalUserDto } from './dto/create-local-user.dto';
 import { UserLocalAuthService } from './user-local-auth.service';
@@ -7,7 +8,10 @@ import { DeviceInfo, TSession, TUser, userTable } from '@/_db/drizzle/schema';
 import { UserSessionRepository } from '@/_repositories/auth/user-session-repository/user-session-repository.service';
 import { SessionRepository } from '@/_repositories/auth/session.repository/session.repository';
 import { OtpService } from '@/common/modules/otp/otp.service';
-import { EmailService } from '@/common/modules/email/email.service';
+import {
+  AccountVerificationEmailSendEvent,
+  EmailEventNames,
+} from '@/common/modules/events/events';
 import { OtpPurpose } from '@/_db/drizzle/enum/otp.purpose.enum';
 import { CustomException } from '@/common/exceptions/custom.exception';
 import { ErrorCode } from '@/common/modules/response/dto/error.schema';
@@ -28,9 +32,9 @@ export class UserAuthService {
     private readonly userSessionRepository: UserSessionRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly otpService: OtpService,
-    private readonly emailService: EmailService,
     private readonly userRepository: UserRepository,
     private readonly userLocalAuthRepository: UserLocalAuthRepository,
+    private readonly eventEmitter: EventEmitter2,
 
     private readonly hashingService: HashingService,
     private readonly i18n: I18nService,
@@ -250,10 +254,13 @@ export class UserAuthService {
       OtpPurpose.ACCOUNT_VERIFICATION,
     );
 
-    await this.emailService.sendVerificationEmail(
-      localUser.userLocalAuth.email,
-      otp,
-      lang,
+    this.eventEmitter.emit(
+      EmailEventNames.ACCOUNT_VERIFICATION_SEND,
+      new AccountVerificationEmailSendEvent({
+        to: localUser.userLocalAuth.email,
+        otp,
+        lang,
+      }),
     );
 
     return { expiresAt, sent: true };

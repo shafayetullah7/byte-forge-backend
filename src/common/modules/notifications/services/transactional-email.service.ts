@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { I18nService } from 'nestjs-i18n';
 import { AppEnvService } from '@/_config/app-env/app-env.service';
 import { EmailService } from '@/common/modules/email/email.service';
+import {
+  LEGACY_TRANSACTIONAL_TEMPLATE_KEY_MAP,
+  EmailTemplateId,
+} from '@/common/modules/email/templates/types/email-template-id.enum';
 import type {
   OrderPlacedEvent,
   OrderStatusChangedEvent,
@@ -18,7 +21,6 @@ import type { ResolvedRecipient } from './notification-recipient.service';
 export class TransactionalEmailService {
   constructor(
     private readonly emailService: EmailService,
-    private readonly i18n: I18nService,
     private readonly appEnv: AppEnvService,
   ) {}
 
@@ -35,7 +37,7 @@ export class TransactionalEmailService {
       .map((o) => `• ${o.orderNumber} (${o.shopName}) — ৳${o.total}`)
       .join('\n');
 
-    await this.sendTemplate(recipient, 'orderPlacedBuyer', {
+    await this.sendTemplate(recipient.email, EmailTemplateId.ORDERS_PLACED_BUYER, {
       orderGroupId: payload.orderGroupId,
       totalAmount: payload.totalAmount,
       orderList,
@@ -48,7 +50,7 @@ export class TransactionalEmailService {
     recipient: ResolvedRecipient,
     order: OrderPlacedEvent['payload']['orders'][number],
   ): Promise<void> {
-    await this.sendTemplate(recipient, 'orderPlacedSeller', {
+    await this.sendTemplate(recipient.email, EmailTemplateId.ORDERS_PLACED_SELLER, {
       orderNumber: order.orderNumber,
       shopName: order.shopName,
       total: order.total,
@@ -62,6 +64,9 @@ export class TransactionalEmailService {
     templateKey: string,
   ): Promise<void> {
     const { payload } = event;
+    const templateId = LEGACY_TRANSACTIONAL_TEMPLATE_KEY_MAP[templateKey];
+    if (!templateId) return;
+
     const isSellerRecipient =
       resolveOrderEmailRecipient(payload) === 'seller';
 
@@ -69,7 +74,7 @@ export class TransactionalEmailService {
       ? `${this.frontendUrl}/app/seller/orders/${payload.orderId}`
       : `${this.frontendUrl}/app/orders/${payload.orderId}`;
 
-    await this.sendTemplate(recipient, templateKey, {
+    await this.sendTemplate(recipient.email, templateId, {
       orderNumber: payload.orderNumber,
       fromStatus: payload.fromStatus,
       toStatus: payload.toStatus,
@@ -82,21 +87,25 @@ export class TransactionalEmailService {
     recipient: ResolvedRecipient,
     event: ShopVerificationSubmittedEvent,
   ): Promise<void> {
-    await this.sendTemplate(recipient, 'shopVerificationSubmitted', {
-      viewShopUrl: `${this.frontendUrl}/app/seller/my-shop`,
-    });
+    await this.sendTemplate(
+      recipient.email,
+      EmailTemplateId.SHOP_VERIFICATION_SUBMITTED,
+      {
+        viewShopUrl: `${this.frontendUrl}/app/seller/my-shop`,
+      },
+    );
   }
 
   async sendVerificationDecided(
     recipient: ResolvedRecipient,
     event: ShopVerificationDecidedEvent,
   ): Promise<void> {
-    const templateKey =
+    const templateId =
       event.payload.decision === 'approved'
-        ? 'shopVerificationApproved'
-        : 'shopVerificationRejected';
+        ? EmailTemplateId.SHOP_VERIFICATION_APPROVED
+        : EmailTemplateId.SHOP_VERIFICATION_REJECTED;
 
-    await this.sendTemplate(recipient, templateKey, {
+    await this.sendTemplate(recipient.email, templateId, {
       reason: event.payload.reason ?? '',
       viewShopUrl: `${this.frontendUrl}/app/seller/my-shop`,
       publicShopUrl: `${this.frontendUrl}/shops`,
@@ -108,38 +117,10 @@ export class TransactionalEmailService {
   }
 
   private async sendTemplate(
-    recipient: ResolvedRecipient,
-    templateKey: string,
+    to: string,
+    templateId: EmailTemplateId,
     args: Record<string, string>,
   ): Promise<void> {
-    const lang = recipient.lang;
-    const base = `message.email.transactional.${templateKey}`;
-    const subject = this.i18n.t(`${base}.subject`, { lang, args });
-    const greeting = this.i18n.t(`${base}.greeting`, { lang, args });
-    const body = this.i18n.t(`${base}.body`, { lang, args });
-    const cta = this.i18n.t(`${base}.cta`, { lang, args });
-    const footer = this.i18n.t(`${base}.footer`, { lang, args });
-
-    const viewOrderUrl = args.viewOrderUrl ?? args.viewOrdersUrl ?? '';
-    const ctaHtml = viewOrderUrl
-      ? `<p><a href="${viewOrderUrl}" style="display:inline-block;padding:12px 24px;background:#2d5a3d;color:#fff;text-decoration:none;border-radius:6px;">${cta}</a></p>`
-      : '';
-
-    const text = `${greeting}\n\n${body}\n\n${cta}${viewOrderUrl ? `: ${viewOrderUrl}` : ''}\n\n${footer}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <p>${greeting}</p>
-        <p>${body}</p>
-        ${ctaHtml}
-        <p style="color: #999; font-size: 12px; margin-top: 24px;">${footer}</p>
-      </div>
-    `;
-
-    await this.emailService.sendTransactionalEmail({
-      to: recipient.email,
-      subject,
-      text,
-      html,
-    });
+    await this.emailService.sendTransactionalEmail(templateId, to, args);
   }
 }

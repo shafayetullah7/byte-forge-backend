@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Order {orderNumber} completed — Aponika",
+    "bn": "অর্ডার {orderNumber} সম্পন্ন — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Your order {orderNumber} is now complete. Thank you for shopping with Aponika!",
+    "bn": "আপনার অর্ডার {orderNumber} সম্পন্ন হয়েছে। অপনিকায় কেনাকাটার জন্য ধন্যবাদ!"
+  },
+  "cta": { "en": "View order", "bn": "অর্ডার দেখুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika order.",
+    "bn": "আপনার অপনিকা অর্ডার আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

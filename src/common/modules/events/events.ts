@@ -5,17 +5,20 @@ export class UserLoggedInEvent {
   guestToken?: string;
 }
 
-export const AuthEventNames = {
-  ACCOUNT_VERIFICATION_REQUESTED: 'auth.verification.requested',
+export const EmailEventNames = {
+  ACCOUNT_VERIFICATION_SEND: 'email.account-verification.send',
+  PASSWORD_RESET_SEND: 'email.password-reset.send',
 } as const;
 
-export class AccountVerificationRequestedEvent {
+export class AccountVerificationEmailSendEvent {
   constructor(
-    public readonly payload: {
-      userId: string;
-      lang: string;
-      force?: boolean;
-    },
+    public readonly payload: { to: string; otp: string; lang: string },
+  ) {}
+}
+
+export class PasswordResetEmailSendEvent {
+  constructor(
+    public readonly payload: { to: string; otp: string; lang: string },
   ) {}
 }
 

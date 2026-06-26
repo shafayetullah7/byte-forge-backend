@@ -31,7 +31,7 @@ Authenticates a user and sets HTTP-only session cookies.
 - **Response**: `{ success: true, message: string, data: { session, user, verification? } }`
 - **Side Effects**:
   - Sets `sessionId` and `userXsrfToken` cookies on response.
-  - When the user's email is not verified, emits `auth.verification.requested` and includes `verification` in the response:
+  - When the user's email is not verified, provisions an OTP synchronously and returns `verification` in the response. Verification email delivery is dispatched asynchronously via `email.account-verification.send` (does not block the login response).
     - `verification.expiresAt` — active OTP expiry (ISO timestamp)
     - `verification.sent` — `true` if a new email was sent; `false` if an existing active OTP was reused (no duplicate email on repeated login within TTL)
   - Account verification OTPs expire after **5 minutes** (`OTP_EXPIRY_MINUTES`).
@@ -48,9 +48,10 @@ Verifies the user's email address using an OTP.
 - **Response**: `{ success: true, message: string }`
 
 ### `POST /v1/user/auth/send-verification-email`
-Resends the verification email OTP (always issues a new OTP).
+Resends the verification email OTP when no active OTP exists.
 - **Authentication**: Required (`UserAuthGuard`)
-- **Response**: `{ success: true, message: string, data: { expiresAt } }`
+- **Response**: `{ success: true, message: string, data: { expiresAt, sent } }`
+- **Behavior**: If an active OTP exists (`expiresAt > now`), returns the existing `expiresAt` with `sent: false` and does **not** send a new email. Otherwise creates a new OTP and sends email (`sent: true`).
 - **Note**: OTP expires after **5 minutes**.
 
 ### `POST /v1/user/auth/logout`
@@ -65,7 +66,7 @@ Logs out the user and clears the session cookie.
 **Path**: `/v1/user/password-reset`
 
 ### `POST /v1/user/password-reset/forgot`
-Initiates the password reset process by sending an OTP.
+Initiates the password reset process by provisioning an OTP. Email is sent asynchronously via `email.password-reset.send`.
 - **Request Body**: `ForgotPasswordDto` (email)
 - **Response**: `{ success: true, message: string, data }`
 
@@ -75,7 +76,7 @@ Verifies the OTP sent for password reset.
 - **Response**: `{ success: true, message: string, data }`
 
 ### `POST /v1/user/password-reset/resend`
-Resends the OTP for password reset.
+Resends the password reset OTP when eligible. Email is sent asynchronously via `email.password-reset.send`.
 - **Request Body**: `ResendResetOtpDto` (token)
 - **Response**: `{ success: true, message: string, data }`
 

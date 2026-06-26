@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Order {orderNumber} accepted — Aponika",
+    "bn": "অর্ডার {orderNumber} গৃহীত হয়েছে — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Good news! The seller has accepted your order {orderNumber} and is preparing it.",
+    "bn": "সুখবর! বিক্রেতা আপনার অর্ডার {orderNumber} গ্রহণ করেছেন এবং প্রস্তুতি নিচ্ছেন।"
+  },
+  "cta": { "en": "Track your order", "bn": "অর্ডার ট্র্যাক করুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika order.",
+    "bn": "আপনার অপনিকা অর্ডার আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

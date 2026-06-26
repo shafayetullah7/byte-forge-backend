@@ -1,0 +1,16 @@
+{
+  "subject": {
+    "en": "Order {orderNumber} packed — Aponika",
+    "bn": "অর্ডার {orderNumber} প্যাক করা হয়েছে — অপনিকা"
+  },
+  "greeting": { "en": "Hello!", "bn": "হ্যালো!" },
+  "body": {
+    "en": "Your order {orderNumber} has been packed and is ready to ship.",
+    "bn": "আপনার অর্ডার {orderNumber} প্যাক করা হয়েছে এবং শিপ করার জন্য প্রস্তুত।"
+  },
+  "cta": { "en": "View order", "bn": "অর্ডার দেখুন" },
+  "footer": {
+    "en": "You received this email because of an update to your Aponika order.",
+    "bn": "আপনার অপনিকা অর্ডার আপডেটের কারণে এই ইমেইল পেয়েছেন।"
+  }
+}

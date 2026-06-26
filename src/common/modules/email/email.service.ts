@@ -3,7 +3,9 @@ import { AppEnvService } from '@/_config/app-env/app-env.service';
 import { IEmailProvider } from './interfaces/email-provider.interface';
 import { GmailProvider } from './providers/gmail.provider';
 import { ConsoleProvider } from './providers/console.provider';
-import { I18nService } from 'nestjs-i18n';
+import { EmailTemplateService } from './services/email-template.service';
+import { EmailTemplateId } from './templates/types/email-template-id.enum';
+import type { EmailRenderArgs, RenderedEmail } from './templates/types/email-template.types';
 import { OTP_EXPIRY_MINUTES } from '@/common/modules/otp/otp.constants';
 
 @Injectable()
@@ -14,11 +16,10 @@ export class EmailService {
     private readonly appEnv: AppEnvService,
     private readonly gmailProvider: GmailProvider,
     private readonly consoleProvider: ConsoleProvider,
-    private readonly i18n: I18nService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {
     const providerType = this.appEnv.MAIL_PROVIDER;
 
-    // Select provider based on configuration
     switch (providerType) {
       case 'gmail':
       case 'smtp':
@@ -29,91 +30,37 @@ export class EmailService {
         this.provider = this.consoleProvider;
         break;
     }
-    console.log(
-      '[DEBUG] EmailService initialized with provider:',
-      providerType || 'default(console)',
+  }
+
+  async sendRenderedEmail(
+    params: { to: string } & RenderedEmail,
+  ): Promise<void> {
+    const { to, subject, text, html } = params;
+    await this.provider.sendEmail({ to, subject, text, html });
+  }
+
+  async sendVerificationEmail(to: string, otp: string): Promise<void> {
+    const rendered = this.emailTemplateService.render(
+      EmailTemplateId.AUTH_ACCOUNT_VERIFICATION,
+      { otp, minutes: String(OTP_EXPIRY_MINUTES) },
     );
+    await this.sendRenderedEmail({ to, ...rendered });
   }
 
-  async sendVerificationEmail(
+  async sendPasswordResetEmail(to: string, otp: string): Promise<void> {
+    const rendered = this.emailTemplateService.render(
+      EmailTemplateId.AUTH_PASSWORD_RESET,
+      { otp, minutes: String(OTP_EXPIRY_MINUTES) },
+    );
+    await this.sendRenderedEmail({ to, ...rendered });
+  }
+
+  async sendTransactionalEmail(
+    templateId: EmailTemplateId,
     to: string,
-    otp: string,
-    lang: string = 'en',
+    args: EmailRenderArgs,
   ): Promise<void> {
-    const subject = this.i18n.t('message.email.verification.subject', { lang });
-    const greeting = this.i18n.t('message.email.verification.greeting', {
-      lang,
-    });
-    const body = this.i18n.t('message.email.verification.body', { lang });
-    const expiry = this.i18n.t('message.email.verification.expiry', {
-      lang,
-      args: { minutes: OTP_EXPIRY_MINUTES },
-    });
-    const ignore = this.i18n.t('message.email.verification.ignore', { lang });
-
-    const text = `${greeting}\n\n${body} ${otp}\n\n${expiry.replace(/<\/?strong>/g, '')}\n\n${ignore}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${subject}</h2>
-        <p>${greeting}</p>
-        <p>${body}</p>
-        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-          ${otp}
-        </div>
-        <p style="color: #666;">${expiry}</p>
-        <p style="color: #999; font-size: 12px;">${ignore}</p>
-      </div>
-    `;
-
-    await this.provider.sendEmail({ to, subject, text, html });
-  }
-
-  async sendPasswordResetEmail(
-    to: string,
-    otp: string,
-    lang: string = 'en',
-  ): Promise<void> {
-    const subject = this.i18n.t('message.email.passwordReset.subject', {
-      lang,
-    });
-    const greeting = this.i18n.t('message.email.passwordReset.greeting', {
-      lang,
-    });
-    const body = this.i18n.t('message.email.passwordReset.body', { lang });
-    const expiry = this.i18n.t('message.email.passwordReset.expiry', {
-      lang,
-      args: { minutes: OTP_EXPIRY_MINUTES },
-    });
-    const ignore = this.i18n.t('message.email.passwordReset.ignore', { lang });
-
-    const text = `${greeting}\n\n${body} ${otp}\n\n${expiry.replace(/<\/?strong>/g, '')}\n\n${ignore}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${subject}</h2>
-        <p>${greeting}</p>
-        <p>${body}</p>
-        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-          ${otp}
-        </div>
-        <p style="color: #666;">${expiry}</p>
-        <p style="color: #999; font-size: 12px;">${ignore}</p>
-      </div>
-    `;
-
-    await this.provider.sendEmail({ to, subject, text, html });
-  }
-
-  async sendTransactionalEmail(params: {
-    to: string;
-    subject: string;
-    text: string;
-    html: string;
-  }): Promise<void> {
-    await this.provider.sendEmail({
-      to: params.to,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    });
+    const rendered = this.emailTemplateService.render(templateId, args);
+    await this.sendRenderedEmail({ to, ...rendered });
   }
 }
