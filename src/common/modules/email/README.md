@@ -16,6 +16,7 @@ Transactional and auth emails are rendered from bilingual copy files and per-tem
 - Shared layout: `templates/layout/aponika.layout.ts`
 - Theme tokens: `templates/layout/aponika-theme.constants.ts` (aligned with frontend `app.css`)
 - Brand name: **Aponika**
+- Sender (inbox “From” line): set `MAIL_FROM_NAME` and `MAIL_FROM_EMAIL` in env (e.g. `Aponika` / `noreply@aponika.com`). The SMTP account (`MAIL_USER`) must be authorized to send from that address in production.
 
 ## Copy rules
 
