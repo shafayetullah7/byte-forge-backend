@@ -17,6 +17,9 @@ export class AppConfigService {
   get appName(): AppEnv['APP_NAME'] {
     return this.configService.getOrThrow('APP_NAME');
   }
+  get frontendUrl(): AppEnv['FRONTEND_URL'] {
+    return this.configService.getOrThrow('FRONTEND_URL');
+  }
 
   // === Database ===
   get dbHost(): AppEnv['DB_HOST'] {
@@ -35,9 +38,9 @@ export class AppConfigService {
   get dbName(): AppEnv['DB_NAME'] {
     return this.configService.getOrThrow('DB_NAME');
   }
-  // get databaseUrl(): AppEnv['DATABASE_URL'] {
-  //   return this.configService.getOrThrow('DATABASE_URL');
-  // }
+  get dbSsl(): AppEnv['DB_SSL'] {
+    return this.configService.getOrThrow('DB_SSL');
+  }
 
   // === Docker Compose ===
   get composeProjectName(): AppEnv['COMPOSE_PROJECT_NAME'] {
@@ -48,6 +51,23 @@ export class AppConfigService {
   }
   get dbExternalPort(): AppEnv['DB_EXTERNAL_PORT'] {
     return this.configService.getOrThrow('DB_EXTERNAL_PORT');
+  }
+  get dockerBuildTarget(): AppEnv['DOCKER_BUILD_TARGET'] {
+    return this.configService.getOrThrow('DOCKER_BUILD_TARGET');
+  }
+
+  // === Observability ===
+  get prometheusExternalPort(): AppEnv['PROMETHEUS_EXTERNAL_PORT'] {
+    return this.configService.get('PROMETHEUS_EXTERNAL_PORT');
+  }
+  get grafanaExternalPort(): AppEnv['GRAFANA_EXTERNAL_PORT'] {
+    return this.configService.get('GRAFANA_EXTERNAL_PORT');
+  }
+  get grafanaAdminUser(): AppEnv['GRAFANA_ADMIN_USER'] {
+    return this.configService.get('GRAFANA_ADMIN_USER');
+  }
+  get grafanaAdminPassword(): AppEnv['GRAFANA_ADMIN_PASSWORD'] {
+    return this.configService.get('GRAFANA_ADMIN_PASSWORD');
   }
 
   // === Security ===

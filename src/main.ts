@@ -19,7 +19,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.setGlobalPrefix('api', { exclude: ['health'] });
+  app.setGlobalPrefix('api', { exclude: ['health', 'metrics'] });
 
   app.use(cookieParser());
 

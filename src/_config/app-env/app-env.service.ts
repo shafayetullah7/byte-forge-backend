@@ -44,9 +44,9 @@ export class AppEnvService {
     return this.configService.get('DB_NAME', { infer: true });
   }
 
-  // get DATABASE_URL() {
-  //   return this.configService.get('DATABASE_URL', { infer: true });
-  // }
+  get DB_SSL() {
+    return this.configService.get('DB_SSL', { infer: true });
+  }
 
   // === Docker Compose ===
   get COMPOSE_PROJECT_NAME() {
@@ -61,8 +61,29 @@ export class AppEnvService {
     return this.configService.get('DB_EXTERNAL_PORT', { infer: true });
   }
 
+  get DOCKER_BUILD_TARGET() {
+    return this.configService.get('DOCKER_BUILD_TARGET', { infer: true });
+  }
+
   get SALT_ROUNDS() {
     return this.configService.get('SALT_ROUNDS', { infer: true });
+  }
+
+  // === Observability ===
+  get PROMETHEUS_EXTERNAL_PORT() {
+    return this.configService.get('PROMETHEUS_EXTERNAL_PORT', { infer: true });
+  }
+
+  get GRAFANA_EXTERNAL_PORT() {
+    return this.configService.get('GRAFANA_EXTERNAL_PORT', { infer: true });
+  }
+
+  get GRAFANA_ADMIN_USER() {
+    return this.configService.get('GRAFANA_ADMIN_USER', { infer: true });
+  }
+
+  get GRAFANA_ADMIN_PASSWORD() {
+    return this.configService.get('GRAFANA_ADMIN_PASSWORD', { infer: true });
   }
 
   // === Email / SMTP ===
@@ -109,5 +130,57 @@ export class AppEnvService {
 
   get CLOUDINARY_API_SECRET() {
     return this.configService.get('CLOUDINARY_API_SECRET', { infer: true });
+  }
+
+  // === JWT Secrets ===
+  get JWT_SECRET_RESET_REQUEST() {
+    return this.configService.get('JWT_SECRET_RESET_REQUEST', { infer: true });
+  }
+
+  get JWT_SECRET_RESET_ACCESS() {
+    return this.configService.get('JWT_SECRET_RESET_ACCESS', { infer: true });
+  }
+
+  // === Session & Cookie ===
+  get SESSION_MAX_AGE() {
+    return this.configService.get('SESSION_MAX_AGE', { infer: true });
+  }
+
+  get COOKIE_DOMAIN() {
+    return this.configService.get('COOKIE_DOMAIN', { infer: true });
+  }
+
+  // === Admin JWT ===
+  get JWT_ADMIN_ACCESS_SECRET() {
+    return this.configService.get('JWT_ADMIN_ACCESS_SECRET', { infer: true });
+  }
+
+  get JWT_ADMIN_ACCESS_EXP() {
+    return this.configService.get('JWT_ADMIN_ACCESS_EXP', { infer: true });
+  }
+
+  get JWT_ADMIN_REFRESH_SECRET() {
+    return this.configService.get('JWT_ADMIN_REFRESH_SECRET', { infer: true });
+  }
+
+  get JWT_ADMIN_REFRESH_EXP() {
+    return this.configService.get('JWT_ADMIN_REFRESH_EXP', { infer: true });
+  }
+
+  // === User JWT ===
+  get JWT_USER_ACCESS_SECRET() {
+    return this.configService.get('JWT_USER_ACCESS_SECRET', { infer: true });
+  }
+
+  get JWT_USER_ACCESS_EXP() {
+    return this.configService.get('JWT_USER_ACCESS_EXP', { infer: true });
+  }
+
+  get JWT_USER_REFRESH_SECRET() {
+    return this.configService.get('JWT_USER_REFRESH_SECRET', { infer: true });
+  }
+
+  get JWT_USER_REFRESH_EXP() {
+    return this.configService.get('JWT_USER_REFRESH_EXP', { infer: true });
   }
 }

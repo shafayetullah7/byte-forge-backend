@@ -18,14 +18,22 @@ export const envSchema = z.object({
   DB_NAME: z.string(),
   DB_SSL: z.enum(['true', 'false']).default('false'),
 
-  // DATABASE_URL: z.string().url().optional(),
   // === Docker Compose ===
   COMPOSE_PROJECT_NAME: z.string(),
   APP_EXTERNAL_PORT: z.coerce.number(),
   DB_EXTERNAL_PORT: z.coerce.number(),
+  DOCKER_BUILD_TARGET: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   SALT_ROUNDS: z.coerce.number(),
 
-  // Email / SMTP
+  // === Observability (Docker Compose; optional in NestJS runtime) ===
+  PROMETHEUS_EXTERNAL_PORT: z.coerce.number().optional(),
+  GRAFANA_EXTERNAL_PORT: z.coerce.number().optional(),
+  GRAFANA_ADMIN_USER: z.string().optional(),
+  GRAFANA_ADMIN_PASSWORD: z.string().optional(),
+
+  // === Email / SMTP ===
   MAIL_PROVIDER: z.enum(['gmail', 'smtp', 'console']),
   MAIL_HOST: z.string(),
   MAIL_PORT: z.coerce.number(),
@@ -80,14 +88,5 @@ export const envSchema = z.object({
       'Invalid duration format (e.g. 15m, 1h, 7d)',
     ),
 });
-// .transform((data) => {
-//   const dbUrl = data.DATABASE_URL;
-//   if (dbUrl) return data;
-//   const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = data;
-//   return {
-//     ...data,
-//     DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-//   };
-// });
 
 export type AppEnv = z.infer<typeof envSchema>;

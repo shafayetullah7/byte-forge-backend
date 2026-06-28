@@ -1,0 +1,24 @@
+# Scrape targets run on the Docker app-network.
+# APP scrape port must match the app container PORT (see .env.*).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: byte-forge-auth
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app:3005']
+        labels:
+          service: byte-forge-auth
+
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+        labels:
+          service: postgres
