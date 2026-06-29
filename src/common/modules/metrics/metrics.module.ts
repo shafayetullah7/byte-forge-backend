@@ -9,12 +9,14 @@ import {
   HTTP_REQUEST_DURATION_SECONDS,
   HTTP_REQUESTS_TOTAL,
 } from './metrics.constants';
+import { MetricsController } from './metrics.controller';
 import { MetricsInterceptor } from './metrics.interceptor';
 
 @Module({
   imports: [
     PrometheusModule.register({
       path: '/metrics',
+      controller: MetricsController,
       defaultMetrics: {
         enabled: true,
       },
