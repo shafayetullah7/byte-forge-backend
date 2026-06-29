@@ -27,7 +27,7 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - '${GRAFANA_EXTERNAL_PORT:-3001}:3000'
+      - '${GRAFANA_EXTERNAL_PORT}:3000'
     networks:
       - app-network
     depends_on:
