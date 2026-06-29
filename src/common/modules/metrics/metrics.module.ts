@@ -18,7 +18,7 @@ import { MetricsInterceptor } from './metrics.interceptor';
       path: '/metrics',
       controller: MetricsController,
       defaultMetrics: {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],
