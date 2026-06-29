@@ -76,6 +76,21 @@ export interface GetSellerOrdersParams {
   lang?: string;
 }
 
+export interface GetAdminOrdersParams {
+  shopId?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  orderStatus?: TOrderStatus;
+  paymentStatus?: TPaymentStatus;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  lang?: string;
+}
+
 export interface SellerOrderStats {
   total: number;
   pending: number;
@@ -119,6 +134,14 @@ export type SellerOrderWithRelations = TOrder & {
     localAuth: { email: string } | null;
   } | null;
   paymentMethodCatalog: OrderPaymentMethodCatalog;
+};
+
+export type AdminOrderWithRelations = SellerOrderWithRelations & {
+  shop:
+    | (TShop & {
+        translations: TShopTranslation[];
+      })
+    | null;
 };
 
 export type BuyerOrderWithRelations = TOrder & {
@@ -738,5 +761,260 @@ export class OrderRepository {
     });
 
     return order ?? null;
+  }
+
+  private buildAdminOrderConditions(params: {
+    shopId?: string;
+    userId?: string;
+    orderStatus?: TOrderStatus;
+    paymentStatus?: TPaymentStatus;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): SQL[] {
+    const conditions: SQL[] = [];
+
+    if (params.shopId) {
+      conditions.push(eq(ordersTable.shopId, params.shopId));
+    }
+
+    if (params.userId) {
+      conditions.push(eq(ordersTable.userId, params.userId));
+    }
+
+    if (params.orderStatus) {
+      conditions.push(eq(ordersTable.status, params.orderStatus));
+    }
+
+    if (params.paymentStatus) {
+      conditions.push(eq(ordersTable.paymentStatus, params.paymentStatus));
+    }
+
+    if (params.dateFrom) {
+      conditions.push(gte(ordersTable.createdAt, new Date(params.dateFrom)));
+    }
+
+    if (params.dateTo) {
+      conditions.push(
+        lte(ordersTable.createdAt, new Date(`${params.dateTo}T23:59:59.999Z`)),
+      );
+    }
+
+    if (params.search) {
+      const searchLower = `%${params.search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          like(ordersTable.orderNumber, searchLower),
+          sql`EXISTS (
+            SELECT 1 FROM ${orderItemsTable} oi
+            WHERE oi.order_id = ${ordersTable.id}
+            AND LOWER(oi.product_name) LIKE ${searchLower}
+          )`,
+          sql`EXISTS (
+            SELECT 1 FROM ${orderAddressTable} oa
+            WHERE oa.order_id = ${ordersTable.id}
+            AND (
+              LOWER(oa.recipient_name) LIKE ${searchLower}
+              OR LOWER(oa.phone) LIKE ${searchLower}
+            )
+          )`,
+        )!,
+      );
+    }
+
+    return conditions;
+  }
+
+  async getAdminOrderStats(filters?: {
+    shopId?: string;
+    userId?: string;
+  }): Promise<SellerOrderStats> {
+    const conditions = this.buildAdminOrderConditions(filters ?? {});
+    const whereClause =
+      conditions.length > 0 ? and(...conditions) : undefined;
+
+    const orders = await this.db.client
+      .select()
+      .from(ordersTable)
+      .where(whereClause)
+      .execute();
+
+    const pendingStatuses = ['PENDING_PAYMENT'];
+    const processingStatuses = ['PROCESSING', 'CONFIRMED'];
+
+    return {
+      total: orders.length,
+      pending: orders.filter((o) => pendingStatuses.includes(o.status)).length,
+      processing: orders.filter((o) => processingStatuses.includes(o.status))
+        .length,
+      shipped: orders.filter((o) => o.status === 'SHIPPED').length,
+      delivered: orders.filter(
+        (o) => o.status === 'DELIVERED' || o.status === 'COMPLETED',
+      ).length,
+      cancelled: orders.filter((o) => o.status === 'CANCELLED').length,
+      revenue: orders
+        .filter((o) => o.status === 'COMPLETED')
+        .reduce((sum, o) => sum + parseFloat(o.total), 0)
+        .toFixed(2),
+    };
+  }
+
+  async getAdminOrdersPaginated(params: GetAdminOrdersParams): Promise<{
+    orders: AdminOrderWithRelations[];
+    total: number;
+  }> {
+    const {
+      shopId,
+      userId,
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      orderStatus,
+      paymentStatus,
+      search,
+      dateFrom,
+      dateTo,
+      lang = 'en',
+    } = params;
+
+    const offset = (page - 1) * limit;
+    const conditions = this.buildAdminOrderConditions({
+      shopId,
+      userId,
+      orderStatus,
+      paymentStatus,
+      search,
+      dateFrom,
+      dateTo,
+    });
+
+    const whereClause =
+      conditions.length > 0 ? and(...conditions) : undefined;
+
+    const totalResult = await this.db.client
+      .select({ count: count() })
+      .from(ordersTable)
+      .where(whereClause)
+      .execute();
+
+    const orderByField =
+      sortBy === 'total' ? ordersTable.total : ordersTable.createdAt;
+
+    const orders = await this.db.client.query.ordersTable.findMany({
+      where: whereClause,
+      with: {
+        items: {
+          with: {
+            product: {
+              with: {
+                thumbnail: true,
+                translations: {
+                  where: (t) => eq(t.locale, lang),
+                },
+              },
+            },
+          },
+        },
+        address: true,
+        statusHistory: {
+          orderBy: orderStatusHistoryTable.createdAt,
+          with: {
+            changedByUser: {
+              columns: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        shipment: true,
+        paymentMethodCatalog: {
+          with: {
+            logo: true,
+          },
+        },
+        user: {
+          with: {
+            localAuth: true,
+          },
+        },
+        shop: {
+          with: {
+            translations: {
+              where: (t) => eq(t.locale, lang),
+            },
+          },
+        },
+      },
+      ...(sortOrder === 'desc'
+        ? { orderBy: desc(orderByField) }
+        : { orderBy: asc(orderByField) }),
+      limit,
+      offset,
+    });
+
+    return {
+      orders: orders as AdminOrderWithRelations[],
+      total: totalResult[0]?.count ?? 0,
+    };
+  }
+
+  async getAdminOrderDetail(
+    orderId: string,
+    lang: string = 'en',
+  ): Promise<AdminOrderWithRelations | null> {
+    const [order] = await this.db.client.query.ordersTable.findMany({
+      where: eq(ordersTable.id, orderId),
+      with: {
+        items: {
+          with: {
+            product: {
+              with: {
+                thumbnail: true,
+                translations: {
+                  where: (t) => eq(t.locale, lang),
+                },
+              },
+            },
+          },
+        },
+        address: true,
+        statusHistory: {
+          orderBy: orderStatusHistoryTable.createdAt,
+          with: {
+            changedByUser: {
+              columns: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        shipment: true,
+        paymentMethodCatalog: {
+          with: {
+            logo: true,
+          },
+        },
+        user: {
+          with: {
+            localAuth: true,
+          },
+        },
+        shop: {
+          with: {
+            translations: {
+              where: (t) => eq(t.locale, lang),
+            },
+          },
+        },
+      },
+      limit: 1,
+    });
+
+    return (order as AdminOrderWithRelations | undefined) ?? null;
   }
 }

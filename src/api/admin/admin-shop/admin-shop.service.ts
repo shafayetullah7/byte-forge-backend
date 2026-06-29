@@ -315,18 +315,29 @@ export class AdminShopService {
       with: {
         owner: {
           columns: {
+            id: true,
             firstName: true,
             lastName: true,
             userName: true,
             avatar: true,
+            emailVerified: true,
+            createdAt: true,
+          },
+          with: {
+            localAuth: {
+              columns: {
+                email: true,
+              },
+            },
           },
         },
         logo: true,
         banner: true,
-        translations: {
-          columns: {
-            locale: true,
-            name: true,
+        translations: true,
+        shopContactTable: true,
+        shopAddressTable: {
+          with: {
+            translations: true,
           },
         },
         shopVerificationTable: {
@@ -356,13 +367,56 @@ export class AdminShopService {
       verificationStatus: shop.shopVerificationTable?.status || null,
       owner: shop.owner
         ? {
+            id: shop.owner.id,
             firstName: shop.owner.firstName,
             lastName: shop.owner.lastName,
             userName: shop.owner.userName,
             avatar: shop.owner.avatar || null,
+            email: shop.owner.localAuth?.email ?? null,
+            emailVerified: shop.owner.emailVerified,
+            memberSince: shop.owner.createdAt,
+          }
+        : null,
+      translations: (shop.translations ?? []).map((t) => ({
+        locale: t.locale,
+        name: t.name,
+        description: t.description,
+        businessHours: t.businessHours,
+        tagline: t.tagline,
+        about: t.about,
+        sellerStory: t.sellerStory,
+        brandMission: t.brandMission,
+      })),
+      contact: shop.shopContactTable
+        ? {
+            businessEmail: shop.shopContactTable.businessEmail,
+            phone: shop.shopContactTable.phone,
+            alternativePhone: shop.shopContactTable.alternativePhone,
+            whatsapp: shop.shopContactTable.whatsapp,
+            telegram: shop.shopContactTable.telegram,
+            facebook: shop.shopContactTable.facebook,
+            instagram: shop.shopContactTable.instagram,
+            x: shop.shopContactTable.x,
+          }
+        : null,
+      address: shop.shopAddressTable
+        ? {
+            postalCode: shop.shopAddressTable.postalCode,
+            latitude: shop.shopAddressTable.latitude,
+            longitude: shop.shopAddressTable.longitude,
+            googleMapsLink: shop.shopAddressTable.googleMapsLink,
+            isVerified: shop.shopAddressTable.isVerified,
+            translations: (shop.shopAddressTable.translations ?? []).map((t) => ({
+              locale: t.locale,
+              country: t.country,
+              division: t.division,
+              district: t.district,
+              street: t.street,
+            })),
           }
         : null,
       createdAt: shop.createdAt,
+      updatedAt: shop.updatedAt,
     };
   }
 

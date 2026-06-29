@@ -10,6 +10,9 @@ import { AdminShopModule } from './admin-shop/admin-shop.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { AdminMediaModule } from './media/admin-media.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
+import { AdminOrdersModule } from './orders/admin-orders.module';
+import { AdminProductsModule } from './products/admin-products.module';
+import { AdminUsersModule } from './users/admin-users.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { AdminReviewsModule } from './reviews/admin-reviews.module';
     PaymentMethodsModule,
     AdminMediaModule,
     AdminReviewsModule,
+    AdminOrdersModule,
+    AdminProductsModule,
+    AdminUsersModule,
   ],
   exports: [
     AdminModule,
@@ -37,6 +43,9 @@ import { AdminReviewsModule } from './reviews/admin-reviews.module';
     PaymentMethodsModule,
     AdminMediaModule,
     AdminReviewsModule,
+    AdminOrdersModule,
+    AdminProductsModule,
+    AdminUsersModule,
   ],
 })
 export class AdminApiModule {}
