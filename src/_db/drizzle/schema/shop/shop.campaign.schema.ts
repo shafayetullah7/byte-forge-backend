@@ -7,37 +7,13 @@ import {
   text,
   index,
   unique,
-  pgEnum,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
-import {
-  ShopCampaignTypeEnum,
-  ShopContentModerationStatusEnum,
-} from '../../enum';
+import { ShopContentModerationStatusEnum } from '../../enum';
 import { shopTable } from './shop.schema';
 import { mediaTable } from '../media';
 import { adminTable } from '../admin/admin.schema';
-import { shopCampaignTranslationsTable } from './shop.campaign.translation.schema';
-import { shopCampaignProductsTable } from './shop.campaign-product.schema';
-
-export const shopCampaignTypeEnum = pgEnum('shop_campaign_type_enum', [
-  ShopCampaignTypeEnum.DISCOUNT,
-  ShopCampaignTypeEnum.BUNDLE,
-  ShopCampaignTypeEnum.FLASH_SALE,
-  ShopCampaignTypeEnum.SEASONAL,
-  ShopCampaignTypeEnum.FREE_SHIPPING,
-]);
-
-export const shopContentModerationStatusEnum = pgEnum(
-  'shop_content_moderation_status_enum',
-  [
-    ShopContentModerationStatusEnum.DRAFT,
-    ShopContentModerationStatusEnum.PENDING,
-    ShopContentModerationStatusEnum.APPROVED,
-    ShopContentModerationStatusEnum.REJECTED,
-    ShopContentModerationStatusEnum.ARCHIVED,
-  ],
-);
+import { shopCampaignTypeEnum } from './shop.campaign-type.enum.schema';
+import { shopContentModerationStatusEnum } from './shop.content-moderation-status.enum.schema';
 
 export const shopCampaignsTable = pgTable(
   'shop_campaigns',
@@ -90,23 +66,3 @@ export const shopCampaignsTable = pgTable(
 
 export type TShopCampaign = typeof shopCampaignsTable.$inferSelect;
 export type TNewShopCampaign = typeof shopCampaignsTable.$inferInsert;
-
-export const shopCampaignsRelations = relations(
-  shopCampaignsTable,
-  ({ one, many }) => ({
-    shop: one(shopTable, {
-      fields: [shopCampaignsTable.shopId],
-      references: [shopTable.id],
-    }),
-    banner: one(mediaTable, {
-      fields: [shopCampaignsTable.bannerId],
-      references: [mediaTable.id],
-    }),
-    moderatedByAdmin: one(adminTable, {
-      fields: [shopCampaignsTable.moderatedByAdminId],
-      references: [adminTable.id],
-    }),
-    translations: many(shopCampaignTranslationsTable),
-    products: many(shopCampaignProductsTable),
-  }),
-);

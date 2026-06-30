@@ -13,6 +13,8 @@ export * from './shop.why-choose-us.translation.schema';
 export * from './shop.value-point.schema';
 export * from './shop.value-point.translation.schema';
 export * from './shop.shipping-rates.schema';
+export * from './shop.content-moderation-status.enum.schema';
+export * from './shop.campaign-type.enum.schema';
 export * from './shop.campaign.schema';
 export * from './shop.campaign.translation.schema';
 export * from './shop.campaign-product.schema';

@@ -9,13 +9,11 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
 import { ShopContentModerationStatusEnum } from '../../enum';
 import { shopTable } from './shop.schema';
 import { mediaTable } from '../media';
 import { adminTable } from '../admin/admin.schema';
-import { shopContentModerationStatusEnum } from './shop.campaign.schema';
-import { shopArticleTranslationsTable } from './shop.article.translation.schema';
+import { shopContentModerationStatusEnum } from './shop.content-moderation-status.enum.schema';
 
 export const shopArticlesTable = pgTable(
   'shop_articles',
@@ -73,26 +71,3 @@ export const shopArticlesTable = pgTable(
 
 export type TShopArticle = typeof shopArticlesTable.$inferSelect;
 export type TNewShopArticle = typeof shopArticlesTable.$inferInsert;
-
-export const shopArticlesRelations = relations(
-  shopArticlesTable,
-  ({ one, many }) => ({
-    shop: one(shopTable, {
-      fields: [shopArticlesTable.shopId],
-      references: [shopTable.id],
-    }),
-    coverImage: one(mediaTable, {
-      fields: [shopArticlesTable.coverImageId],
-      references: [mediaTable.id],
-    }),
-    moderatedByAdmin: one(adminTable, {
-      fields: [shopArticlesTable.moderatedByAdminId],
-      references: [adminTable.id],
-    }),
-    editorsPickByAdmin: one(adminTable, {
-      fields: [shopArticlesTable.editorsPickByAdminId],
-      references: [adminTable.id],
-    }),
-    translations: many(shopArticleTranslationsTable),
-  }),
-);

@@ -575,6 +575,13 @@
       "when": 1782273610313,
       "tag": "0083_lively_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1782833750604,
+      "tag": "0084_crazy_mulholland_black",
+      "breakpoints": true
     }
   ]
 }
