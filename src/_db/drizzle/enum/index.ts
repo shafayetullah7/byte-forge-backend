@@ -18,3 +18,5 @@ export * from './payment-method.enum';
 export * from './shipping-status.enum';
 export * from './shipping-method.enum';
 export * from './review-status.enum';
+export * from './shop-campaign-type.enum';
+export * from './shop-content-moderation-status.enum';

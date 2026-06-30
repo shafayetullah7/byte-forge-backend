@@ -8,6 +8,9 @@ import { ShippingRatesModule } from './shipping-rates/shipping-rates.module';
 import { StorefrontModule } from './storefront/storefront.module';
 import { SellerOrdersModule } from './orders/orders.module';
 import { SellerReviewsModule } from './reviews/seller-reviews.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+import { ArticlesModule } from './articles/articles.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -19,6 +22,9 @@ import { SellerReviewsModule } from './reviews/seller-reviews.module';
     StorefrontModule,
     SellerOrdersModule,
     SellerReviewsModule,
+    CampaignsModule,
+    ArticlesModule,
+    AnalyticsModule,
   ],
   exports: [ShopModule],
 })

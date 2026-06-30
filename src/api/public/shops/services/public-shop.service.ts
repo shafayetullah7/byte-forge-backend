@@ -8,6 +8,9 @@ import { GetShopCategoriesServedService } from './get-shop-categories-served.ser
 import { ListPublicShopsService } from './list-public-shops.service';
 import { ListPublicShopProductsService } from './list-public-shop-products.service';
 import { PublicShopReviewsService } from './public-shop-reviews.service';
+import { ListPublicShopCampaignsService } from './list-public-shop-campaigns.service';
+import { ListPublicShopArticlesService } from './list-public-shop-articles.service';
+import { ShopFollowRepository } from '@/_repositories/business/shop-follow.repository/shop-follow.repository';
 import { ListPublicShopsQueryDto } from '../dto/list-public-shops-query.dto';
 import { ListPublicShopProductsQueryDto } from '../dto/list-public-shop-products-query.dto';
 import { ListPublicShopReviewsQueryDto } from '../dto/list-public-shop-reviews-query.dto';
@@ -21,6 +24,9 @@ export class PublicShopService {
     private readonly listPublicShopsService: ListPublicShopsService,
     private readonly listPublicShopProductsService: ListPublicShopProductsService,
     private readonly publicShopReviewsService: PublicShopReviewsService,
+    private readonly listPublicShopCampaignsService: ListPublicShopCampaignsService,
+    private readonly listPublicShopArticlesService: ListPublicShopArticlesService,
+    private readonly shopFollowRepository: ShopFollowRepository,
   ) {}
 
   listShops(query: ListPublicShopsQueryDto, lang: string) {
@@ -43,7 +49,39 @@ export class PublicShopService {
     return this.publicShopReviewsService.getShopReviews(slug, query, lang);
   }
 
-  async getPublicShopBySlug(slug: string, lang: string) {
+  listShopCampaigns(slug: string, lang: string) {
+    return this.listPublicShopCampaignsService.execute(slug, lang);
+  }
+
+  getShopCampaignHighlights(slug: string) {
+    return this.listPublicShopCampaignsService.getHighlights(slug);
+  }
+
+  getShopCampaignDetail(slug: string, campaignSlug: string, lang: string) {
+    return this.listPublicShopCampaignsService.getDetail(
+      slug,
+      campaignSlug,
+      lang,
+    );
+  }
+
+  listShopArticles(slug: string, lang: string) {
+    return this.listPublicShopArticlesService.list(slug, lang);
+  }
+
+  getShopArticleDetail(slug: string, articleSlug: string, lang: string) {
+    return this.listPublicShopArticlesService.getDetail(
+      slug,
+      articleSlug,
+      lang,
+    );
+  }
+
+  async getPublicShopBySlug(
+    slug: string,
+    lang: string,
+    viewerUserId?: string,
+  ) {
     const shop = await this.shopRepository.getShopBySlug(slug);
 
     if (!shop || shop.status !== ShopStatusEnum.ACTIVE) {
@@ -56,6 +94,14 @@ export class PublicShopService {
       : null;
 
     const metrics = await this.listPublicShopsService.getShopMetrics(shop.id);
+    const followerCount = await this.shopFollowRepository.countByShopId(
+      shop.id,
+    );
+    const isFollowedByViewer = viewerUserId
+      ? Boolean(
+          await this.shopFollowRepository.isFollowing(shop.id, viewerUserId),
+        )
+      : false;
 
     const [whyChooseUsItems, valuePointItems, categoriesServed] =
       await Promise.all([
@@ -98,7 +144,9 @@ export class PublicShopService {
         : null,
       address: shop.shopAddressTable ?? null,
       createdAt: shop.createdAt.toISOString(),
-      metrics,
+      metrics: { ...metrics, followerCount },
+      followerCount,
+      isFollowedByViewer,
     };
   }
 }

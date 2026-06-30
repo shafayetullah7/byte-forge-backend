@@ -1,0 +1,26 @@
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { SlugSchema } from '@/common/schemas/slug.schema';
+import { ShopCampaignTypeEnum } from '@/_db/drizzle/enum';
+import { campaignTranslationsSchema } from './create-campaign.dto';
+
+export const updateCampaignSchema = z
+  .object({
+    slug: SlugSchema.optional(),
+    type: z.nativeEnum(ShopCampaignTypeEnum).optional(),
+    bannerId: z.string().uuid().optional().nullable(),
+    discountPercent: z.coerce.number().int().min(0).max(100).optional().nullable(),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
+    productIds: z.array(z.string().uuid()).max(50).optional(),
+    translations: campaignTranslationsSchema.partial().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) return data.endDate > data.startDate;
+      return true;
+    },
+    { message: 'End date must be after start date', path: ['endDate'] },
+  );
+
+export class UpdateCampaignDto extends createZodDto(updateCampaignSchema) {}

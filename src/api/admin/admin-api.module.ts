@@ -13,6 +13,8 @@ import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminOrdersModule } from './orders/admin-orders.module';
 import { AdminProductsModule } from './products/admin-products.module';
 import { AdminUsersModule } from './users/admin-users.module';
+import { AdminCampaignsModule } from './campaigns/admin-campaigns.module';
+import { AdminArticlesModule } from './articles/admin-articles.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminOrdersModule,
     AdminProductsModule,
     AdminUsersModule,
+    AdminCampaignsModule,
+    AdminArticlesModule,
   ],
   exports: [
     AdminModule,
@@ -46,6 +50,8 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminOrdersModule,
     AdminProductsModule,
     AdminUsersModule,
+    AdminCampaignsModule,
+    AdminArticlesModule,
   ],
 })
 export class AdminApiModule {}
