@@ -5,7 +5,10 @@ import { PublicShopSlugDto } from '../dto/public-shop-slug.dto';
 import { ListPublicShopsQueryDto } from '../dto/list-public-shops-query.dto';
 import { ListPublicShopProductsQueryDto } from '../dto/list-public-shop-products-query.dto';
 import { ListPublicShopReviewsQueryDto } from '../dto/list-public-shop-reviews-query.dto';
-import { PublicShopCampaignSlugDto, PublicShopArticleSlugDto } from '../dto/public-shop-content-slug.dto';
+import {
+  PublicShopCampaignSlugDto,
+  PublicShopArticleSlugDto,
+} from '../dto/public-shop-content-slug.dto';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiNotFoundResponse } from '@/common/decorators/api-error.decorator';

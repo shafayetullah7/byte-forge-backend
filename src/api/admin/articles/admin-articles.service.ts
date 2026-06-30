@@ -65,7 +65,7 @@ export class AdminArticlesService {
     if (!article) {
       throw new NotFoundException('Article not found');
     }
-    return this.mapArticleDetail(article as ArticleAdminRow);
+    return this.mapArticleDetail(article);
   }
 
   async approveArticle(articleId: string, adminId: string) {
@@ -139,7 +139,7 @@ export class AdminArticlesService {
       article.moderationStatus !== ShopContentModerationStatusEnum.APPROVED
     ) {
       throw new BadRequestException(
-        'Only approved articles can be marked as editor\'s pick',
+        "Only approved articles can be marked as editor's pick",
       );
     }
 

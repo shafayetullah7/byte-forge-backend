@@ -48,7 +48,9 @@ export class AnalyticsService {
             with: { translations: true, thumbnail: true },
           })
         : [];
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const productMap = new Map(
+      products.map((product) => [product.id, product]),
+    );
 
     const topProducts = topProductRows.map((row) => {
       const product = productMap.get(row.productId);

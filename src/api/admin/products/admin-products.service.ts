@@ -3,16 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  ilike,
-  or,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   mediaTable,
@@ -22,10 +13,7 @@ import {
   shopTable,
   shopTranslationsTable,
 } from '@/_db/drizzle/schema';
-import {
-  ProductStatusEnum,
-  ShopStatusEnum,
-} from '@/_db/drizzle/enum';
+import { ProductStatusEnum, ShopStatusEnum } from '@/_db/drizzle/enum';
 import { paginate } from '@/common/utils/pagination.util';
 import {
   AdminProductsQueryDto,
@@ -62,8 +50,7 @@ export class AdminProductsService {
         : undefined,
     ].filter(Boolean);
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ total }] = await this.db.client
       .select({ total: count() })
@@ -133,14 +120,14 @@ export class AdminProductsService {
       .offset(offset);
 
     return paginate(
-      rows.map((row) => mapAdminProductSummary(row, lang)),
+      rows.map((row) => mapAdminProductSummary(row)),
       total,
       page,
       limit,
     );
   }
 
-  async getProduct(productId: string, lang: string) {
+  async getProduct(productId: string) {
     const product = await this.db.client.query.productsTable.findFirst({
       where: eq(productsTable.id, productId),
       with: {
@@ -167,37 +154,35 @@ export class AdminProductsService {
     const baseVariant =
       product.variants?.find((v) => v.isBase) ?? product.variants?.[0];
 
-    return mapAdminProductDetail(
-      {
-        id: product.id,
-        slug: product.slug,
-        status: product.status,
-        productType: product.productType,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-        thumbnailUrl: product.thumbnail?.url ?? null,
-        name: enTranslation?.name ?? product.slug,
-        shortDescription: enTranslation?.shortDescription ?? null,
-        description: enTranslation?.description ?? null,
-        price: baseVariant?.price ?? null,
-        inventoryCount: baseVariant?.inventoryCount ?? 0,
-        shopId: product.shopId,
-        shopSlug: product.shop?.slug ?? '',
-        shopName: shopEnName ?? product.shop?.slug ?? null,
-        shopStatus: product.shop?.status ?? '',
-        sku: baseVariant?.sku ?? null,
-        translations: (product.translations ?? []).map((t) => ({
-          locale: t.locale,
-          name: t.name,
-          shortDescription: t.shortDescription,
-          description: t.description,
-        })),
-      },
-      lang,
-    );
+    return mapAdminProductDetail({
+      id: product.id,
+      slug: product.slug,
+      status: product.status,
+      productType: product.productType,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      thumbnailUrl: product.thumbnail?.url ?? null,
+      name: enTranslation?.name ?? product.slug,
+      shortDescription: enTranslation?.shortDescription ?? null,
+      description: enTranslation?.description ?? null,
+      price: baseVariant?.price ?? null,
+      inventoryCount: baseVariant?.inventoryCount ?? 0,
+      shopId: product.shopId,
+      shopSlug: product.shop?.slug ?? '',
+      shopName: shopEnName ?? product.shop?.slug ?? null,
+      shopStatus: product.shop?.status ?? '',
+      sku: baseVariant?.sku ?? null,
+      translations: (product.translations ?? []).map((t) => ({
+        locale: t.locale,
+        name: t.name,
+        shortDescription: t.shortDescription,
+        description: t.description,
+      })),
+    });
   }
 
-  async archiveProduct(productId: string, _dto: ArchiveProductDto) {
+  async archiveProduct(productId: string, dto: ArchiveProductDto) {
+    void dto;
     const product = await this.db.client.query.productsTable.findFirst({
       where: eq(productsTable.id, productId),
       columns: { id: true, status: true },

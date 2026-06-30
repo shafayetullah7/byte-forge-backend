@@ -6,7 +6,6 @@ import {
   desc,
   eq,
   ilike,
-  inArray,
   or,
   sql,
   type SQL,
@@ -47,8 +46,7 @@ export class ShopArticleRepository {
   constructor(private readonly db: DrizzleService) {}
 
   async listByShopId(shopId: string, query: SellerArticleListQuery) {
-    const { page, limit, search, moderationStatus, sortOrder = 'desc' } =
-      query;
+    const { page, limit, search, moderationStatus, sortOrder = 'desc' } = query;
     const offset = (page - 1) * limit;
     const conditions: SQL[] = [eq(shopArticlesTable.shopId, shopId)];
 
@@ -280,7 +278,7 @@ export class ShopArticleRepository {
         .values(data)
         .returning();
       await this.upsertTranslations(article.id, translations, executor);
-      return this.findByIdForShop(data.shopId!, article.id, executor);
+      return this.findByIdForShop(data.shopId, article.id, executor);
     };
     if (tx) return run(tx);
     return this.db.transaction(run);

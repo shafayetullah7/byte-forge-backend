@@ -406,13 +406,15 @@ export class AdminShopService {
             longitude: shop.shopAddressTable.longitude,
             googleMapsLink: shop.shopAddressTable.googleMapsLink,
             isVerified: shop.shopAddressTable.isVerified,
-            translations: (shop.shopAddressTable.translations ?? []).map((t) => ({
-              locale: t.locale,
-              country: t.country,
-              division: t.division,
-              district: t.district,
-              street: t.street,
-            })),
+            translations: (shop.shopAddressTable.translations ?? []).map(
+              (t) => ({
+                locale: t.locale,
+                country: t.country,
+                division: t.division,
+                district: t.district,
+                street: t.street,
+              }),
+            ),
           }
         : null,
       createdAt: shop.createdAt,

@@ -47,9 +47,7 @@ type CampaignAdminRow = {
 
 @Injectable()
 export class AdminCampaignsService {
-  constructor(
-    private readonly campaignRepository: ShopCampaignRepository,
-  ) {}
+  constructor(private readonly campaignRepository: ShopCampaignRepository) {}
 
   async listCampaigns(query: AdminCampaignsQueryDto) {
     const page = query.page ?? 1;
@@ -74,7 +72,7 @@ export class AdminCampaignsService {
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
-    return this.mapCampaignDetail(campaign as CampaignAdminRow);
+    return this.mapCampaignDetail(campaign);
   }
 
   async approveCampaign(campaignId: string, adminId: string) {

@@ -84,7 +84,9 @@ export class UpdateCampaignService {
     );
     if (!existing) throw new NotFoundException('Campaign not found');
     if (!assertEditableStatus(existing.moderationStatus)) {
-      throw new BadRequestException('Campaign cannot be edited in current status');
+      throw new BadRequestException(
+        'Campaign cannot be edited in current status',
+      );
     }
 
     if (dto.productIds) {
@@ -166,7 +168,7 @@ export class SubmitCampaignService {
 
     const campaign = await this.campaignRepository.findByIdForShop(
       shopId,
-      updated!.id,
+      updated.id,
     );
     return mapSellerCampaign(campaign!);
   }

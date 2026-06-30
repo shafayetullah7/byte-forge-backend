@@ -1,6 +1,9 @@
 import { resolveTranslation } from '@/common/utils/resolve-translation.util';
 import { mapOrderPaymentMethod } from '@/common/utils/map-order-payment-method.util';
-import type { TProductTranslation, TShopTranslation } from '@/_db/drizzle/schema';
+import type {
+  TProductTranslation,
+  TShopTranslation,
+} from '@/_db/drizzle/schema';
 import type { AdminOrderWithRelations } from '@/_repositories/user/order.repository/order.repository';
 import { mapStatusHistoryActor } from '@/api/user/seller/orders/map-status-history-actor.util';
 

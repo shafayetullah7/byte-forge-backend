@@ -56,9 +56,7 @@ export class ShopFollowService {
           name: translation?.name ?? '',
           tagline: translation?.tagline ?? null,
           isVerified: shop.isVerified,
-          logo: shop.logo
-            ? { id: shop.logo.id, url: shop.logo.url }
-            : null,
+          logo: shop.logo ? { id: shop.logo.id, url: shop.logo.url } : null,
           banner: shop.banner
             ? { id: shop.banner.id, url: shop.banner.url }
             : null,

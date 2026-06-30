@@ -7,7 +7,9 @@ export const listArticlesQuerySchema = PaginationParamsSchema.extend({
   moderationStatus: z.nativeEnum(ShopContentModerationStatusEnum).optional(),
 });
 
-export class ListArticlesQueryDto extends createZodDto(listArticlesQuerySchema) {}
+export class ListArticlesQueryDto extends createZodDto(
+  listArticlesQuerySchema,
+) {}
 
 export const articleIdParamSchema = z.object({
   id: z.string().uuid(),

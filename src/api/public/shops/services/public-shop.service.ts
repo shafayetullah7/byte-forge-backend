@@ -77,11 +77,7 @@ export class PublicShopService {
     );
   }
 
-  async getPublicShopBySlug(
-    slug: string,
-    lang: string,
-    viewerUserId?: string,
-  ) {
+  async getPublicShopBySlug(slug: string, lang: string, viewerUserId?: string) {
     const shop = await this.shopRepository.getShopBySlug(slug);
 
     if (!shop || shop.status !== ShopStatusEnum.ACTIVE) {

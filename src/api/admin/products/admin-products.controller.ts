@@ -43,14 +43,8 @@ export class AdminProductsController {
 
   @ApiOperation({ summary: 'Get product detail' })
   @Get(':productId')
-  async getProduct(
-    @Param() params: AdminProductIdParamDto,
-    @I18nLang() lang: string,
-  ) {
-    const data = await this.adminProductsService.getProduct(
-      params.productId,
-      lang,
-    );
+  async getProduct(@Param() params: AdminProductIdParamDto) {
+    const data = await this.adminProductsService.getProduct(params.productId);
     return this.responseService.success({
       message: 'Product retrieved successfully',
       data,

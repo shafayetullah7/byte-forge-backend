@@ -1,10 +1,11 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import {
-  wishlistItemsTable,
-  wishlistsTable,
-} from '@/_db/drizzle/schema/cart';
+import { wishlistItemsTable, wishlistsTable } from '@/_db/drizzle/schema/cart';
 import { productVariantsTable } from '@/_db/drizzle/schema';
 import { ProductStatusEnum } from '@/_db/drizzle/enum';
 
@@ -58,12 +59,11 @@ export class WishlistRepository {
     const wishlist = await this.getOrCreateWishlist(userId);
     if (!wishlist) throw new ConflictException('Wishlist unavailable');
 
-    const variantRow = await this.db.client.query.productVariantsTable.findFirst(
-      {
+    const variantRow =
+      await this.db.client.query.productVariantsTable.findFirst({
         where: eq(productVariantsTable.id, variantId),
         with: { product: true },
-      },
-    );
+      });
 
     if (!variantRow) {
       throw new NotFoundException('Variant not found');

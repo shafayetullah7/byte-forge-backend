@@ -830,8 +830,7 @@ export class OrderRepository {
     userId?: string;
   }): Promise<SellerOrderStats> {
     const conditions = this.buildAdminOrderConditions(filters ?? {});
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const orders = await this.db.client
       .select()
@@ -889,8 +888,7 @@ export class OrderRepository {
       dateTo,
     });
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const totalResult = await this.db.client
       .select({ count: count() })
@@ -956,7 +954,7 @@ export class OrderRepository {
     });
 
     return {
-      orders: orders as AdminOrderWithRelations[],
+      orders: orders,
       total: totalResult[0]?.count ?? 0,
     };
   }
@@ -1015,6 +1013,6 @@ export class OrderRepository {
       limit: 1,
     });
 
-    return (order as AdminOrderWithRelations | undefined) ?? null;
+    return order ?? null;
   }
 }

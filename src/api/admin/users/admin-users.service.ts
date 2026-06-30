@@ -1,14 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  exists,
-  ilike,
-  or,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, ilike, or } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ordersTable,
@@ -52,16 +43,12 @@ export class AdminUsersService {
         : undefined,
     ].filter(Boolean);
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ total }] = await this.db.client
       .select({ total: count() })
       .from(userTable)
-      .leftJoin(
-        userLocalAuthTable,
-        eq(userLocalAuthTable.userId, userTable.id),
-      )
+      .leftJoin(userLocalAuthTable, eq(userLocalAuthTable.userId, userTable.id))
       .where(whereClause);
 
     const rows = await this.db.client
@@ -77,10 +64,7 @@ export class AdminUsersService {
         createdAt: userTable.createdAt,
       })
       .from(userTable)
-      .leftJoin(
-        userLocalAuthTable,
-        eq(userLocalAuthTable.userId, userTable.id),
-      )
+      .leftJoin(userLocalAuthTable, eq(userLocalAuthTable.userId, userTable.id))
       .where(whereClause)
       .orderBy(
         query.sortBy === 'name'
@@ -128,10 +112,7 @@ export class AdminUsersService {
         updatedAt: userTable.updatedAt,
       })
       .from(userTable)
-      .leftJoin(
-        userLocalAuthTable,
-        eq(userLocalAuthTable.userId, userTable.id),
-      )
+      .leftJoin(userLocalAuthTable, eq(userLocalAuthTable.userId, userTable.id))
       .where(eq(userTable.id, userId))
       .limit(1);
 

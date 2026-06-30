@@ -18,7 +18,13 @@ export const createCampaignSchema = z
     slug: SlugSchema.optional(),
     type: z.nativeEnum(ShopCampaignTypeEnum),
     bannerId: z.string().uuid().optional().nullable(),
-    discountPercent: z.coerce.number().int().min(0).max(100).optional().nullable(),
+    discountPercent: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .optional()
+      .nullable(),
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
     productIds: z.array(z.string().uuid()).max(50).optional().default([]),

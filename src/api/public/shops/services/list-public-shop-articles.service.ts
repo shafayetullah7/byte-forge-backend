@@ -13,9 +13,7 @@ export class ListPublicShopArticlesService {
 
   async list(slug: string, lang: string) {
     const shop = await this.requireActiveShop(slug);
-    const articles = await this.articleRepository.listApprovedByShopId(
-      shop.id,
-    );
+    const articles = await this.articleRepository.listApprovedByShopId(shop.id);
     return articles.map((a) => mapPublicShopArticle(a, lang));
   }
 

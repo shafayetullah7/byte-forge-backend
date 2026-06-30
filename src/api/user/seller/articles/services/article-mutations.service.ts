@@ -144,7 +144,7 @@ export class SubmitArticleService {
 
     const article = await this.articleRepository.findByIdForShop(
       shopId,
-      updated!.id,
+      updated.id,
     );
     return mapSellerArticle(article!);
   }

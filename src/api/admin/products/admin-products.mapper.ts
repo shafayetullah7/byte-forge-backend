@@ -27,7 +27,7 @@ type ProductDetailRow = ProductListRow & {
   sku: string | null;
 };
 
-export function mapAdminProductSummary(row: ProductListRow, lang: string) {
+export function mapAdminProductSummary(row: ProductListRow) {
   return {
     id: row.id,
     slug: row.slug,
@@ -48,12 +48,12 @@ export function mapAdminProductSummary(row: ProductListRow, lang: string) {
   };
 }
 
-export function mapAdminProductDetail(row: ProductDetailRow, lang: string) {
+export function mapAdminProductDetail(row: ProductDetailRow) {
   const enTranslation = row.translations.find((t) => t.locale === 'en');
   const bnTranslation = row.translations.find((t) => t.locale === 'bn');
 
   return {
-    ...mapAdminProductSummary(row, lang),
+    ...mapAdminProductSummary(row),
     sku: row.sku,
     shortDescription: row.shortDescription,
     description: row.description,

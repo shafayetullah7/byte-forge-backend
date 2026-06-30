@@ -29,4 +29,6 @@ export const AdminOrderIdParamSchema = z.object({
   orderId: z.string().uuid(),
 });
 
-export class AdminOrderIdParamDto extends createZodDto(AdminOrderIdParamSchema) {}
+export class AdminOrderIdParamDto extends createZodDto(
+  AdminOrderIdParamSchema,
+) {}

@@ -46,13 +46,13 @@ export class ListPublicShopCampaignsService {
         ?.map((link) => link.product)
         .filter((p) => p && p.status === ProductStatusEnum.ACTIVE)
         .map((product) => {
-          const translation = resolveTranslation(product!.translations, lang);
-          const variant = product!.variants?.[0];
+          const translation = resolveTranslation(product.translations, lang);
+          const variant = product.variants?.[0];
           return {
-            id: product!.id,
-            slug: product!.slug,
+            id: product.id,
+            slug: product.slug,
             name: translation?.name ?? '',
-            thumbnailUrl: product!.thumbnail?.url ?? '',
+            thumbnailUrl: product.thumbnail?.url ?? '',
             price: variant?.price ?? 0,
           };
         }) ?? [];

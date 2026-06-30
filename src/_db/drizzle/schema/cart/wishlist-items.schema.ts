@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  timestamp,
-  index,
-  unique,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, timestamp, index, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { wishlistsTable } from './wishlists.schema';
 import { productVariantsTable } from '../products/product-variants.schema';

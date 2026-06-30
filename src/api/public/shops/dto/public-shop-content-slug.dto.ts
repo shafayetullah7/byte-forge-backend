@@ -1,5 +1,4 @@
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 import { publicShopSlugSchema } from './public-shop-slug.dto';
 import { SlugSchema } from '@/common/schemas/slug.schema';
 

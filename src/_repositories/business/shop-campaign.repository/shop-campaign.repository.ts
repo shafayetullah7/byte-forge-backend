@@ -53,8 +53,7 @@ export class ShopCampaignRepository {
   constructor(private readonly db: DrizzleService) {}
 
   async listByShopId(shopId: string, query: SellerCampaignListQuery) {
-    const { page, limit, search, moderationStatus, sortOrder = 'desc' } =
-      query;
+    const { page, limit, search, moderationStatus, sortOrder = 'desc' } = query;
     const offset = (page - 1) * limit;
 
     const conditions: SQL[] = [eq(shopCampaignsTable.shopId, shopId)];
@@ -131,11 +130,7 @@ export class ShopCampaignRepository {
     });
   }
 
-  findApprovedByShopSlug(
-    shopId: string,
-    campaignSlug: string,
-    tx?: DrizzleTx,
-  ) {
+  findApprovedByShopSlug(shopId: string, campaignSlug: string, tx?: DrizzleTx) {
     const executor = this.db.getExecutor(tx);
     return executor.query.shopCampaignsTable.findFirst({
       where: and(
@@ -313,7 +308,7 @@ export class ShopCampaignRepository {
         await this.replaceProducts(campaign.id, productIds, executor);
       }
 
-      return this.findByIdForShop(data.shopId!, campaign.id, executor);
+      return this.findByIdForShop(data.shopId, campaign.id, executor);
     };
 
     if (tx) return run(tx);
@@ -392,9 +387,9 @@ export class ShopCampaignRepository {
 
     if (productIds.length === 0) return;
 
-    await tx.insert(shopCampaignProductsTable).values(
-      productIds.map((productId) => ({ campaignId, productId })),
-    );
+    await tx
+      .insert(shopCampaignProductsTable)
+      .values(productIds.map((productId) => ({ campaignId, productId })));
   }
 
   async deleteCampaign(shopId: string, campaignId: string) {

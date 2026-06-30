@@ -35,9 +35,7 @@ export function mapPublicShopCampaign(campaign: CampaignRow, lang: string) {
   };
 }
 
-export function mapPublicShopCampaignHighlights(
-  campaigns: CampaignRow[],
-) {
+export function mapPublicShopCampaignHighlights(campaigns: CampaignRow[]) {
   const now = new Date();
   const twelveMonthsAgo = new Date(now);
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
