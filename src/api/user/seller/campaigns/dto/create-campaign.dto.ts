@@ -13,11 +13,13 @@ export const campaignTranslationsSchema = z.object({
   bn: campaignTranslationSchema,
 });
 
+const campaignDateSchema = z.string().datetime({ offset: true });
+
 export const createCampaignSchema = z
   .object({
     slug: SlugSchema.optional(),
     type: z.nativeEnum(ShopCampaignTypeEnum),
-    bannerId: z.string().uuid().optional().nullable(),
+    bannerId: z.uuid().optional().nullable(),
     discountPercent: z.coerce
       .number()
       .int()
@@ -25,15 +27,15 @@ export const createCampaignSchema = z
       .max(100)
       .optional()
       .nullable(),
-    startDate: z.coerce.date(),
-    endDate: z.coerce.date(),
-    productIds: z.array(z.string().uuid()).max(50).optional().default([]),
+    startDate: campaignDateSchema,
+    endDate: campaignDateSchema,
+    productIds: z.array(z.uuid()).max(50).optional().default([]),
     translations: z.object({
       en: campaignTranslationSchema,
       bn: campaignTranslationSchema.optional(),
     }),
   })
-  .refine((data) => data.endDate > data.startDate, {
+  .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
     message: 'End date must be after start date',
     path: ['endDate'],
   });

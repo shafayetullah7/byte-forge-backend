@@ -4,6 +4,8 @@ import { SlugSchema } from '@/common/schemas/slug.schema';
 import { ShopCampaignTypeEnum } from '@/_db/drizzle/enum';
 import { campaignTranslationsSchema } from './create-campaign.dto';
 
+const campaignDateSchema = z.string().datetime({ offset: true });
+
 export const updateCampaignSchema = z
   .object({
     slug: SlugSchema.optional(),
@@ -16,14 +18,16 @@ export const updateCampaignSchema = z
       .max(100)
       .optional()
       .nullable(),
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional(),
-    productIds: z.array(z.string().uuid()).max(50).optional(),
+    startDate: campaignDateSchema.optional(),
+    endDate: campaignDateSchema.optional(),
+    productIds: z.array(z.uuid()).max(50).optional(),
     translations: campaignTranslationsSchema.partial().optional(),
   })
   .refine(
     (data) => {
-      if (data.startDate && data.endDate) return data.endDate > data.startDate;
+      if (data.startDate && data.endDate) {
+        return new Date(data.endDate) > new Date(data.startDate);
+      }
       return true;
     },
     { message: 'End date must be after start date', path: ['endDate'] },
