@@ -1,4 +1,9 @@
 import type { Request, Response } from 'express';
+import {
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { OidcAuthService } from '../../oidc-auth.service';
 import { CookieService } from '@/libs/modules/cookie/cookie.service';
 import { AppConfigService } from '@/libs/modules/app-config/app-config.service';
@@ -130,7 +135,7 @@ describe('OidcAuthService', () => {
       });
     });
 
-    it('returns login error URL without setting cookies when provision fails', async () => {
+    async function mockSuccessfulTokenExchange() {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -146,21 +151,47 @@ describe('OidcAuthService', () => {
           email_verified: true,
         },
       });
-      oidcProvisioner.provisionFromToken.mockRejectedValue(
-        new Error('provision failed'),
-      );
+    }
 
-      const redirectUrl = await service.completeCallback(req, res, {
-        code: 'auth-code',
-        state: 'state-1',
-      });
+    it.each([
+      {
+        label: 'generic Error',
+        error: new Error('provision failed'),
+        code: 'provision_failed',
+      },
+      {
+        label: 'ConflictException',
+        error: new ConflictException('Account already linked'),
+        code: 'identity_conflict',
+      },
+      {
+        label: 'unverified email',
+        error: new UnauthorizedException('Email must be verified'),
+        code: 'email_unverified',
+      },
+      {
+        label: 'inactive account',
+        error: new ForbiddenException('Account is inactive'),
+        code: 'account_inactive',
+      },
+    ])(
+      'maps provision $label to oidc_error=$code without setting cookies',
+      async ({ error, code }) => {
+        await mockSuccessfulTokenExchange();
+        oidcProvisioner.provisionFromToken.mockRejectedValue(error);
 
-      expect(redirectUrl).toBe(
-        'http://localhost:3000/login?oidc_error=provision_failed',
-      );
-      expect(cookieService.setOidcSessionCookies).not.toHaveBeenCalled();
-      expect(cookieService.clearOidcPkceCookies).toHaveBeenCalledWith(res);
-    });
+        const redirectUrl = await service.completeCallback(req, res, {
+          code: 'auth-code',
+          state: 'state-1',
+        });
+
+        expect(redirectUrl).toBe(
+          `http://localhost:3000/login?oidc_error=${code}`,
+        );
+        expect(cookieService.setOidcSessionCookies).not.toHaveBeenCalled();
+        expect(cookieService.clearOidcPkceCookies).toHaveBeenCalledWith(res);
+      },
+    );
 
     it('maps IdP error to a closed code and does not echo raw strings', async () => {
       const redirectUrl = await service.completeCallback(req, res, {

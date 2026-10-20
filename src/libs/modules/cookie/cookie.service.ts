@@ -10,16 +10,20 @@ const BF_XSRF_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 export class CookieService {
   constructor(private readonly configService: AppConfigService) {}
 
-  /** Shared across :3000 / :3005 when COOKIE_DOMAIN=localhost (matches Aponika pattern). */
+  /**
+   * Shared across storefront `:3000` and API `:3005` when `COOKIE_DOMAIN` is set
+   * (e.g. `localhost`). Empty → host-only cookies (SSR/XSRF break across ports).
+   */
   private resolveUserCookieDomain(): string | undefined {
     const domain = this.configService.cookieDomain?.trim();
     return domain || undefined;
   }
 
   /**
-   * Shared cookie options for user-facing cross-domain auth cookies.
-   * Production: Secure + SameSite=None for cross-origin frontends.
-   * Development: relaxed for http://localhost.
+   * Shared options for OIDC user cookies — use for **set and clear**:
+   * `bfAccessToken`, `bfRefreshToken`, `bf-xsrf-token`, `bfOidc*`.
+   * Domain/path/SameSite/Secure must match on clearCookie or browsers leave zombies.
+   * Production: Secure + SameSite=None. Development: SameSite=Lax over http.
    */
   private getUserCookieOptions(httpOnly: boolean): CookieOptions {
     const isProduction = this.configService.nodeEnv === 'production';

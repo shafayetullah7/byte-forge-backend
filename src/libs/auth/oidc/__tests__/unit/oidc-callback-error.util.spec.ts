@@ -1,6 +1,12 @@
 import {
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
   buildOidcLoginErrorUrl,
   mapOidcCallbackError,
+  mapOidcProvisionFailure,
 } from '../../oidc-callback-error.util';
 
 describe('oidc-callback-error.util', () => {
@@ -10,6 +16,9 @@ describe('oidc-callback-error.util', () => {
     expect(mapOidcCallbackError('temporarily_unavailable')).toBe(
       'temporarily_unavailable',
     );
+    expect(mapOidcCallbackError('email_unverified')).toBe('email_unverified');
+    expect(mapOidcCallbackError('account_inactive')).toBe('account_inactive');
+    expect(mapOidcCallbackError('identity_conflict')).toBe('identity_conflict');
     expect(mapOidcCallbackError('provision_failed')).toBe('provision_failed');
     expect(mapOidcCallbackError('token_exchange_failed')).toBe(
       'token_exchange_failed',
@@ -31,5 +40,39 @@ describe('oidc-callback-error.util', () => {
     expect(
       buildOidcLoginErrorUrl('http://localhost:3000', 'not-a-real-error'),
     ).toBe('http://localhost:3000/login?oidc_error=failed');
+  });
+});
+
+describe('mapOidcProvisionFailure', () => {
+  it('maps ForbiddenException to account_inactive', () => {
+    expect(
+      mapOidcProvisionFailure(new ForbiddenException('Account is inactive')),
+    ).toBe('account_inactive');
+  });
+
+  it('maps ConflictException to identity_conflict', () => {
+    expect(
+      mapOidcProvisionFailure(
+        new ConflictException('Account already linked to another identity'),
+      ),
+    ).toBe('identity_conflict');
+  });
+
+  it('maps unverified-email UnauthorizedException to email_unverified', () => {
+    expect(
+      mapOidcProvisionFailure(
+        new UnauthorizedException('Email must be verified'),
+      ),
+    ).toBe('email_unverified');
+  });
+
+  it('maps other UnauthorizedException to provision_failed', () => {
+    expect(
+      mapOidcProvisionFailure(new UnauthorizedException('Invalid access token')),
+    ).toBe('provision_failed');
+  });
+
+  it('maps generic errors to provision_failed', () => {
+    expect(mapOidcProvisionFailure(new Error('boom'))).toBe('provision_failed');
   });
 });

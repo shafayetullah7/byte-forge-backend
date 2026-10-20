@@ -11,7 +11,10 @@ import {
   buildFrontendRedirect,
   safeReturnTo,
 } from '@/libs/auth/oidc/oidc-return-to.util';
-import { buildOidcLoginErrorUrl } from '@/libs/auth/oidc/oidc-callback-error.util';
+import {
+  buildOidcLoginErrorUrl,
+  mapOidcProvisionFailure,
+} from '@/libs/auth/oidc/oidc-callback-error.util';
 import { buildOidcAccessTokenContext } from '@/libs/auth/oidc/build-oidc-access-token-context';
 import { OidcJwksClientService } from '@/libs/auth/oidc-jwks-client.service';
 import type { OidcTokenResponse } from '@/libs/auth/oidc/oidc-token.types';
@@ -104,9 +107,12 @@ export class OidcAuthService {
 
       try {
         await this.provisionIdentityFromAccessToken(tokens.access_token);
-      } catch {
+      } catch (error) {
         this.cookieService.clearOidcPkceCookies(res);
-        return buildOidcLoginErrorUrl(frontendUrl, 'provision_failed');
+        return buildOidcLoginErrorUrl(
+          frontendUrl,
+          mapOidcProvisionFailure(error),
+        );
       }
 
       this.cookieService.setOidcSessionCookies(res, tokens);
