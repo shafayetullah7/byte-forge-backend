@@ -10,5 +10,6 @@ export { GetSellerCampaignQuery } from './get-seller-campaign.query';
 export { ListAdminCampaignsQuery } from './list-admin-campaigns.query';
 export { GetAdminCampaignQuery } from './get-admin-campaign.query';
 export { ListPublicShopCampaignsQuery } from './list-public-shop-campaigns.query';
+export { ListPublicCampaignsFeedQuery } from './list-public-campaigns-feed.query';
 export { GetPublicShopCampaignHighlightsQuery } from './get-public-shop-campaign-highlights.query';
 export { GetPublicShopCampaignQuery } from './get-public-shop-campaign.query';

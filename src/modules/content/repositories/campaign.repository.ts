@@ -5,8 +5,10 @@ import {
   count,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
+  lte,
   or,
   sql,
   type SQL,
@@ -21,7 +23,12 @@ import {
 import {
   ProductStatusEnum,
   ShopContentModerationStatusEnum,
+  ShopStatusEnum,
 } from '@/_db/drizzle/enum';
+import { shopTable } from '@/_db/drizzle/schema/shop';
+import { paginate } from '@/libs/utils/pagination.util';
+import { resolveTranslation } from '@/libs/utils/resolve-translation.util';
+import { mapPublicShopCampaign } from '../mappers/public-shop-campaign.mapper';
 import { productsTable } from '@/_db/drizzle/schema';
 import { slugifyShopContentName } from '@/libs/utils/slugify-shop-content.util';
 import type {
@@ -433,5 +440,90 @@ export class CampaignRepository {
       .where(eq(shopCampaignsTable.id, campaignId))
       .returning();
     return updated;
+  }
+
+  /**
+   * Cross-shop approved campaigns in the active date window (public feed).
+   * Caller supplies shop entitlement filter (subscription).
+   */
+  async listPublicFeedPage(
+    params: {
+      page: number;
+      limit: number;
+      now: Date;
+      shopEntitlementCondition: SQL;
+    },
+    lang: string,
+  ) {
+    const { page, limit, now, shopEntitlementCondition } = params;
+    const offset = (page - 1) * limit;
+
+    const feedWhere = and(
+      eq(
+        shopCampaignsTable.moderationStatus,
+        ShopContentModerationStatusEnum.APPROVED,
+      ),
+      lte(shopCampaignsTable.startDate, now),
+      gte(shopCampaignsTable.endDate, now),
+      eq(shopTable.status, ShopStatusEnum.ACTIVE),
+      shopEntitlementCondition,
+    );
+
+    const [{ total }] = await this.db.client
+      .select({ total: count() })
+      .from(shopCampaignsTable)
+      .innerJoin(shopTable, eq(shopCampaignsTable.shopId, shopTable.id))
+      .where(feedWhere);
+
+    const idRows = await this.db.client
+      .select({
+        campaignId: shopCampaignsTable.id,
+        shopId: shopTable.id,
+        shopSlug: shopTable.slug,
+      })
+      .from(shopCampaignsTable)
+      .innerJoin(shopTable, eq(shopCampaignsTable.shopId, shopTable.id))
+      .where(feedWhere)
+      .orderBy(asc(shopCampaignsTable.endDate))
+      .limit(limit)
+      .offset(offset);
+
+    if (idRows.length === 0) {
+      return paginate([], Number(total), page, limit);
+    }
+
+    const campaignIds = idRows.map((r) => r.campaignId);
+    const shopIds = [...new Set(idRows.map((r) => r.shopId))];
+
+    const [campaignRows, shopRows] = await Promise.all([
+      this.db.client.query.shopCampaignsTable.findMany({
+        where: inArray(shopCampaignsTable.id, campaignIds),
+        with: { translations: true, banner: true, products: true },
+      }),
+      this.db.client.query.shopTable.findMany({
+        where: inArray(shopTable.id, shopIds),
+        with: { translations: true },
+      }),
+    ]);
+
+    const campaignById = new Map(campaignRows.map((c) => [c.id, c]));
+    const shopById = new Map(shopRows.map((s) => [s.id, s]));
+
+    const data = idRows.map((row) => {
+      const campaign = campaignById.get(row.campaignId);
+      const shop = shopById.get(row.shopId);
+      if (!campaign || !shop) {
+        throw new Error('Campaign feed row missing joined data');
+      }
+      const shopTranslation = resolveTranslation(shop.translations, lang);
+      const base = mapPublicShopCampaign(campaign, lang);
+      return {
+        shopSlug: row.shopSlug,
+        shopName: shopTranslation?.name ?? row.shopSlug,
+        campaign: { ...base, slug: campaign.slug },
+      };
+    });
+
+    return paginate(data, Number(total), page, limit);
   }
 }

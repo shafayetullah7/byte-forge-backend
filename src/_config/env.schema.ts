@@ -1,5 +1,6 @@
 // src/config/env.schema.ts
 import { z } from 'zod';
+import { parseAllowedOrigins } from '@/libs/security/allowed-origins';
 
 export const OIDC_PRODUCTION_REQUIRED_KEYS = [
   'OIDC_ISSUER',
@@ -9,110 +10,165 @@ export const OIDC_PRODUCTION_REQUIRED_KEYS = [
   'OIDC_POST_LOGOUT_REDIRECT_URI',
 ] as const;
 
-export const envSchema = z.object({
-  // === Application Settings ===
-  NODE_ENV: z.enum(['development', 'test', 'production']),
-  PORT: z.coerce.number(),
-  APP_NAME: z.string(),
+/** OIDC URL keys that must not use loopback hosts in production. */
+export const OIDC_PRODUCTION_NON_LOOPBACK_KEYS = [
+  'OIDC_ISSUER',
+  'OIDC_DEFAULT_RESOURCE',
+  'OIDC_REDIRECT_URI',
+  'OIDC_POST_LOGOUT_REDIRECT_URI',
+] as const;
 
-  // === Frontend (deep links in transactional emails) ===
-  FRONTEND_URL: z.string().url(),
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
-  // === Database ===
-  DB_HOST: z.string(),
-  DB_PORT: z.coerce.number(),
-  DB_USER: z.string(),
-  DB_PASSWORD: z.string(),
-  DB_NAME: z.string(),
-  DB_SSL: z.enum(['true', 'false']).default('false'),
+/** True when the URL hostname is a loopback address (local OIDC defaults). */
+export function isLoopbackUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return LOOPBACK_HOSTS.has(host);
+  } catch {
+    return false;
+  }
+}
 
-  // DATABASE_URL: z.string().url().optional(),
-  // === Docker Compose ===
-  COMPOSE_PROJECT_NAME: z.string(),
-  APP_EXTERNAL_PORT: z.coerce.number(),
-  DB_EXTERNAL_PORT: z.coerce.number(),
-  SALT_ROUNDS: z.coerce.number(),
+export const envSchema = z
+  .object({
+    // === Application Settings ===
+    NODE_ENV: z.enum(['development', 'test', 'production']),
+    PORT: z.coerce.number(),
+    APP_NAME: z.string(),
 
-  // Email / SMTP
-  MAIL_PROVIDER: z.enum(['gmail', 'smtp', 'console']),
-  MAIL_HOST: z.string(),
-  MAIL_PORT: z.coerce.number(),
-  MAIL_SECURE: z.string(),
-  MAIL_USER: z.string().optional(),
-  MAIL_PASSWORD: z.string().optional(),
-  MAIL_FROM_NAME: z.string(),
-  MAIL_FROM_EMAIL: z.string().email(),
+    // === Frontend (deep links in transactional emails) ===
+    FRONTEND_URL: z.string().url(),
 
-  // === Cloudinary ===
-  CLOUDINARY_CLOUD_NAME: z.string().nonempty().max(255),
-  CLOUDINARY_API_KEY: z.string().nonempty().max(255),
-  CLOUDINARY_API_SECRET: z.string().nonempty().max(255),
+    // === Database ===
+    DB_HOST: z.string(),
+    DB_PORT: z.coerce.number(),
+    DB_USER: z.string(),
+    DB_PASSWORD: z.string(),
+    DB_NAME: z.string(),
+    DB_SSL: z.enum(['true', 'false']).default('false'),
 
-  // === JWT Secrets (admin only) ===
+    // DATABASE_URL: z.string().url().optional(),
+    // === Docker Compose ===
+    COMPOSE_PROJECT_NAME: z.string(),
+    APP_EXTERNAL_PORT: z.coerce.number(),
+    DB_EXTERNAL_PORT: z.coerce.number(),
+    SALT_ROUNDS: z.coerce.number(),
 
-  // === Session & Cookie ===
-  SESSION_MAX_AGE: z.coerce.number(),
-  COOKIE_DOMAIN: z.string(),
+    // Email / SMTP
+    MAIL_PROVIDER: z.enum(['gmail', 'smtp', 'console']),
+    MAIL_HOST: z.string(),
+    MAIL_PORT: z.coerce.number(),
+    MAIL_SECURE: z.string(),
+    MAIL_USER: z.string().optional(),
+    MAIL_PASSWORD: z.string().optional(),
+    MAIL_FROM_NAME: z.string(),
+    MAIL_FROM_EMAIL: z.string().email(),
 
-  // === Admin JWT ===
-  JWT_ADMIN_ACCESS_SECRET: z.string().min(32),
-  JWT_ADMIN_ACCESS_EXP: z
-    .string()
-    .regex(
-      /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
-      'Invalid duration format (e.g. 15m, 1h, 7d)',
-    ),
-  JWT_ADMIN_REFRESH_SECRET: z.string().min(32),
-  JWT_ADMIN_REFRESH_EXP: z
-    .string()
-    .regex(
-      /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
-      'Invalid duration format (e.g. 15m, 1h, 7d)',
-    ),
+    // === Cloudinary ===
+    CLOUDINARY_CLOUD_NAME: z.string().nonempty().max(255),
+    CLOUDINARY_API_KEY: z.string().nonempty().max(255),
+    CLOUDINARY_API_SECRET: z.string().nonempty().max(255),
 
-  // === Admin registration (gatekeeper OTP) ===
-  ADMIN_REGISTRATION_OTP_EMAIL: z.string().email(),
+    // === JWT Secrets (admin only) ===
 
-  // === Plant AI (optional — feature off when unset) ===
-  GEMINI_API_KEY: z.string().min(1).optional(),
-  PLANT_AI_ENABLED: z.enum(['true', 'false']).default('false'),
-  GEMINI_MODEL: z.string().default('gemini-3.6-flash'),
-  PLANT_AI_RATE_LIMIT_PER_DAY: z.coerce.number().int().positive().default(20),
-  PLANT_AI_MAX_IMAGE_BYTES: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(5 * 1024 * 1024),
-  PLANT_AI_MAX_OUTPUT_TOKENS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(8192),
-  PLANT_AI_GEMINI_TIMEOUT_MS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(120_000),
+    // === Session & Cookie ===
+    SESSION_MAX_AGE: z.coerce.number(),
+    COOKIE_DOMAIN: z.string(),
+    /** Comma-separated absolute origins for CORS + CSRF. Required in production. */
+    ALLOWED_ORIGINS: z.string().optional(),
 
-  // === Seller subscription (Stripe / coupons) ===
-  STRIPE_SECRET_KEY: z.string().min(1).optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-  STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+    // === Admin JWT ===
+    JWT_ADMIN_ACCESS_SECRET: z.string().min(32),
+    JWT_ADMIN_ACCESS_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
+    JWT_ADMIN_REFRESH_SECRET: z.string().min(32),
+    JWT_ADMIN_REFRESH_EXP: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y|)$|^\d+$/i,
+        'Invalid duration format (e.g. 15m, 1h, 7d)',
+      ),
 
-  // === OIDC (Aponika Auth) ===
-  OIDC_ISSUER: z.string().url().optional(),
-  /** Server-side HTTP base for /token and /jwks (Docker/K8s). Defaults to OIDC_ISSUER. */
-  OIDC_INTERNAL_ISSUER: z.string().url().optional(),
-  OIDC_DEFAULT_RESOURCE: z.string().url().optional(),
-  OIDC_CLIENT_ID: z.string().min(1).optional(),
-  OIDC_REDIRECT_URI: z.string().url().optional(),
-  /** Must match Aponika client post_logout registration exactly (incl. trailing slash). */
-  OIDC_POST_LOGOUT_REDIRECT_URI: z.string().url().optional(),
-  OIDC_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
-})
+    // === Admin registration (gatekeeper OTP) ===
+    ADMIN_REGISTRATION_OTP_EMAIL: z.string().email(),
+
+    // === Plant AI (optional — feature off when unset) ===
+    GEMINI_API_KEY: z.string().min(1).optional(),
+    PLANT_AI_ENABLED: z.enum(['true', 'false']).default('false'),
+    GEMINI_MODEL: z.string().default('gemini-3.6-flash'),
+    PLANT_AI_RATE_LIMIT_PER_DAY: z.coerce.number().int().positive().default(20),
+    PLANT_AI_MAX_IMAGE_BYTES: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(5 * 1024 * 1024),
+    PLANT_AI_MAX_OUTPUT_TOKENS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(8192),
+    PLANT_AI_GEMINI_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(120_000),
+
+    // === Seller subscription (Stripe / coupons) ===
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+
+    // === OIDC (Aponika Auth) ===
+    OIDC_ISSUER: z.string().url().optional(),
+    /** Server-side HTTP base for /token and /jwks (Docker/K8s). Defaults to OIDC_ISSUER. */
+    OIDC_INTERNAL_ISSUER: z.string().url().optional(),
+    OIDC_DEFAULT_RESOURCE: z.string().url().optional(),
+    OIDC_CLIENT_ID: z.string().min(1).optional(),
+    OIDC_REDIRECT_URI: z.string().url().optional(),
+    /** Must match Aponika client post_logout registration exactly (incl. trailing slash). */
+    OIDC_POST_LOGOUT_REDIRECT_URI: z.string().url().optional(),
+    OIDC_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  })
   .superRefine((data, ctx) => {
+    let parsedOrigins: string[] | undefined;
+    if (data.ALLOWED_ORIGINS != null && data.ALLOWED_ORIGINS.trim() !== '') {
+      try {
+        parsedOrigins = parseAllowedOrigins(data.ALLOWED_ORIGINS);
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['ALLOWED_ORIGINS'],
+          message:
+            'ALLOWED_ORIGINS must be comma-separated absolute origins (e.g. https://shop.example.com)',
+        });
+      }
+    }
+
     if (data.NODE_ENV !== 'production') {
       return;
+    }
+
+    if (!data.COOKIE_DOMAIN.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['COOKIE_DOMAIN'],
+        message:
+          'COOKIE_DOMAIN is required when NODE_ENV=production (shared BF cookies across API and storefront)',
+      });
+    }
+
+    if (!parsedOrigins || parsedOrigins.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ALLOWED_ORIGINS'],
+        message:
+          'ALLOWED_ORIGINS is required when NODE_ENV=production (comma-separated absolute origins; include storefront FRONTEND_URL origin)',
+      });
     }
 
     for (const key of OIDC_PRODUCTION_REQUIRED_KEYS) {
@@ -124,15 +180,27 @@ export const envSchema = z.object({
         });
       }
     }
+
+    for (const key of OIDC_PRODUCTION_NON_LOOPBACK_KEYS) {
+      const value = data[key];
+      if (typeof value === 'string' && value.length > 0 && isLoopbackUrl(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} must not use a loopback host when NODE_ENV=production`,
+        });
+      }
+    }
   })
   .transform((data) => ({
     ...data,
+    COOKIE_DOMAIN: data.COOKIE_DOMAIN.trim(),
     OIDC_ISSUER: data.OIDC_ISSUER ?? 'http://localhost:3010',
     OIDC_DEFAULT_RESOURCE: data.OIDC_DEFAULT_RESOURCE ?? 'http://localhost:3005',
     OIDC_CLIENT_ID: data.OIDC_CLIENT_ID ?? 'byte-forge-web',
     OIDC_REDIRECT_URI:
-      data.OIDC_REDIRECT_URI
-      ?? 'http://localhost:3005/api/v1/user/auth/oidc/callback',
+      data.OIDC_REDIRECT_URI ??
+      'http://localhost:3005/api/v1/user/auth/oidc/callback',
     OIDC_POST_LOGOUT_REDIRECT_URI:
       data.OIDC_POST_LOGOUT_REDIRECT_URI ?? 'http://localhost:3000/',
   }));

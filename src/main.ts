@@ -5,15 +5,45 @@ import { VersioningType } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import cookieParser = require('cookie-parser');
 import { AppEnvService } from './_config/app-env/app-env.service';
+import { AppConfigService } from './libs/modules/app-config/app-config.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { getAllowedOrigins } from './libs/security/allowed-origins';
+function logOidcContract(
+  logger: AppLoggerService,
+  appConfig: AppConfigService,
+): void {
+  const cookieDomain = appConfig.cookieDomain?.trim() || '(unset)';
+  logger.log(
+    [
+      'OIDC contract:',
+      `issuer=${appConfig.oidcIssuer}`,
+      `internalIssuer=${appConfig.oidcInternalIssuer}`,
+      `clientId=${appConfig.oidcClientId}`,
+      `redirectUri=${appConfig.oidcRedirectUri}`,
+      `resource=${appConfig.oidcDefaultResource}`,
+      `postLogoutRedirectUri=${appConfig.oidcPostLogoutRedirectUri}`,
+      `frontendUrl=${appConfig.frontendUrl}`,
+      `cookieDomain=${cookieDomain}`,
+      `allowedOrigins=${appConfig.allowedOrigins.join(',')}`,
+    ].join(' '),
+  );
+
+  if (
+    appConfig.nodeEnv === 'development' &&
+    !appConfig.cookieDomain?.trim()
+  ) {
+    logger.warn(
+      'COOKIE_DOMAIN is empty — bfAccessToken / bf-xsrf-token will be host-only on :3005; storefront SSR and federated logout CSRF will break across :3000 ↔ :3005. Set COOKIE_DOMAIN=localhost for local OIDC.',
+    );
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn'],
     rawBody: true,
   });
-  app.useLogger(app.get(AppLoggerService));
+  const logger = app.get(AppLoggerService);
+  app.useLogger(logger);
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -25,6 +55,8 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const appEnv = app.get(AppEnvService);
+  const appConfig = app.get(AppConfigService);
+  logOidcContract(logger, appConfig);
 
   process.on('unhandledRejection', (reason, promise) => {
     const logger = app.get(AppLoggerService);
@@ -44,7 +76,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: getAllowedOrigins(),
+    origin: appConfig.allowedOrigins,
     credentials: true,
   });
 

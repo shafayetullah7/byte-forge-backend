@@ -10,6 +10,7 @@ export * from './public-shop-article-slug.dto';
 export * from './create-campaign.dto';
 export * from './update-campaign.dto';
 export * from './list-campaigns-query.dto';
+export * from './list-campaigns-feed-query.dto';
 export * from './admin-campaigns-query.dto';
 export * from './campaign-id-param.dto';
 export * from './reject-campaign.dto';

@@ -48,6 +48,7 @@ import { ContentModule } from './modules/content/content.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { LocationModule } from './modules/location/location.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { LocationModule } from './modules/location/location.module';
     AuthModule,
     UserModule,
     LocationModule,
+    SearchModule,
   ],
   controllers: [],
   providers: [
