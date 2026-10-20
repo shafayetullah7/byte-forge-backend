@@ -139,9 +139,8 @@ export class OidcAuthService {
    * RP-initiated logout: clear Byte Forge cookies, revoke IdP refresh token,
    * then return HTML that auto-submits to the IdP `end_session_endpoint`.
    *
-   * GET with `client_id` + `post_logout_redirect_uri` only. `id_token_hint` is
-   * omitted so the JWT never lands in the query string (browser history, logs).
-   * The IdP session cookie identifies the user when present.
+   * `state` prefix tells Aponika whether to revoke only this hosted session
+   * (`browser.`) or every device (`all.`).
    */
   async completeFederatedLogout(req: Request, res: Response): Promise<string> {
     const refreshToken = (req.cookies?.bfRefreshToken as string | undefined)?.trim();
@@ -155,7 +154,8 @@ export class OidcAuthService {
 
     const issuer = this.appConfig.oidcIssuer.replace(/\/$/, '');
     const endSessionEndpoint = `${issuer}/session/end`;
-    const state = randomUUID();
+    const statePrefix = this.isAllDevicesFederatedLogout(req) ? 'all.' : 'browser.';
+    const state = `${statePrefix}${randomUUID()}`;
     const postLogoutRedirectUri = this.appConfig.oidcPostLogoutRedirectUri;
     const clientId = this.appConfig.oidcClientId;
 
@@ -201,6 +201,12 @@ export class OidcAuthService {
   endLocalSession(res: Response): void {
     this.cookieService.clearOidcSessionCookies(res);
     this.cookieService.clearOidcPkceCookies(res);
+  }
+
+  private isAllDevicesFederatedLogout(req: Request): boolean {
+    const raw = (req.body as Record<string, unknown> | undefined)?.allDevices
+      ?? req.query?.allDevices;
+    return raw === true || raw === '1' || raw === 'true';
   }
 
   private async provisionIdentityFromAccessToken(

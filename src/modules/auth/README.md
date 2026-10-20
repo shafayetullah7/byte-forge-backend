@@ -10,8 +10,8 @@ User OIDC login (Aponika IdP) and admin local email/password auth.
 | `GET` | `v1/user/auth/oidc/callback` | Code exchange, **provision identity**, then set `bfAccessToken` / `bfRefreshToken` cookies |
 | `POST` | `v1/user/auth/oidc/refresh` | Refresh OIDC tokens (no identity provisioning). CSRF required. |
 | `GET` | `v1/user/auth/oidc-check` | Resolve linked local user from access token (read-only) |
-| `POST` | `v1/user/auth/logout` | Local logout — clear OIDC cookies on this app. CSRF required. |
-| `POST` | `v1/user/auth/oidc/logout` | Federated logout — HTML auto-submit to Aponika `end_session`. CSRF required. `GET` returns 405. |
+| `POST` | `v1/user/auth/logout` | Soft logout — clear BF cookies only (token-refresh 401). CSRF required. Does not hit `end_session`. |
+| `POST` | `v1/user/auth/oidc/logout` | Federated logout — HTML auto-submit to Aponika `end_session`. Form `allDevices=1` → `state=all.*` (every hosted session); otherwise `state=browser.*` (this browser). CSRF required. `GET` returns 405. |
 
 **Services:** `OidcAuthService`, `OidcIdentityProvisionerService`
 

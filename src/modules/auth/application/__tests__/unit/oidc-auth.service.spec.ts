@@ -281,6 +281,7 @@ describe('OidcAuthService', () => {
       expect(html).not.toContain('id_token_hint');
       expect(html).not.toContain('id-token.jwt');
       expect(html).toContain('name="client_id" value="byte-forge-web"');
+      expect(html).toMatch(/name="state" value="browser\.[^"]+"/);
       expect(html).toContain(
         'name="post_logout_redirect_uri" value="http://localhost:3000/"',
       );
@@ -299,6 +300,18 @@ describe('OidcAuthService', () => {
 
       expect(html).not.toContain('id_token_hint');
       expect(html).toContain('name="client_id" value="byte-forge-web"');
+    });
+
+    it('prefixes state with all. when allDevices is set', async () => {
+      const req = {
+        cookies: {},
+        body: { allDevices: '1' },
+      } as unknown as Request;
+      const res = {} as Response;
+
+      const html = await service.completeFederatedLogout(req, res);
+
+      expect(html).toMatch(/name="state" value="all\.[^"]+"/);
     });
 
     it('beginFederatedLogout builds URL with client_id for legacy callers', () => {
