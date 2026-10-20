@@ -6,12 +6,15 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
+      "@/libs/*": ["./src/libs/*"],
+      "@/modules/*": ["./src/modules/*"],
       "@/tests/*": ["./tests/*"]
     },
     "incremental": true,

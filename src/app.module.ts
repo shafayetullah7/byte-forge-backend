@@ -11,34 +11,43 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './_config/configuration';
 import { envSchema } from './_config/env.schema';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
-import { UserApiModule } from './api/user/user-api.module';
-import { HashingModule } from './common/modules/hashing/hashing.module';
-import { CookieModule } from './common/modules/cookie/cookie.module';
-import { ResponseModule } from './common/modules/response/response.module';
-import { PublicApiModule } from './api/public/public.module';
-import { AdminApiModule } from './api/admin/admin-api.module';
+import { HashingModule } from './libs/modules/hashing/hashing.module';
+import { CookieModule } from './libs/modules/cookie/cookie.module';
+import { ResponseModule } from './libs/modules/response/response.module';
 
-import { EmailModule } from './common/modules/email/email.module';
-import { AppConfigModule } from './common/modules/app-config/app-config.module';
-import { AllExceptionsFilter } from './common/exception-filters/all.exception.filter';
+import { EmailModule } from './libs/modules/email/email.module';
+import { AppConfigModule } from './libs/modules/app-config/app-config.module';
+import { AllExceptionsFilter } from './libs/exception-filters/all.exception.filter';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { MediaModule } from './api/media/media.module';
-import { CloudinaryModule } from './common/modules/cloudinary/cloudinary.module';
-import { LoggerModule } from './common/modules/logger/logger.module';
-import { UserAuthGuardModule } from './common/guards/user-auth-guard/user-auth-guard.module';
-import { UserAuthJWtGuardModule } from './common/guards/user-auth-jwt-guard/user-auth-jwt-guard.module';
-import { VerifiedUserAuthGuardModule } from './common/guards/verified-user-auth-guard/verified-user-auth.guard.module';
-import { AdminAuthGuardModule } from './common/guards/admin-auth-guard/admin-auth-guard.module';
-import { CartAccessGuardModule } from './common/guards/cart-access-guard/cart-access-guard.module';
-import { EventsModule } from './common/modules/events/events.module';
-import { NotificationsModule } from './common/modules/notifications/notifications.module';
+import { MediaModule } from './modules/media/media.module';
+import { CloudinaryModule } from './libs/modules/cloudinary/cloudinary.module';
+import { LoggerModule } from './libs/modules/logger/logger.module';
+import { UserAuthGuardModule } from './libs/guards/user-auth-guard/user-auth-guard.module';
+import { VerifiedUserAuthGuardModule } from './libs/guards/verified-user-auth-guard/verified-user-auth.guard.module';
+import { AdminAuthGuardModule } from './libs/guards/admin-auth-guard/admin-auth-guard.module';
+import { CartAccessGuardModule } from './libs/guards/cart-access-guard/cart-access-guard.module';
+import { SellerShopGuardModule } from './libs/guards/seller-shop-guard/seller-shop.guard.module';
+import { EventsModule } from './libs/modules/events/events.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 import { AppEnvModule } from './_config/app-env/app-env.module';
 import { JwtModule } from '@nestjs/jwt';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import morgan = require('morgan');
-import { GuestTokenMiddleware } from './common/middleware/guest-token.middleware';
-import { HealthModule } from './common/modules/health/health.module';
+import { GuestTokenMiddleware } from './libs/middleware/guest-token.middleware';
+import { PlatformModule } from './modules/platform/platform.module';
+import { OrderModule } from './modules/order/order.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { CartModule } from './modules/cart/cart.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { ShopModule } from './modules/shop/shop.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { ReviewModule } from './modules/review/review.module';
+import { ContentModule } from './modules/content/content.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
+import { LocationModule } from './modules/location/location.module';
 
 @Module({
   imports: [
@@ -63,9 +72,6 @@ import { HealthModule } from './common/modules/health/health.module';
       validate: (config) => envSchema.parse(config),
       expandVariables: true,
     }),
-    UserApiModule,
-    AdminApiModule,
-    PublicApiModule,
     MediaModule,
     HashingModule,
     CookieModule,
@@ -75,14 +81,26 @@ import { HealthModule } from './common/modules/health/health.module';
     CloudinaryModule,
     LoggerModule,
     UserAuthGuardModule,
-    UserAuthJWtGuardModule,
     VerifiedUserAuthGuardModule,
     AdminAuthGuardModule,
     CartAccessGuardModule,
+    SellerShopGuardModule,
     EventsModule,
-    NotificationsModule,
+    NotificationModule,
     AppEnvModule,
-    HealthModule,
+    PlatformModule,
+    OrderModule,
+    InventoryModule,
+    CartModule,
+    PaymentModule,
+    SubscriptionModule,
+    ShopModule,
+    CatalogModule,
+    ReviewModule,
+    ContentModule,
+    AuthModule,
+    UserModule,
+    LocationModule,
   ],
   controllers: [],
   providers: [
