@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 import { ShopModule } from '@/modules/shop/shop.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import {
   ApproveArticleCommand,
   ApproveCampaignCommand,
@@ -31,12 +32,14 @@ import {
   ListAdminCampaignsQuery,
   ListPublicShopArticlesQuery,
   ListPublicShopCampaignsQuery,
+  ListPublicCampaignsFeedQuery,
   ListSellerArticlesQuery,
   ListSellerCampaignsQuery,
 } from './application/queries';
 import {
   AdminArticlesController,
   AdminCampaignsController,
+  PublicCampaignsFeedController,
   PublicShopArticlesController,
   PublicShopCampaignsController,
   SellerArticlesController,
@@ -45,7 +48,7 @@ import {
 import { ArticleRepository, CampaignRepository } from './repositories';
 
 @Module({
-  imports: [DrizzleModule, ShopModule],
+  imports: [DrizzleModule, ShopModule, SubscriptionModule],
   controllers: [
     SellerArticlesController,
     AdminArticlesController,
@@ -53,6 +56,7 @@ import { ArticleRepository, CampaignRepository } from './repositories';
     SellerCampaignsController,
     AdminCampaignsController,
     PublicShopCampaignsController,
+    PublicCampaignsFeedController,
   ],
   providers: [
     ArticleRepository,
@@ -84,6 +88,7 @@ import { ArticleRepository, CampaignRepository } from './repositories';
     ApproveCampaignCommand,
     RejectCampaignCommand,
     ListPublicShopCampaignsQuery,
+    ListPublicCampaignsFeedQuery,
     GetPublicShopCampaignHighlightsQuery,
     GetPublicShopCampaignQuery,
   ],

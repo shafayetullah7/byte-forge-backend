@@ -1,5 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import { ordersTable, productsTable, reviewsTable } from '@/_db/drizzle/schema';
 import { shopTable, shopTranslationsTable } from '@/_db/drizzle/schema/shop';
@@ -50,14 +61,21 @@ export class ListPublicShopsQuery {
 
     const visibility = eq(shopTable.status, ShopStatusEnum.ACTIVE);
 
-    const searchFilter = search?.trim()
+    const trimmedSearch = search?.trim();
+    const searchFilter = trimmedSearch
       ? or(
-          ilike(shopTable.slug, `%${search.trim()}%`),
-          sql`exists (
-            select 1 from ${shopTranslationsTable}
-            where ${shopTranslationsTable.shopId} = ${shopTable.id}
-            and ${shopTranslationsTable.name} ilike ${`%${search.trim()}%`}
-          )`,
+          ilike(shopTable.slug, `%${trimmedSearch}%`),
+          exists(
+            this.db.client
+              .select({ id: shopTranslationsTable.id })
+              .from(shopTranslationsTable)
+              .where(
+                and(
+                  eq(shopTranslationsTable.shopId, shopTable.id),
+                  ilike(shopTranslationsTable.name, `%${trimmedSearch}%`),
+                ),
+              ),
+          ),
         )
       : undefined;
 
@@ -72,20 +90,25 @@ export class ListPublicShopsQuery {
         ? [desc(shopTable.createdAt)]
         : [desc(shopTable.createdAt)];
 
-    const shops = await this.db.client.query.shopTable.findMany({
-      where,
-      orderBy,
-      limit,
-      offset,
-      with: {
-        translations: true,
-        logo: true,
-        banner: true,
-        shopAddressTable: {
-          with: { translations: true },
-        },
+    const shopWith = {
+      translations: true,
+      logo: true,
+      banner: true,
+      shopAddressTable: {
+        with: { translations: true },
       },
-    });
+    } as const;
+
+    // Relational findMany + translation exists corrupts shop table alias in SQL.
+    const shops = trimmedSearch
+      ? await this.loadShopsByFilteredIds(where, orderBy, limit, offset)
+      : await this.db.client.query.shopTable.findMany({
+          where,
+          orderBy,
+          limit,
+          offset,
+          with: shopWith,
+        });
 
     const [{ total }] = await this.db.client
       .select({ total: count() })
@@ -215,6 +238,43 @@ export class ListPublicShopsQuery {
     }
 
     return paginate(data, total, page, limit);
+  }
+
+  private async loadShopsByFilteredIds(
+    where: SQL | undefined,
+    orderBy: ReturnType<typeof desc>[],
+    limit: number,
+    offset: number,
+  ) {
+    const idRows = await this.db.client
+      .select({ id: shopTable.id })
+      .from(shopTable)
+      .where(where)
+      .orderBy(...orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    const shopIds = idRows.map((row) => row.id);
+    if (shopIds.length === 0) {
+      return [];
+    }
+
+    const shopsRaw = await this.db.client.query.shopTable.findMany({
+      where: inArray(shopTable.id, shopIds),
+      with: {
+        translations: true,
+        logo: true,
+        banner: true,
+        shopAddressTable: {
+          with: { translations: true },
+        },
+      },
+    });
+
+    const shopById = new Map(shopsRaw.map((shop) => [shop.id, shop]));
+    return shopIds
+      .map((id) => shopById.get(id))
+      .filter((shop): shop is NonNullable<typeof shop> => shop != null);
   }
 
   async getShopMetrics(shopId: string) {
